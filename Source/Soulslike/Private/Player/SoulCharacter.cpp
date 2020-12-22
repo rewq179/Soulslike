@@ -1,6 +1,9 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 
 #include "Player/SoulCharacter.h"
+#include "Player/SoulPlayerController.h"
+
+#include "Interact/PickUpActor.h"
 
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
@@ -9,18 +12,25 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 
+#include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
+
+#include "Containers/EnumAsByte.h"
+#include "DrawDebugHelpers.h"
+
 #include "Engine/Engine.h"
 #include "Engine/SkeletalMeshSocket.h"
-#include "Net/UnrealNetwork.h"
 
 #include "Animation/AnimInstance.h"
 
+#include "Net/UnrealNetwork.h"
 ASoulCharacter::ASoulCharacter()
 {
-	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
-
+	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
+
+	// Capusle :: 카메라 Ignore
+	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
 	// set our turn rates for input
 	BaseTurnRate = 45.f;
@@ -29,6 +39,13 @@ ASoulCharacter::ASoulCharacter()
 	MoveSpeed = 500.f;
 	SprintSpeed = 8000.f;
 	bSprinting = false;
+
+	// 스텟 초기화
+	PlayerStat.MaxHp = 500.f;
+	PlayerStat.CurHp = PlayerStat.MaxHp;
+	PlayerStat.MaxStamina = 200.f;
+	PlayerStat.CurStamina = PlayerStat.MaxStamina;
+
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
@@ -52,21 +69,25 @@ ASoulCharacter::ASoulCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
-}
 
-void ASoulCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(ASoulCharacter, bSprinting);
-	DOREPLIFETIME(ASoulCharacter, bRolling);
-	DOREPLIFETIME(ASoulCharacter, bAttacking);
+	Tags.Add(FName("Player"));
 }
 
 void ASoulCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		OnTakeAnyDamage.AddDynamic(this, &ASoulCharacter::HandleTakeAnyDamage);
+
+		auto SoulPC = Cast<ASoulPlayerController>(GetController());
+		if (SoulPC)
+		{
+			//SoulPC->ClientUpdateHpBar(PlayerStat.CurHp, PlayerStat.MaxHp);
+			//SoulPC->ClientUpdateStaminaBar(PlayerStat.CurStamina, PlayerStat.MaxStamina);
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -84,6 +105,7 @@ void ASoulCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ASoulCharacter::StartSprint);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ASoulCharacter::EndSprint);
 	PlayerInputComponent->BindAction("Roll", IE_Released, this, &ASoulCharacter::StartRoll);
+	PlayerInputComponent->BindAction("Interact", IE_Released, this, &ASoulCharacter::ServerInteractActor);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &ASoulCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ASoulCharacter::MoveRight);
@@ -199,7 +221,6 @@ void ASoulCharacter::MulticastRoll_Implementation(bool bRoll)
 	}
 }
 
-
 bool ASoulCharacter::MulticastRoll_Validate(bool bRoll)
 {
 	return true;
@@ -215,9 +236,12 @@ void ASoulCharacter::EndRoll()
 	ServerRoll(false);
 }
 
+////////////////////////////////////////////////////////////////////////////
+//// 이동
+
 void ASoulCharacter::MoveForward(float Value)
 {
-	if ((Controller != NULL) && (Value != 0.0f))
+	if ((Controller != NULL) && (Value != 0.0f) && bMoveable)
 	{
 		// find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
@@ -231,7 +255,7 @@ void ASoulCharacter::MoveForward(float Value)
 
 void ASoulCharacter::MoveRight(float Value)
 {
-	if ((Controller != NULL) && (Value != 0.0f))
+	if ((Controller != NULL) && (Value != 0.0f) && bMoveable)
 	{
 		// find out which way is right
 		const FRotator Rotation = Controller->GetControlRotation();
@@ -245,7 +269,7 @@ void ASoulCharacter::MoveRight(float Value)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// 
+//// 공격
 
 bool ASoulCharacter::ServerTryToActivateAbility_Validate(EPlayerAttack Attack)
 {
@@ -285,6 +309,179 @@ void ASoulCharacter::EndAttack_Implementation()
 	bAttacking = false;
 }
 
+////////////////////////////////////////////////////////////////////////////
+//// 아이템 루팅
+
+bool ASoulCharacter::ServerInteractActor_Validate()
+{
+	return true;
+}
+
+void ASoulCharacter::ServerInteractActor_Implementation()
+{
+	if (CurrentPickUpActor == nullptr)
+	{
+		return;
+	}
+
+	HandlePickUp();
+}
+
+void ASoulCharacter::SetPickUpActor(APickUpActor* PickUpActor)
+{
+	if (PickUpActor == nullptr)
+	{
+		CurrentPickUpActor = nullptr;
+		
+		auto SoulPC = Cast<ASoulPlayerController>(GetController());
+		if (SoulPC)
+		{
+			SoulPC->ClientShowPickUpName(FText::GetEmpty());
+		}
+
+		return;
+	}
+
+	CurrentPickUpActor = PickUpActor;
+	auto SoulPC = Cast<ASoulPlayerController>(GetController());
+	if (SoulPC)
+	{
+		SoulPC->ClientShowPickUpName(CurrentPickUpActor->PickUpInfo.Name);
+	}
+}
+
+void ASoulCharacter::HandlePickUp()
+{
+	switch (CurrentPickUpActor->GetPickUpType())
+	{
+	case EPickUpType::PICK_Weapon:
+		if (!EquipInfo.bWeaponEquiped)
+		{
+			EquipWeapon(CurrentPickUpActor);
+		}
+		break;
+
+	case EPickUpType::PICK_Souls:
+		if (!EquipInfo.bSoulsEquiped)
+		{
+		}
+		break;
+
+	case EPickUpType::PICK_Armor:
+		if (!EquipInfo.bArmorEquiped)
+		{
+		}
+		break;
+
+	default:
+		break;
+	}
+}
+
+void ASoulCharacter::OnRep_Weapon()
+{
+	CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WeaponSocket");
+
+	//if (RightHandSocket)
+	{
+		//RightHandSocket->AttachActor(NewItem, MainPlayer->GetMesh());
+	}
+
+}
+
+void ASoulCharacter::EquipWeapon(AActor* Item)
+{
+	CurrentWeapon = Item;
+	EquipInfo.bWeaponEquiped = true;
+
+	OnRep_Weapon();
+}
+
+void ASoulCharacter::LightAttackToTarget()
+{
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		TArray<AActor*> OverlappedActors;
+
+		TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
+		TArray<AActor*>IgnoreTypes;
+		IgnoreTypes.Add(GetOwner());
+		float Radius = 130.f;
+		FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * Radius * 1.5f;
+
+		UKismetSystemLibrary::SphereOverlapActors(GetWorld(), SphereLocation, Radius, ObjectTypes, nullptr, IgnoreTypes, OverlappedActors);
+
+		DrawDebugSphere(GetWorld(), SphereLocation, Radius, 12, FColor::Red, false, 3.f, 2.f);
+
+		UE_LOG(LogTemp, Log, TEXT("Count : %d "), OverlappedActors.Num());
+
+		for (auto& Actor : OverlappedActors)
+		{
+			UGameplayStatics::ApplyDamage(Actor, 350.f, GetController(), this, DamageType);
+		}
+	}
+}
+
+void ASoulCharacter::HandleTakeAnyDamage(AActor * DamagedActor, float Damage, const UDamageType * Type, AController * InstigatedBy, AActor * DamageCauser)
+{
+	if (Damage <= 0.f)
+	{
+		return;
+	}
+
+	// Update health clamped
+	PlayerStat.CurHp -= Damage;
+	auto SoulPC = Cast<ASoulPlayerController>(GetController());
+	if (SoulPC)
+	{
+		SoulPC->ClientUpdateHpBar(PlayerStat.CurHp, PlayerStat.MaxHp);
+	}
+
+	if (PlayerStat.CurHp <= 0.f)
+	{
+		ServerDeath();
+	}
+}
+
+bool ASoulCharacter::ServerDeath_Validate()
+{
+	return true;
+}
+
+void ASoulCharacter::ServerDeath_Implementation()
+{
+	if (!bDead)
+	{
+		bDead = true;
+		bMoveable = false;
+		
+		auto SoulPC = Cast<ASoulPlayerController>(GetController());
+		if (SoulPC)
+		{
+			SoulPC->ShowDeadScreenWidget();
+		}
+
+		OnRep_Dead();
+	}
+}
+
+void ASoulCharacter::OnRep_Dead()
+{
+	GetMesh()->PlayAnimation(DeathAnim, false);
+
+	GetCapsuleComponent()->SetCollisionProfileName("Ragdoll");
+	/*
+	GetMesh()->SetCollisionProfileName("Ragdoll");
+
+	GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->WakeRigidBody();*/
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+//// 애니메이션 재생
+
 void ASoulCharacter::PlayMontage(UAnimMontage* AnimMontage, FName AnimName, float PlayRate)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
@@ -312,3 +509,17 @@ void ASoulCharacter::MulticastPlayMontage_Implementation(UAnimMontage * AnimMont
 	}
 }
 
+void ASoulCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ASoulCharacter, bMoveable);
+	DOREPLIFETIME(ASoulCharacter, bSprinting);
+	DOREPLIFETIME(ASoulCharacter, bRolling);
+	DOREPLIFETIME(ASoulCharacter, bAttacking);
+	DOREPLIFETIME(ASoulCharacter, CurrentPickUpActor);
+	DOREPLIFETIME(ASoulCharacter, CurrentWeapon);
+	DOREPLIFETIME(ASoulCharacter, EquipInfo);
+	DOREPLIFETIME(ASoulCharacter, PlayerStat);
+	DOREPLIFETIME(ASoulCharacter, bDead);
+}

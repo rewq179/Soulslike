@@ -10,7 +10,9 @@
 
 class UStatComponent;
 class AWeapon;
+class APickUpActor;
 class UAnimMontage;
+class UDamageType;
 
 UCLASS(config = Game)
 class ASoulCharacter : public ACharacter
@@ -31,6 +33,8 @@ class ASoulCharacter : public ACharacter
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* LightAttackMontage;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	UAnimSequence *DeathAnim;
 	   
 	/** 평상시 속도 */
 	float MoveSpeed;
@@ -48,11 +52,16 @@ public:
 	/** Constructor */
 	ASoulCharacter();
 
-	/** 네트워크 설정 */
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	TSubclassOf<UDamageType> DamageType;
+
+	DECLARE_DELEGATE_OneParam(FMouseClickDelegate, EPlayerAttack);
 
 protected:
+	/** True : 이동가능, False : 이동 불가능 */
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = Movement)
+	bool bMoveable;
+
 	virtual void BeginPlay() override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -65,6 +74,8 @@ protected:
 
 	/** 스페이스바 입력  */
 	void StartRoll();
+
+
 
 	/** Called for forwards/backward input */
 	void MoveForward(float Value);
@@ -125,6 +136,62 @@ protected:
 	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
 	void EndAttack();
 
+protected:
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = PickUpActor)
+	APickUpActor* CurrentPickUpActor;
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerInteractActor();
+
+public:
+	void SetPickUpActor(APickUpActor* PickUpActor);
+
+	void HandlePickUp();
+
+protected:
+	/** */
+	UPROPERTY(ReplicatedUsing = OnRep_Weapon, BlueprintReadOnly, Category = Equip)
+	AActor* CurrentWeapon;
+
+	UPROPERTY(Replicated)
+	FEquipInfo EquipInfo;
+
+	/** RefNotify */
+	UFUNCTION()
+	void OnRep_Weapon();
+
+	/** BP에서 ABP_SoulCharacter의 bool값 설정 */
+	UFUNCTION(BlueprintImplementableEvent, Category = Equip)
+	void OnUpdateWeapon();
+
+public:
+	void EquipWeapon(AActor* Item);
+
+	UFUNCTION(BlueprintCallable)
+	void LightAttackToTarget();
+
+protected:
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Stat)
+	FPlayerStat PlayerStat;
+
+	UFUNCTION()
+	void HandleTakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* Type, class AController* InstigatedBy, AActor* DamageCauser);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerDeath();
+	
+	/** True : 죽음, False : 살아있음 */
+	UPROPERTY(ReplicatedUsing = OnRep_Dead, BlueprintReadOnly, Category = Stat)
+	bool bDead;
+	
+	/** RefNotify */
+	UFUNCTION()
+	void OnRep_Dead();
+
+	/** BP에서 ABP_SoulCharacter의 bool값 설정 */
+	UFUNCTION(BlueprintImplementableEvent, Category = Stat)
+	void OnUpdateDeath();
+	
 public:	
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -137,5 +204,6 @@ public:
 	UFUNCTION(NetMulticast, Reliable, WithValidation)
 	void MulticastPlayMontage(UAnimMontage* AnimMontage, FName AnimName, float PlayRate);
 
-	DECLARE_DELEGATE_OneParam(FMouseClickDelegate, EPlayerAttack);
+	/** 네트워크 설정 */
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
