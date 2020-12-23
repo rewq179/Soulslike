@@ -381,7 +381,6 @@ void ASoulCharacter::HandlePickUp()
 void ASoulCharacter::OnRep_Weapon()
 {
 	CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WeaponSocket");
-
 	//if (RightHandSocket)
 	{
 		//RightHandSocket->AttachActor(NewItem, MainPlayer->GetMesh());
@@ -413,8 +412,6 @@ void ASoulCharacter::LightAttackToTarget()
 		UKismetSystemLibrary::SphereOverlapActors(GetWorld(), SphereLocation, Radius, ObjectTypes, nullptr, IgnoreTypes, OverlappedActors);
 
 		DrawDebugSphere(GetWorld(), SphereLocation, Radius, 12, FColor::Red, false, 3.f, 2.f);
-
-		UE_LOG(LogTemp, Log, TEXT("Count : %d "), OverlappedActors.Num());
 
 		for (auto& Actor : OverlappedActors)
 		{

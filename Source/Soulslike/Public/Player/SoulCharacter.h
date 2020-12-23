@@ -8,6 +8,8 @@
 
 #include "SoulCharacter.generated.h"
 
+class USpringArmComponent;
+class UCameraComponent;
 class UStatComponent;
 class AWeapon;
 class APickUpActor;
@@ -21,11 +23,11 @@ class ASoulCharacter : public ACharacter
 
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class USpringArmComponent* CameraBoom;
+	USpringArmComponent* CameraBoom;
 
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class UCameraComponent* FollowCamera;
+	UCameraComponent* FollowCamera;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* RollMontage;
@@ -193,10 +195,12 @@ protected:
 	void OnUpdateDeath();
 	
 public:	
+	FORCEINLINE bool IsDead() { return bDead; }
+
 	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	/** Returns InteractSphere subobject **/
 
 	void PlayMontage(UAnimMontage* AnimMontage, FName AnimName, float PlayRate);

@@ -27,8 +27,7 @@ void AEnemyAIController::OnSeePawn(APawn* InPawn)
 	{
 		Target = InPawn;
 
-		auto Enemy = Cast<AEnemy>(GetCharacter());
-		if (Enemy)
+		if (auto const Enemy = Cast<AEnemy>(GetCharacter()))
 		{
 			Enemy->SetTarget(Target);
 		}

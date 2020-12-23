@@ -174,3 +174,12 @@ enum class EMovementState : uint8
 	STATE_Walk UMETA(DisplayName = "Walk"),
 	STATE_Run UMETA(DisplayName = "Run")
 };
+
+UENUM(BlueprintType)
+enum class EMonsterAttack : uint8
+{
+	MATK_LightAttack UMETA(DisplayName = "Light Attack"),
+	MATK_HeavyAttack UMETA(DisplayName = "Heavy Attack"),
+	MATK_RangeAttack UMETA(DisplayName = "Range Attack"),
+	MATK_SpecialAttack UMETA(DisplayName = "Speical Attack")
+};
