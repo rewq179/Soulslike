@@ -26,6 +26,11 @@ void ASoulPlayerController::ClientUpdateStaminaBar_Implementation(float CurStami
 }
 
 
+void ASoulPlayerController::ClientUpdateSoulsCount_Implementation(int32 SoulsCount)
+{
+	OnUpdateSoulsCount(SoulsCount);
+}
+
 void ASoulPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

@@ -63,6 +63,7 @@ AEnemy::AEnemy()
 
 	Tags.Add(FName("Enemy"));
 
+	SoulsValue = 1;
 }
 
 // Called when the game starts or when spawned
@@ -70,34 +71,16 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	StartLocation = GetActorLocation();
 	SetMovementState(EMovementState::STATE_Walk);
 
 	WeaponMesh->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "b_MF_Weapon_R_Socket");
-
-	FTimerHandle WaitHandle;
-	float WaitTime = 1.f;
-	GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
-	{
-		StartRoaming();
-
-	}), WaitTime, false);
-
+	
 	MeleeCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnOverlapBegin);
 	MeleeCollision->OnComponentEndOverlap.AddDynamic(this, &AEnemy::OnOverlapEnd);
-}
-
-void AEnemy::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	if (bFindTarget && Target)
+	
+	if (GetLocalRole() == ROLE_Authority)
 	{
-		FRotator Rotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Target->GetActorLocation());
-		Rotation.Pitch = 0.f;
-		Rotation.Roll = 0.f;
-
-		SetActorRotation(Rotation);
+		OnTakeAnyDamage.AddDynamic(this, &AEnemy::HandleTakeAnyDamage);
 	}
 }
 
@@ -127,25 +110,16 @@ void AEnemy::SetMovementState(EMovementState State)
 void AEnemy::SetTarget(AActor * InTarget)
 {
 	Target = InTarget; 
-	bFindTarget = true;
 
-
-	SetActorTickEnabled(true);
 	SetMovementState(EMovementState::STATE_Run);
-	StartLocation = GetActorLocation();
-
-	
-	CheckAggro();
 }
 
 void AEnemy::ClearTarget()
 {
 	Target = nullptr;
-	bFindTarget = false;
+
 	SetActorEnableCollision(false);
 	SetMovementState(EMovementState::STATE_Walk);
-	
-	StartRoaming();
 }
 
 void AEnemy::SetMeleeCollision(bool bActive)
@@ -161,44 +135,26 @@ void AEnemy::SetMeleeCollision(bool bActive)
 	}
 }
 
-void AEnemy::CheckAggro_Implementation()
+void AEnemy::PlayAggroMotion()
 {
-	GetController()->StopMovement();
-	if (Target->GetDistanceTo(this) >= 800.f)
+	MulticastPlayMontage(AggroMontage, 1.f);
+
+	FTimerHandle WaitHandle;
+	float WaitTime = AggroMontage->GetPlayLength();
+	GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
 	{
-		MulticastPlayMontage(AggroMontage, 1.f, "Aggro");
+		OnAggroMoitionEnd.Broadcast();
 
-		FTimerHandle WaitHandle;
-		float WaitTime = AggroMontage->GetPlayLength();
-		GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
-		{
-			FollowTarget();
-
-		}), WaitTime, false); 
-	}
-
-	else
-	{
-		FollowTarget();
-	}
+	}), WaitTime, false);
 }
 
-
-void AEnemy::StartRoaming_Implementation()
-{
-
-}
-
-void AEnemy::FollowTarget_Implementation()
-{
-}
 
 float AEnemy::GetDamage()
 {
 	return AttackDamage[(int)MonsterAttack];
 }
 
-void AEnemy::Attack_Implementation()
+void AEnemy::StartAttack(EMonsterAttack Attack, int32 AttackNumber)
 {
 	if (Target == nullptr)
 	{
@@ -207,86 +163,88 @@ void AEnemy::Attack_Implementation()
 		return;
 	}
 
-	if (auto const Player = Cast<ASoulCharacter>(Target))
+	SetMonsterAttack(Attack);
+	float WaitTime;
+
+	switch (MonsterAttack)
 	{
-		if (Player->IsDead())
-		{
-			ClearTarget();
+	case EMonsterAttack::MATK_LightAttack:
+		MulticastPlayMontage(MeleeAttackMontages[AttackNumber], 1.f);
+		WaitTime = MeleeAttackMontages[AttackNumber]->GetPlayLength() + 0.2f;
+		break;
 
-			return;
+	case EMonsterAttack::MATK_HeavyAttack:
+		MulticastPlayMontage(HeavyAttackMontages[AttackNumber], 1.f);
+		WaitTime = HeavyAttackMontages[AttackNumber]->GetPlayLength() + 0.2f;
+		break;
+
+	case EMonsterAttack::MATK_RangeAttack:
+		bRangeDelay = true;
+		MulticastPlayMontage(RangeAttackMontages[AttackNumber], 1.f);
+		WaitTime = RangeAttackMontages[AttackNumber]->GetPlayLength() + 0.2f;
+		break;
+
+	case EMonsterAttack::MATK_ChargeAttack:
+		bChargeDelay = true;
+		MulticastPlayMontage(ChargeAttackMontages[AttackNumber], 1.f);
+		WaitTime = ChargeAttackMontages[AttackNumber]->GetPlayLength() + 0.2f;
+		break;
+
+	default:
+		break;
+	}
+
+	SetAttackDelay(WaitTime);
+}
+
+void AEnemy::SetAttackDelay(float WaitTime)
+{
+	GetWorld()->GetTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([&]() // 공격 모션 끝나면 BT에게 정보전달함
+	{
+		switch (MonsterAttack)
+		{
+		case EMonsterAttack::MATK_LightAttack:
+			OnLightAttackEnd.Broadcast();
+			break;
+
+		case EMonsterAttack::MATK_HeavyAttack:
+			OnHeavyAttackEnd.Broadcast();
+			break;
+
+		case EMonsterAttack::MATK_RangeAttack:
+			OnRangeAttackEnd.Broadcast();
+			break;
+
+		case EMonsterAttack::MATK_ChargeAttack:
+			OnChargeAttackEnd.Broadcast();
+			break;
+
+		default:
+			break;
 		}
-		
-		else
+	}), WaitTime, false);
+
+	if (MonsterAttack > EMonsterAttack::MATK_HeavyAttack) // 원거리 공격과 차징 공격은 계속해서 사용못함.
+	{
+		float DelayTime;
+
+		switch (MonsterAttack)
 		{
-			float Distance = Target->GetDistanceTo(this);
-			if (Distance < MeleeDistance)
+		case EMonsterAttack::MATK_RangeAttack:
+			DelayTime = 8.f;
+			GetWorld()->GetTimerManager().SetTimer(RangeDelayTimer, FTimerDelegate::CreateLambda([&]()
 			{
-				if (GetPercent(AttackPercent))
-				{
-					SetMonsterAttack(EMonsterAttack::MATK_LightAttack);
+				bRangeDelay = false;
+			}), DelayTime, false);
+			break;
 
-					int32 RandNumber = FMath::RandRange(0, 2);
-
-					MulticastPlayMontage(MeleeAttackMontages[RandNumber], 1.f, "None");
-
-					FTimerHandle WaitHandle;
-					float WaitTime = MeleeAttackMontages[RandNumber]->GetPlayLength() + 0.5f;
-					GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
-					{
-						FollowTarget();
-
-					}), WaitTime, false);
-				}
-
-				else
-				{
-					SetMonsterAttack(EMonsterAttack::MATK_HeavyAttack);
-
-					MulticastPlayMontage(HeavyAttackMontage, 1.f, "None");
-
-					FTimerHandle WaitHandle;
-					float WaitTime = HeavyAttackMontage->GetPlayLength() + 0.5f;
-					GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
-					{
-						FollowTarget();
-
-					}), WaitTime, false);
-				}
-			}
-
-			
-			else
+		case EMonsterAttack::MATK_ChargeAttack:
+			DelayTime = 5.f;
+			GetWorld()->GetTimerManager().SetTimer(ChargeDelayTimer, FTimerDelegate::CreateLambda([&]()
 			{
-				if (Distance <= RangeDistance)
-				{
-					SetMonsterAttack(EMonsterAttack::MATK_SpecialAttack);
-
-					MulticastPlayMontage(SpecialAttackMontage, 1.f, "None");
-
-					FTimerHandle WaitHandle;
-					float WaitTime = SpecialAttackMontage->GetPlayLength() + 0.5f;
-					GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
-					{
-						FollowTarget();
-
-					}), WaitTime, false);
-				}
-
-				else
-				{
-					SetMonsterAttack(EMonsterAttack::MATK_RangeAttack);
-
-					MulticastPlayMontage(RangeAttackMontage, 1.f, "None");
-
-					FTimerHandle WaitHandle;
-					float WaitTime = RangeAttackMontage->GetPlayLength() + 0.5f;
-					GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
-					{
-						FollowTarget();
-
-					}), WaitTime, false);
-				}
-			}
+				bChargeDelay = false;
+			}), DelayTime, false);
+			break;
 		}
 	}
 }
@@ -295,35 +253,7 @@ void AEnemy::HeavyAttack()
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		TArray<AActor*> OverlappedActors;
-
-		TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
-
-		TArray<AActor*>IgnoreTypes;
-		IgnoreTypes.Add(GetOwner());
-
-		float Radius = 300.f;
-		FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * Radius;
-
-		UKismetSystemLibrary::SphereOverlapActors(GetWorld(), SphereLocation, Radius, ObjectTypes, ClassFilter, IgnoreTypes, OverlappedActors);
-		DrawDebugSphere(GetWorld(), SphereLocation, Radius, 12, FColor::Red, false, 3.f, 2.f);
-
-		for (auto& Actor : OverlappedActors)
-		{
-			if (Actor->ActorHasTag("Player"))
-			{
-				UGameplayStatics::ApplyDamage(Actor, GetDamage(), GetController(), this, DamageType);
-
-				if (auto const Player = Cast<ASoulCharacter>(Actor))
-				{
-					FVector UnitVector = UKismetMathLibrary::GetDirectionUnitVector(GetActorLocation(), Actor->GetActorLocation());
-					UnitVector.Z += 1.f;
-
-					Player->LaunchCharacter(UnitVector * 300.f, false, false);
-				}
-			}
-		}
+		CreateOverlapSphere(300.f, GetDamage(), 300.f);
 	}
 }
 
@@ -344,52 +274,106 @@ void AEnemy::RangeAttack()
 	}
 }
 
-void AEnemy::SpecialAttack()
+void AEnemy::ChargeAttack()
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		TArray<AActor*> OverlappedActors;
+		CreateOverlapSphere(300.f, GetDamage(), 300.f);
+	}
+}
 
-		TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
+void AEnemy::CreateOverlapSphere(float Radius, float Damage, float Velocity)
+{
+	TArray<AActor*> OverlappedActors;
 
-		TArray<AActor*>IgnoreTypes;
-		IgnoreTypes.Add(GetOwner());
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
 
-		float Radius = 300.f;
-		FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * Radius;
+	TArray<AActor*>IgnoreTypes;
+	IgnoreTypes.Add(GetOwner());
 
-		UKismetSystemLibrary::SphereOverlapActors(GetWorld(), SphereLocation, Radius, ObjectTypes, ClassFilter, IgnoreTypes, OverlappedActors);
-		DrawDebugSphere(GetWorld(), SphereLocation, Radius, 12, FColor::Red, false, 3.f, 2.f);
+	FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * Radius;
 
-		for (auto& Actor : OverlappedActors)
+	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), SphereLocation, Radius, ObjectTypes, ClassFilter, IgnoreTypes, OverlappedActors);
+	DrawDebugSphere(GetWorld(), SphereLocation, Radius, 12, FColor::Red, false, 3.f, 2.f);
+
+	for (auto& Actor : OverlappedActors)
+	{
+		if (Actor->ActorHasTag("Player"))
 		{
-			if (Actor->ActorHasTag("Player"))
+			UGameplayStatics::ApplyDamage(Actor, Damage, GetController(), this, DamageType);
+
+			if (auto const Player = Cast<ASoulCharacter>(Actor))
 			{
-				UGameplayStatics::ApplyDamage(Actor, GetDamage(), GetController(), this, DamageType);
+				FVector UnitVector = UKismetMathLibrary::GetDirectionUnitVector(GetActorLocation(), Actor->GetActorLocation());
+				UnitVector.Z += 1.f;
 
-				if (auto const Player = Cast<ASoulCharacter>(Actor))
-				{
-					FVector UnitVector = UKismetMathLibrary::GetDirectionUnitVector(GetActorLocation(), Actor->GetActorLocation());
-					UnitVector.Z += 1.f;
-
-					Player->LaunchCharacter(UnitVector * 300.f, false, false);
-				}
+				Player->LaunchCharacter(UnitVector * Velocity, false, false);
 			}
 		}
 	}
 }
 
-bool AEnemy::GetPercent(float Percent)
-{
-	float RandNumber = FMath::RandRange(0.f, 100.f);
 
-	if (RandNumber < Percent)
+void AEnemy::HandleTakeAnyDamage(AActor * DamagedActor, float Damage, const UDamageType * Type, AController * InstigatedBy, AActor * DamageCauser)
+{
+	if (Damage <= 0.f)
 	{
-		return true;
+		return;
 	}
 
-	return false; 
+	// Update health clamped
+	CurHp -= Damage;
+
+	if (CurHp <= 0.f)
+	{
+		ServerDeath(DamageCauser);
+	}
+}
+
+
+bool AEnemy::ServerDeath_Validate(AActor* DamageCauser)
+{
+	return true;
+}
+
+void AEnemy::ServerDeath_Implementation(AActor* DamageCauser)
+{
+	if (!bDead)
+	{
+		bDead = true;
+
+		MulticastPlayAnimation(DeathAnim, false);
+		GetCharacterMovement()->SetAvoidanceEnabled(false);
+		GetCharacterMovement()->DisableMovement();
+
+		if (auto const EnemyAI = Cast<AEnemyAIController>(GetController()))
+		{
+			EnemyAI->StopBehaviorTree();
+		}
+
+		if (auto const Player = Cast<ASoulCharacter>(DamageCauser))
+		{
+			Player->SpawnSouls(SoulsValue);
+		}
+
+		ClearTarget();
+	}
+}
+
+bool AEnemy::MulticastPlayAnimation_Validate(UAnimationAsset* AnimAsset, bool bLooping)
+{
+	return true;
+}
+
+void AEnemy::MulticastPlayAnimation_Implementation(UAnimationAsset* AnimAsset, bool bLooping)
+{
+	GetCapsuleComponent()->SetCollisionProfileName("Ragdoll");
+	GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+
+	GetMesh()->PlayAnimation(AnimAsset, false);
+
+
 }
 
 bool AEnemy::MulticastPlayMontage_Validate(UAnimMontage* AnimMontage, float PlayRate, FName AnimName)
@@ -397,7 +381,7 @@ bool AEnemy::MulticastPlayMontage_Validate(UAnimMontage* AnimMontage, float Play
 	return true;
 }
 
-void AEnemy::MulticastPlayMontage_Implementation(UAnimMontage* AnimMontage, float PlayRate, FName AnimName)
+void AEnemy::MulticastPlayMontage_Implementation(UAnimMontage* AnimMontage, float PlayRate, FName AnimName = NAME_None)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -422,4 +406,11 @@ void AEnemy::OnOverlapBegin(UPrimitiveComponent * OverlappedComponent, AActor * 
 void AEnemy::OnOverlapEnd(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex)
 {
 
+}
+
+void AEnemy::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AEnemy, bDead);
 }

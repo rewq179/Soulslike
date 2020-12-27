@@ -3,33 +3,50 @@
 
 #include "Enemy/EnemyAIController.h"
 #include "Enemy/Enemy.h"
-#include "Perception/PawnSensingComponent.h"
 
-AEnemyAIController::AEnemyAIController()
+#include "BehaviorTree/BlackboardData.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "BehaviorTree/BehaviorTree.h"
+
+const FName AEnemyAIController::Target(TEXT("Target"));
+const FName AEnemyAIController::Distance(TEXT("Distance"));
+const FName AEnemyAIController::PatternNumber(TEXT("PatternNumber"));
+const FName AEnemyAIController::HomeLocation(TEXT("HomeLocation"));
+const FName AEnemyAIController::PatrolLocation(TEXT("PatrolLocation"));
+const FName AEnemyAIController::Dead(TEXT("Dead"));
+const FName AEnemyAIController::Aggro(TEXT("Aggro"));
+
+void AEnemyAIController::OnPossess(APawn* InPawn)
 {
-	PawnSensing = CreateDefaultSubobject<UPawnSensingComponent>(TEXT("PawnSensing"));
+	Super::OnPossess(InPawn);
 
-	PawnSensing->SightRadius = 1500.f;
-	PawnSensing->SetPeripheralVisionAngle(180.f);
-}
-
-// Called when the game starts or when spawned
-void AEnemyAIController::BeginPlay()
-{
-	Super::BeginPlay();
-
-	PawnSensing->OnSeePawn.AddDynamic(this, &AEnemyAIController::OnSeePawn);
-}
-
-void AEnemyAIController::OnSeePawn(APawn* InPawn)
-{
-	if (Target == nullptr)
+	if (UseBlackboard(BBAsset, Blackboard))
 	{
-		Target = InPawn;
+		Blackboard->SetValueAsVector(HomeLocation, InPawn->GetActorLocation());
 
-		if (auto const Enemy = Cast<AEnemy>(GetCharacter()))
+		if (!RunBehaviorTree(BTAsset))
 		{
-			Enemy->SetTarget(Target);
+			UE_LOG(LogTemp, Warning, TEXT("OnPossess : EnemyAI couln't Run!"));
 		}
+	}
+}
+
+void AEnemyAIController::StartBehaviorTree()
+{
+	auto BehaviorTreeComponent = Cast<UBehaviorTreeComponent>(BrainComponent);
+
+	if (BehaviorTreeComponent != nullptr)
+	{
+		BehaviorTreeComponent->StartTree(*BTAsset, EBTExecutionMode::Looped);
+	}
+}
+
+void AEnemyAIController::StopBehaviorTree()
+{
+	auto BehaviorTreeComponent = Cast<UBehaviorTreeComponent>(BrainComponent);
+
+	if (BehaviorTreeComponent != nullptr)
+	{
+		BehaviorTreeComponent->StopTree(EBTStopMode::Safe);
 	}
 }

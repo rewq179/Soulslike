@@ -41,6 +41,12 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void ShowDeadScreenWidget();
 
+	UFUNCTION(Client, Reliable)
+	void ClientUpdateSoulsCount(int32 SoulsCount);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnUpdateSoulsCount(int32 SoulsCount);
+
 	/** 네트워크 설정 */
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

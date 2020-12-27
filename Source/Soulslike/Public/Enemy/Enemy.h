@@ -10,13 +10,27 @@
 class UStaticMeshComponent;
 class USphereComponent;
 class UArrowComponent;
-class ASoulCharacter;
 class AEnemyProjectile;
+class UAnimationAsset;
+class ASoulCharacter;
+
+/**
+* Enemy가 보유한 데이터들을 바탕으로 전투 및 애니메이션들을 재생한다.
+* AI 분야를 제외한 모든 데이터, 함수가 해당 클래스에 속한다.
+*/
+
 
 UCLASS()
 class SOULSLIKE_API AEnemy : public ACharacter
 {
 	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	UAnimSequence *DeathAnim;
+
+	FTimerHandle AttackTimer;
+	FTimerHandle ChargeDelayTimer;
+	FTimerHandle RangeDelayTimer;
 
 public:
 	// Sets default values for this character's properties
@@ -38,26 +52,21 @@ public:
 	TArray<UAnimMontage*> MeleeAttackMontages;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Montage)
-	UAnimMontage* HeavyAttackMontage;
+	TArray<UAnimMontage*> HeavyAttackMontages;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Montage)
-	UAnimMontage* RangeAttackMontage;
+	TArray<UAnimMontage*> RangeAttackMontages;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Montage)
-	UAnimMontage* SpecialAttackMontage;
-	
+	TArray<UAnimMontage*> ChargeAttackMontages;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Enemy)
 	TSubclassOf<AEnemyProjectile> ProjectileClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Enemy)
 	TSubclassOf<UDamageType> DamageType;
-
-	/** 공격 퍼센트*/
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	float AttackPercent;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Enemy)
 	TSubclassOf<ASoulCharacter> ClassFilter;
 
 protected:
@@ -76,29 +85,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
 	EMovementState MovementState;
 
-	/** 스폰된 위치이자, 돌아갈 위치 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
-	FVector StartLocation;
-
-	/** 적의 상태(대기, 걷기, 달리기) */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Movement)
-	bool bRoaming;
-
 public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
 	void SetMovementState(EMovementState State);
 		
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void StartRoaming();
-
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Target)
 	AActor* Target;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Target)
-	bool bFindTarget;
 
 	/** 근접 공격 가능한 거리 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Target)
@@ -111,15 +103,12 @@ protected:
 public:
 	void SetTarget(AActor* InTarget);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION()
 	void ClearTarget();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void FollowTarget();
-
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void CheckAggro();
-
+	UFUNCTION()
+	void PlayAggroMotion();
+	
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat)
 	EMonsterAttack MonsterAttack;
@@ -128,6 +117,12 @@ protected:
 	TArray<float> AttackDamage;
 
 public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat)
+	bool bChargeDelay;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat)
+	bool bRangeDelay;
+
 	FORCEINLINE void SetMonsterAttack(EMonsterAttack Attack) { MonsterAttack = Attack; }
 
 	float GetDamage();
@@ -135,8 +130,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetMeleeCollision(bool bActive);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void Attack();
+	UFUNCTION()
+	void StartAttack(EMonsterAttack Attack, int32 AttackNumber);
+
+	UFUNCTION()
+	void SetAttackDelay(float WaitTime);
 
 	UFUNCTION(BlueprintCallable)
 	void HeavyAttack();
@@ -145,18 +143,67 @@ public:
 	void RangeAttack();
 
 	UFUNCTION(BlueprintCallable)
-	void SpecialAttack();
+	void ChargeAttack();
+
+	void CreateOverlapSphere(float Radius, float Damage, float Velocity);
+
+protected:
+	/** 몬스터의 현재 체력 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat)
+	float CurHp;
+
+	/** 몬스터의 현재 체력 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat)
+	float MaxHp;
+
+	UFUNCTION()
+	void HandleTakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* Type, class AController* InstigatedBy, AActor* DamageCauser);
+
+
+	/** 사망시 플레이어에게 줄 XP */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat)
+	int32 SoulsValue;
+
+	//** True : 죽음, False : 살아있음 */
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
+	bool bDead;
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerDeath(AActor* DamageCauser);
+	
+	//** BP에서 ABP_SoulCharacter의 bool값 설정 */
+	UFUNCTION(BlueprintImplementableEvent, Category = Combat)
+	void OnUpdateDeath();
 
 public:
-	UFUNCTION()
-	bool GetPercent(float Percent);
+	FORCEINLINE bool IsDead() { return bDead; }
+	/** Attack 애니메이션 종료시, BT에게 종료되었다는 정보를 준다. */
+	FOnAggroMoitionEndDelegate OnAggroMoitionEnd;
+
+	/** Attack 애니메이션 종료시, BT에게 종료되었다는 정보를 준다. */
+	FOnLightAttackEndDelegate OnLightAttackEnd;
+
+	/** Attack 애니메이션 종료시, BT에게 종료되었다는 정보를 준다. */
+	FOnHeavyAttackEndDelegate OnHeavyAttackEnd;
+
+	/** Attack 애니메이션 종료시, BT에게 종료되었다는 정보를 준다. */
+	FOnRangeAttackEndDelegate OnRangeAttackEnd;
+
+	/** Attack 애니메이션 종료시, BT에게 종료되었다는 정보를 준다. */
+	FOnChargeAttackEndDelegate OnChargeAttackEnd;
 
 	UFUNCTION(NetMulticast, Reliable, WithValidation)
-	void MulticastPlayMontage(UAnimMontage* AnimMontage, float PlayRate, FName AnimName);
+	void MulticastPlayAnimation(UAnimationAsset* AnimAsset, bool bLooping);
+
+	UFUNCTION(NetMulticast, Reliable, WithValidation)
+	void MulticastPlayMontage(UAnimMontage* AnimMontage, float PlayRate, FName AnimName = NAME_None);
 
 	UFUNCTION()
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION()
 	virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	/** 네트워크 설정 */
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

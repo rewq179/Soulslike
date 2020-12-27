@@ -59,6 +59,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	UFUNCTION()
 	void OnActorDestroyed(AActor* DestroyedActor);
 
 	/** 발사체가 대상을 맞추면 실행한다. */

@@ -88,7 +88,10 @@ struct SOULSLIKE_API FPickUpInfo
 	UTexture2D* Icon;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	float Damage;
+	float LightDamage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float HeavyDamage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float Armor;
@@ -141,7 +144,6 @@ struct SOULSLIKE_API FPlayerStat
 	/** */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float CurHp;
-	
 
 	/** */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
@@ -181,5 +183,11 @@ enum class EMonsterAttack : uint8
 	MATK_LightAttack UMETA(DisplayName = "Light Attack"),
 	MATK_HeavyAttack UMETA(DisplayName = "Heavy Attack"),
 	MATK_RangeAttack UMETA(DisplayName = "Range Attack"),
-	MATK_SpecialAttack UMETA(DisplayName = "Speical Attack")
+	MATK_ChargeAttack UMETA(DisplayName = "Charge Attack")
 };
+
+DECLARE_MULTICAST_DELEGATE(FOnAggroMoitionEndDelegate);
+DECLARE_MULTICAST_DELEGATE(FOnLightAttackEndDelegate);
+DECLARE_MULTICAST_DELEGATE(FOnHeavyAttackEndDelegate);
+DECLARE_MULTICAST_DELEGATE(FOnRangeAttackEndDelegate);
+DECLARE_MULTICAST_DELEGATE(FOnChargeAttackEndDelegate);
