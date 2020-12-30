@@ -28,7 +28,7 @@ EBTNodeResult::Type UBTTask_RangeAttack::ExecuteTask(UBehaviorTreeComponent& Own
 		return EBTNodeResult::Failed;
 	}
 
-	Enemy->StartAttack(EMonsterAttack::MATK_RangeAttack, AttackNumber);
+	Enemy->StartAttack(EMonsterAttack::MATK_RangeAttack);
 	bAttacking = true;
 	Enemy->OnRangeAttackEnd.AddLambda([this]() -> void { bAttacking = false; });
 

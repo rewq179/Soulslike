@@ -15,6 +15,7 @@ const FName AEnemyAIController::HomeLocation(TEXT("HomeLocation"));
 const FName AEnemyAIController::PatrolLocation(TEXT("PatrolLocation"));
 const FName AEnemyAIController::Dead(TEXT("Dead"));
 const FName AEnemyAIController::Aggro(TEXT("Aggro"));
+const FName AEnemyAIController::FirstAttack(TEXT("FirstAttack"));
 
 void AEnemyAIController::OnPossess(APawn* InPawn)
 {

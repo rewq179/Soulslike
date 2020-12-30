@@ -27,7 +27,7 @@ EBTNodeResult::Type UBTTask_LightAttack::ExecuteTask(UBehaviorTreeComponent& Own
 		return EBTNodeResult::Failed;
 	}
 
-	Enemy->StartAttack(EMonsterAttack::MATK_LightAttack, AttackNumber);
+	Enemy->StartAttack(EMonsterAttack::MATK_LightAttack);
 	bAttacking = true;
 	Enemy->OnLightAttackEnd.AddLambda([this]() -> void { bAttacking = false; });
 

@@ -29,16 +29,16 @@ AEnemy::AEnemy()
 	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
 	WeaponMesh->SetupAttachment(GetMesh());
 
-	// Melee Collision :: 처음엔 반응X, 모든 반응은 Ignore, Pawn만 오버랩
-	MeleeCollision = CreateDefaultSubobject<USphereComponent>(TEXT("Melee"));
-	MeleeCollision->SetupAttachment(GetMesh());
-	MeleeCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	MeleeCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	MeleeCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	// Light Collision :: 처음엔 반응X, 모든 반응은 Ignore, Pawn만 오버랩
+	LightCollision = CreateDefaultSubobject<USphereComponent>(TEXT("Light"));
+	LightCollision->SetupAttachment(GetMesh());
+	LightCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	LightCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	LightCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
-	// LaunchPoint :: 원거리 공격이 생성되는 위치
-	LaunchPoint = CreateDefaultSubobject<UArrowComponent>(TEXT("LaunchPoint"));
-	LaunchPoint->SetupAttachment(GetMesh());
+	// ProjectilePoint :: 원거리 공격이 생성되는 위치
+	ProjectilePoint = CreateDefaultSubobject<UArrowComponent>(TEXT("LaunchPoint"));
+	ProjectilePoint->SetupAttachment(GetMesh());
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
@@ -61,6 +61,10 @@ AEnemy::AEnemy()
 	// Mesh :: 모든 반응이 Ingore. 
 	GetMesh()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 
+	// WeaponMesh :: 모든 반응이 Ingore. 
+	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	
 	Tags.Add(FName("Enemy"));
 
 	SoulsValue = 1;
@@ -73,16 +77,18 @@ void AEnemy::BeginPlay()
 	
 	SetMovementState(EMovementState::STATE_Walk);
 
-	WeaponMesh->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "b_MF_Weapon_R_Socket");
+	WeaponMesh->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Weapon_R_Socket");
 	
-	MeleeCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnOverlapBegin);
-	MeleeCollision->OnComponentEndOverlap.AddDynamic(this, &AEnemy::OnOverlapEnd);
+	LightCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnOverlapBegin);
 	
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		OnTakeAnyDamage.AddDynamic(this, &AEnemy::HandleTakeAnyDamage);
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////
+//// Set
 
 void AEnemy::SetMovementState(EMovementState State)
 {
@@ -122,20 +128,23 @@ void AEnemy::ClearTarget()
 	SetMovementState(EMovementState::STATE_Walk);
 }
 
-void AEnemy::SetMeleeCollision(bool bActive)
+void AEnemy::SetLightCollision(bool bActive)
 {
 	if (bActive)
 	{
-		MeleeCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		LightCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	}
 
 	else
 	{
-		MeleeCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		LightCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 }
 
-void AEnemy::PlayAggroMotion()
+////////////////////////////////////////////////////////////////////////////
+//// 행동 트리
+
+void AEnemy::StartAggro()
 {
 	MulticastPlayMontage(AggroMontage, 1.f);
 
@@ -148,13 +157,7 @@ void AEnemy::PlayAggroMotion()
 	}), WaitTime, false);
 }
 
-
-float AEnemy::GetDamage()
-{
-	return AttackDamage[(int)MonsterAttack];
-}
-
-void AEnemy::StartAttack(EMonsterAttack Attack, int32 AttackNumber)
+void AEnemy::StartAttack(EMonsterAttack Attack, int32 AttackNumber, bool bFirstAttack)
 {
 	if (Target == nullptr)
 	{
@@ -164,40 +167,59 @@ void AEnemy::StartAttack(EMonsterAttack Attack, int32 AttackNumber)
 	}
 
 	SetMonsterAttack(Attack);
-	float WaitTime;
+	int32 MontageNumber;
+	float DelayTime;
 
 	switch (MonsterAttack)
 	{
 	case EMonsterAttack::MATK_LightAttack:
-		MulticastPlayMontage(MeleeAttackMontages[AttackNumber], 1.f);
-		WaitTime = MeleeAttackMontages[AttackNumber]->GetPlayLength() + 0.2f;
+		MontageNumber = FMath::RandRange(0, LightAttackMontages.Num() - 1);
+		MulticastPlayMontage(LightAttackMontages[MontageNumber], 1.f);
+		DelayTime = LightAttackMontages[MontageNumber]->GetPlayLength() + 0.2f;
 		break;
 
 	case EMonsterAttack::MATK_HeavyAttack:
-		MulticastPlayMontage(HeavyAttackMontages[AttackNumber], 1.f);
-		WaitTime = HeavyAttackMontages[AttackNumber]->GetPlayLength() + 0.2f;
+		MontageNumber = FMath::RandRange(0, HeavyAttackMontages.Num() - 1);
+		MulticastPlayMontage(HeavyAttackMontages[MontageNumber], 1.f);
+		DelayTime = HeavyAttackMontages[MontageNumber]->GetPlayLength() + 0.2f;
+		break;
+
+	case EMonsterAttack::MATK_ChargeAttack:
+		MontageNumber = FMath::RandRange(0, ChargeAttackMontages.Num() - 1);
+		MulticastPlayMontage(ChargeAttackMontages[MontageNumber], 1.f);
+		DelayTime = ChargeAttackMontages[MontageNumber]->GetPlayLength() + 0.2f;
 		break;
 
 	case EMonsterAttack::MATK_RangeAttack:
 		bRangeDelay = true;
-		MulticastPlayMontage(RangeAttackMontages[AttackNumber], 1.f);
-		WaitTime = RangeAttackMontages[AttackNumber]->GetPlayLength() + 0.2f;
-		break;
-
-	case EMonsterAttack::MATK_ChargeAttack:
-		bChargeDelay = true;
-		MulticastPlayMontage(ChargeAttackMontages[AttackNumber], 1.f);
-		WaitTime = ChargeAttackMontages[AttackNumber]->GetPlayLength() + 0.2f;
+		MontageNumber = FMath::RandRange(0, RangeAttackMontages.Num() - 1);
+		MulticastPlayMontage(RangeAttackMontages[MontageNumber], 1.f);
+		DelayTime = RangeAttackMontages[MontageNumber]->GetPlayLength() + 0.2f;
 		break;
 
 	default:
 		break;
 	}
 
-	SetAttackDelay(WaitTime);
+	if (bFirstAttack)
+	{
+		MulticastPlayMontage(ChargeAttackMontages[AttackNumber], 1.f);
+		DelayTime = ChargeAttackMontages[AttackNumber]->GetPlayLength() + 0.2f;
+
+		GetWorld()->GetTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([&]() // 공격 모션 끝나면 BT에게 정보전달함
+		{
+			OnFirstAttackEnd.Broadcast();
+
+		}), DelayTime, false);
+	}
+
+	else
+	{
+		BrocastAttackEnd(DelayTime);
+	}
 }
 
-void AEnemy::SetAttackDelay(float WaitTime)
+void AEnemy::BrocastAttackEnd(float DelayTime)
 {
 	GetWorld()->GetTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([&]() // 공격 모션 끝나면 BT에게 정보전달함
 	{
@@ -211,49 +233,40 @@ void AEnemy::SetAttackDelay(float WaitTime)
 			OnHeavyAttackEnd.Broadcast();
 			break;
 
-		case EMonsterAttack::MATK_RangeAttack:
-			OnRangeAttackEnd.Broadcast();
-			break;
-
 		case EMonsterAttack::MATK_ChargeAttack:
 			OnChargeAttackEnd.Broadcast();
 			break;
 
-		default:
-			break;
-		}
-	}), WaitTime, false);
-
-	if (MonsterAttack > EMonsterAttack::MATK_HeavyAttack) // 원거리 공격과 차징 공격은 계속해서 사용못함.
-	{
-		float DelayTime;
-
-		switch (MonsterAttack)
-		{
 		case EMonsterAttack::MATK_RangeAttack:
-			DelayTime = 8.f;
+			OnRangeAttackEnd.Broadcast();
+
 			GetWorld()->GetTimerManager().SetTimer(RangeDelayTimer, FTimerDelegate::CreateLambda([&]()
 			{
 				bRangeDelay = false;
-			}), DelayTime, false);
+			}), RangeDelayTime, false);
 			break;
 
-		case EMonsterAttack::MATK_ChargeAttack:
-			DelayTime = 5.f;
-			GetWorld()->GetTimerManager().SetTimer(ChargeDelayTimer, FTimerDelegate::CreateLambda([&]()
-			{
-				bChargeDelay = false;
-			}), DelayTime, false);
+
+		default:
 			break;
 		}
-	}
+	}), DelayTime, false);
 }
 
-void AEnemy::HeavyAttack()
+
+void AEnemy::HeavyAttack(float Radius, float Height, bool bKnockDown)
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		CreateOverlapSphere(300.f, GetDamage(), 300.f);
+		CreateOverlapSphere(Radius, 1.f, bKnockDown);
+	}
+}
+
+void AEnemy::ChargeAttack(float Radius, float Height, bool bKnockDown)
+{
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		CreateOverlapSphere(Radius, 1.f, bKnockDown);
 	}
 }
 
@@ -269,20 +282,26 @@ void AEnemy::RangeAttack()
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
 
-		auto Projectile = GetWorld()->SpawnActor<AEnemyProjectile>(ProjectileClass, LaunchPoint->GetComponentTransform(), SpawnParams);
+		auto Projectile = GetWorld()->SpawnActor<AEnemyProjectile>(ProjectileClass, ProjectilePoint->GetComponentTransform(), SpawnParams);
 		Projectile->Damage = GetDamage();
 	}
 }
 
-void AEnemy::ChargeAttack()
+
+void AEnemy::PlayEffectAtTransform(UParticleSystem* InParticle, USoundBase* InSound, FTransform Transform)
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (InParticle)
 	{
-		CreateOverlapSphere(300.f, GetDamage(), 300.f);
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), InParticle, Transform, true);
+	}
+
+	if (InSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), InSound, Transform.GetLocation(), 1.f);
 	}
 }
 
-void AEnemy::CreateOverlapSphere(float Radius, float Damage, float Velocity)
+void AEnemy::CreateOverlapSphere(float Radius, float Height, bool bKnockDown)
 {
 	TArray<AActor*> OverlappedActors;
 
@@ -292,28 +311,30 @@ void AEnemy::CreateOverlapSphere(float Radius, float Damage, float Velocity)
 	TArray<AActor*>IgnoreTypes;
 	IgnoreTypes.Add(GetOwner());
 
-	FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * Radius;
+	FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * 100;
 
-	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), SphereLocation, Radius, ObjectTypes, ClassFilter, IgnoreTypes, OverlappedActors);
+	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), SphereLocation, Radius, ObjectTypes, ASoulCharacter::StaticClass(), IgnoreTypes, OverlappedActors);
 	DrawDebugSphere(GetWorld(), SphereLocation, Radius, 12, FColor::Red, false, 3.f, 2.f);
 
 	for (auto& Actor : OverlappedActors)
 	{
 		if (Actor->ActorHasTag("Player"))
 		{
-			UGameplayStatics::ApplyDamage(Actor, Damage, GetController(), this, DamageType);
+			UGameplayStatics::ApplyDamage(Actor, GetDamage(), GetController(), this, DamageType);
 
 			if (auto const Player = Cast<ASoulCharacter>(Actor))
 			{
 				FVector UnitVector = UKismetMathLibrary::GetDirectionUnitVector(GetActorLocation(), Actor->GetActorLocation());
-				UnitVector.Z += 1.f;
+				UnitVector.Z += Height;
 
-				Player->LaunchCharacter(UnitVector * Velocity, false, false);
+				Player->HitReaction(1.f, UnitVector, bKnockDown);
 			}
 		}
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////
+//// 스텟 변화
 
 void AEnemy::HandleTakeAnyDamage(AActor * DamagedActor, float Damage, const UDamageType * Type, AController * InstigatedBy, AActor * DamageCauser)
 {
@@ -343,7 +364,7 @@ void AEnemy::ServerDeath_Implementation(AActor* DamageCauser)
 	{
 		bDead = true;
 
-		MulticastPlayAnimation(DeathAnim, false);
+		MulticastPlayMontage(DeathMontage, 1.f);
 		GetCharacterMovement()->SetAvoidanceEnabled(false);
 		GetCharacterMovement()->DisableMovement();
 
@@ -354,27 +375,15 @@ void AEnemy::ServerDeath_Implementation(AActor* DamageCauser)
 
 		if (auto const Player = Cast<ASoulCharacter>(DamageCauser))
 		{
-			Player->SpawnSouls(SoulsValue);
+			Player->AddSoulsValue(SoulsValue);
 		}
 
 		ClearTarget();
 	}
 }
 
-bool AEnemy::MulticastPlayAnimation_Validate(UAnimationAsset* AnimAsset, bool bLooping)
-{
-	return true;
-}
-
-void AEnemy::MulticastPlayAnimation_Implementation(UAnimationAsset* AnimAsset, bool bLooping)
-{
-	GetCapsuleComponent()->SetCollisionProfileName("Ragdoll");
-	GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
-
-	GetMesh()->PlayAnimation(AnimAsset, false);
-
-
-}
+////////////////////////////////////////////////////////////////////////////
+//// 기타
 
 bool AEnemy::MulticastPlayMontage_Validate(UAnimMontage* AnimMontage, float PlayRate, FName AnimName)
 {
@@ -399,13 +408,14 @@ void AEnemy::OnOverlapBegin(UPrimitiveComponent * OverlappedComponent, AActor * 
 		if (OtherActor->ActorHasTag("Player"))
 		{
 			UGameplayStatics::ApplyDamage(OtherActor, GetDamage(), GetController(), this, DamageType);
+			FVector UnitVector = UKismetMathLibrary::GetDirectionUnitVector(GetActorLocation(), OtherActor->GetActorLocation());
+
+			if (auto const Player = Cast<ASoulCharacter>(OtherActor))
+			{
+				Player->HitReaction(1.f, UnitVector, false);
+			}
 		}
 	}
-}
-
-void AEnemy::OnOverlapEnd(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex)
-{
-
 }
 
 void AEnemy::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

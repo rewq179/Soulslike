@@ -38,7 +38,7 @@ void UBTService_DetectTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8 
 		Center,
 		FQuat::Identity,
 		ECollisionChannel::ECC_GameTraceChannel2,
-		FCollisionShape::MakeSphere(DetectRange),
+		FCollisionShape::MakeSphere(Enemy->GetDetectDistance()),
 		CollisionQueryParam
 	);
 
@@ -54,6 +54,7 @@ void UBTService_DetectTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8 
 					{
 						OwnerComp.GetBlackboardComponent()->SetValueAsObject(AEnemyAIController::Target, nullptr);
 						OwnerComp.GetBlackboardComponent()->SetValueAsBool(AEnemyAIController::Aggro, false);
+						OwnerComp.GetBlackboardComponent()->SetValueAsBool(AEnemyAIController::FirstAttack, false);
 
 						Enemy->ClearTarget();
 					}
@@ -75,6 +76,7 @@ void UBTService_DetectTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8 
 	{
 		OwnerComp.GetBlackboardComponent()->SetValueAsObject(AEnemyAIController::Target, nullptr);
 		OwnerComp.GetBlackboardComponent()->SetValueAsBool(AEnemyAIController::Aggro, false);
+		OwnerComp.GetBlackboardComponent()->SetValueAsBool(AEnemyAIController::FirstAttack, false);
 
 		Enemy->ClearTarget();
 	}

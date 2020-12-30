@@ -2,12 +2,14 @@
 
 
 #include "Enemy/EnemyProjectile.h"
+#include "Player/SoulCharacter.h"
 
 #include "Components/SphereComponent.h"
 #include "Components/SceneComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 #include "Net/UnrealNetwork.h"
 
@@ -55,22 +57,16 @@ void AEnemyProjectile::BeginPlay()
 	OnDestroyed.AddDynamic(this, &AEnemyProjectile::OnActorDestroyed);
 }
 
-// Called every frame
-void AEnemyProjectile::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
 
 void AEnemyProjectile::OnActorDestroyed(AActor * DestroyedActor)
 {
 	if (bHit)
 	{
-		MulticastSpawnFX();
+		MulticastPlayParticle();
 	}
 }
 
-void AEnemyProjectile::MulticastSpawnFX_Implementation()
+void AEnemyProjectile::MulticastPlayParticle_Implementation()
 {
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorLocation());
 }
@@ -85,6 +81,14 @@ void AEnemyProjectile::OnOverlapBegin(UPrimitiveComponent * OverlappedComponent,
 
 			UGameplayStatics::ApplyDamage(OtherActor, Damage, nullptr, GetOwner(), DamageType);
 		
+			if (auto const Player = Cast<ASoulCharacter>(OtherActor))
+			{
+				FVector UnitVector = UKismetMathLibrary::GetDirectionUnitVector(GetActorLocation(), OtherActor->GetActorLocation());
+				UnitVector.Z += 1;
+
+				Player->HitReaction(1.f, UnitVector, false);
+			}
+
 			Destroy();
 		}
 	}

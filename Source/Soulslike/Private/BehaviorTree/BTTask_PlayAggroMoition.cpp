@@ -29,7 +29,7 @@ EBTNodeResult::Type UBTTask_PlayAggroMoition::ExecuteTask(UBehaviorTreeComponent
 		return EBTNodeResult::Failed;
 	}
 
-	Enemy->PlayAggroMotion();
+	Enemy->StartAggro();
 	bPlaying = true;
 	Enemy->OnAggroMoitionEnd.AddLambda([this]() -> void { bPlaying = false; });
 

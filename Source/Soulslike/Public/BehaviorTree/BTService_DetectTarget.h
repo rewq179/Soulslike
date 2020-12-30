@@ -18,10 +18,6 @@ class SOULSLIKE_API UBTService_DetectTarget : public UBTService
 public:
 	UBTService_DetectTarget();
 
-	/** 탐지 가능한 거리 */
-	UPROPERTY(EditAnywhere, Category = "Value")
-	float DetectRange;
-
 protected:
 	virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 };

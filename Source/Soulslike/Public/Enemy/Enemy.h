@@ -13,6 +13,7 @@ class UArrowComponent;
 class AEnemyProjectile;
 class UAnimationAsset;
 class ASoulCharacter;
+class USoundCue;
 
 /**
 * Enemy가 보유한 데이터들을 바탕으로 전투 및 애니메이션들을 재생한다.
@@ -25,11 +26,7 @@ class SOULSLIKE_API AEnemy : public ACharacter
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	UAnimSequence *DeathAnim;
-
 	FTimerHandle AttackTimer;
-	FTimerHandle ChargeDelayTimer;
 	FTimerHandle RangeDelayTimer;
 
 public:
@@ -40,16 +37,16 @@ public:
 	UStaticMeshComponent* WeaponMesh;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
-	USphereComponent* MeleeCollision;
+	USphereComponent* LightCollision;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
-	UArrowComponent* LaunchPoint;
+	UArrowComponent* ProjectilePoint;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Montage)
 	UAnimMontage* AggroMontage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Montage)
-	TArray<UAnimMontage*> MeleeAttackMontages;
+	TArray<UAnimMontage*> LightAttackMontages;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Montage)
 	TArray<UAnimMontage*> HeavyAttackMontages;
@@ -60,14 +57,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Montage)
 	TArray<UAnimMontage*> ChargeAttackMontages;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Montage)
+	UAnimMontage* DeathMontage;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Enemy)
 	TSubclassOf<AEnemyProjectile> ProjectileClass;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Enemy)
 	TSubclassOf<UDamageType> DamageType;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Enemy)
-	TSubclassOf<ASoulCharacter> ClassFilter;
 
 protected:
 	// Called when the game starts or when spawned
@@ -92,11 +89,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Target)
 	AActor* Target;
 
-	/** 근접 공격 가능한 거리 */
+	/** 탐지 가능한 거리 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Target)
+	float DetectDistance;
+
+	/** 근접 공격이 가능한 거리 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Target)
 	float MeleeDistance;
 
-	/** 원거리 공격 가능한 거리 */
+	/** 원거리 공격이 가능한 거리 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Target)
 	float RangeDistance;
 
@@ -107,7 +108,7 @@ public:
 	void ClearTarget();
 
 	UFUNCTION()
-	void PlayAggroMotion();
+	void StartAggro();
 	
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat)
@@ -118,34 +119,33 @@ protected:
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat)
-	bool bChargeDelay;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat)
 	bool bRangeDelay;
 
-	FORCEINLINE void SetMonsterAttack(EMonsterAttack Attack) { MonsterAttack = Attack; }
-
-	float GetDamage();
-	
-	UFUNCTION(BlueprintCallable)
-	void SetMeleeCollision(bool bActive);
-
-	UFUNCTION()
-	void StartAttack(EMonsterAttack Attack, int32 AttackNumber);
-
-	UFUNCTION()
-	void SetAttackDelay(float WaitTime);
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat)
+	float RangeDelayTime;
 
 	UFUNCTION(BlueprintCallable)
-	void HeavyAttack();
+	void SetLightCollision(bool bActive);
+
+	UFUNCTION()
+	void StartAttack(EMonsterAttack Attack, int32 AttackNumber = 0, bool bFirstAttack = false);
+
+	UFUNCTION()
+	void BrocastAttackEnd(float DelayTime);
+
+	UFUNCTION(BlueprintCallable)
+	void HeavyAttack(float Radius, float Height, bool bKnockDown);
 
 	UFUNCTION(BlueprintCallable)
 	void RangeAttack();
 
 	UFUNCTION(BlueprintCallable)
-	void ChargeAttack();
+	void ChargeAttack(float Radius, float Height, bool bKnockDown);
 
-	void CreateOverlapSphere(float Radius, float Damage, float Velocity);
+	UFUNCTION(BlueprintCallable)
+	void PlayEffectAtTransform(UParticleSystem* InParticle, USoundBase* InSound, FTransform Transform);
+
+	void CreateOverlapSphere(float Radius, float Height, bool bKnockDown);
 
 protected:
 	/** 몬스터의 현재 체력 */
@@ -159,7 +159,7 @@ protected:
 	UFUNCTION()
 	void HandleTakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* Type, class AController* InstigatedBy, AActor* DamageCauser);
 
-
+protected:
 	/** 사망시 플레이어에게 줄 XP */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat)
 	int32 SoulsValue;
@@ -176,33 +176,27 @@ protected:
 	void OnUpdateDeath();
 
 public:
+	FORCEINLINE float GetDetectDistance() { return DetectDistance; }
+	FORCEINLINE float GetMeleeDistance() { return MeleeDistance; }
+	FORCEINLINE float GetRangeDistance() { return RangeDistance; }
+	FORCEINLINE float GetDamage() { return AttackDamage[(int)MonsterAttack]; }
 	FORCEINLINE bool IsDead() { return bDead; }
+
+	FORCEINLINE void SetMonsterAttack(EMonsterAttack Attack) { MonsterAttack = Attack; }
+
 	/** Attack 애니메이션 종료시, BT에게 종료되었다는 정보를 준다. */
 	FOnAggroMoitionEndDelegate OnAggroMoitionEnd;
-
-	/** Attack 애니메이션 종료시, BT에게 종료되었다는 정보를 준다. */
 	FOnLightAttackEndDelegate OnLightAttackEnd;
-
-	/** Attack 애니메이션 종료시, BT에게 종료되었다는 정보를 준다. */
 	FOnHeavyAttackEndDelegate OnHeavyAttackEnd;
-
-	/** Attack 애니메이션 종료시, BT에게 종료되었다는 정보를 준다. */
 	FOnRangeAttackEndDelegate OnRangeAttackEnd;
-
-	/** Attack 애니메이션 종료시, BT에게 종료되었다는 정보를 준다. */
 	FOnChargeAttackEndDelegate OnChargeAttackEnd;
-
-	UFUNCTION(NetMulticast, Reliable, WithValidation)
-	void MulticastPlayAnimation(UAnimationAsset* AnimAsset, bool bLooping);
+	FOnChargeAttackEndDelegate OnFirstAttackEnd;
 
 	UFUNCTION(NetMulticast, Reliable, WithValidation)
 	void MulticastPlayMontage(UAnimMontage* AnimMontage, float PlayRate, FName AnimName = NAME_None);
 
 	UFUNCTION()
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-	virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	/** 네트워크 설정 */
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

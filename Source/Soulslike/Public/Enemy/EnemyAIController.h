@@ -26,6 +26,7 @@ public:
 	static const FName PatrolLocation;
 	static const FName Dead;
 	static const FName Aggro;
+	static const FName FirstAttack;
 
 protected:
 	/** 사용될 블랙보드 에셋 */

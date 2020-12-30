@@ -30,7 +30,7 @@ EBTNodeResult::Type UBTTask_HeavyAttack::ExecuteTask(UBehaviorTreeComponent& Own
 	}
 
 	
-	Enemy->StartAttack(EMonsterAttack::MATK_HeavyAttack, AttackNumber);
+	Enemy->StartAttack(EMonsterAttack::MATK_HeavyAttack);
 	bAttacking = true;
 	Enemy->OnHeavyAttackEnd.AddLambda([this]() -> void { bAttacking = false; });
 

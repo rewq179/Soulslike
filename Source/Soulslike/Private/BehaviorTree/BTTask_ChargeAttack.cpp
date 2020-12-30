@@ -25,13 +25,13 @@ EBTNodeResult::Type UBTTask_ChargeAttack::ExecuteTask(UBehaviorTreeComponent& Ow
 
 	auto Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
 	auto Target = Cast<ASoulCharacter>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AEnemyAIController::Target));
-	if (Enemy == nullptr || Target == nullptr || Enemy->bChargeDelay)
+	if (Enemy == nullptr || Target == nullptr)
 	{
 		return EBTNodeResult::Failed;
 	}
 
 
-	Enemy->StartAttack(EMonsterAttack::MATK_ChargeAttack, AttackNumber);
+	Enemy->StartAttack(EMonsterAttack::MATK_ChargeAttack);
 	bCharging = true;
 	Enemy->OnChargeAttackEnd.AddLambda([this]() -> void { bCharging = false; });
 

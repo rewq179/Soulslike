@@ -56,15 +56,13 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION()
 	void OnActorDestroyed(AActor* DestroyedActor);
 
 	/** 발사체가 대상을 맞추면 실행한다. */
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastSpawnFX();
+	void MulticastPlayParticle();
 
 	UFUNCTION()
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);

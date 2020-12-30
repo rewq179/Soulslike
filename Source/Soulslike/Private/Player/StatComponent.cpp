@@ -3,35 +3,35 @@
 
 #include "Player/StatComponent.h"
 #include "Player/SoulCharacter.h"
+#include "Player/SoulPlayerController.h"
 
 #include "System/SoulGameModeBase.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
 
+#include "Engine/Engine.h"
+#include "TimerManager.h"
+
 #include "Net/UnrealNetwork.h"
+
 
 // Sets default values for this component's properties
 UStatComponent::UStatComponent()
 {
-	// Value 설정
-	Hp = 100.f;
-	   
+	RecoveryRate = 1.5f;
+	DrainRate = -3.2f;
+
+	// 스텟 초기화
+	PlayerStat.MaxHp = 500.f;
+	PlayerStat.CurHp = PlayerStat.MaxHp;
+	PlayerStat.MaxStamina = 200.f;
+	PlayerStat.CurStamina = PlayerStat.MaxStamina;
+
 	SetIsReplicatedByDefault(true);
 }
 
-void UStatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void UStatComponent::Initialize()
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(UStatComponent, Hp);
-}
-
-
-// Called when the game starts
-void UStatComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
 	if (GetOwnerRole() == ROLE_Authority)
 	{
 		AActor* MyOwner = GetOwner();
@@ -40,60 +40,129 @@ void UStatComponent::BeginPlay()
 			MyOwner->OnTakeAnyDamage.AddDynamic(this, &UStatComponent::HandleTakeAnyDamage);
 		}
 	}
-}
 
-
-void UStatComponent::OnRep_Hp(float OldHp)
-{
-	float Damage = Hp - OldHp;
-
-	OnHpChanged.Broadcast(this, Hp, nullptr, nullptr, nullptr);
-}
-
-
-void UStatComponent::HandleTakeAnyDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser)
-{
-	if (Damage <= 0.0f || bIsDead)
+	if (auto const Character = Cast<ASoulCharacter>(GetOwner()))
 	{
-		return;
-	}
+		OwnerCharacter = Character;
 
-	// Update Hp clamped
-	Hp -= Damage;
-	UE_LOG(LogTemp, Log, TEXT("Hp Changed: %s"), *FString::SanitizeFloat(Hp));
-
-	bIsDead = Hp <= 0.0f;
-
-	OnHpChanged.Broadcast(this, Hp, DamageType, InstigatedBy, DamageCauser);
-
-	if (bIsDead)
-	{
-		//ASoulslikeGameModeBase* GameMode = Cast<ASoulslikeGameModeBase>(GetWorld()->GetAuthGameMode());
-
-		//if (GameMode)
+		if (auto const Controller = Cast<ASoulPlayerController>(OwnerCharacter->GetController()))
 		{
-			//GameMode->OnActorKilled.Broadcast(GetOwner(), DamageCauser, InstigatedBy);
+			OwnerController = Controller;
 		}
 	}
+
+	FTimerHandle WaitHandle;
+	GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
+	{
+		OwnerController->ClientUpdateHpBar(PlayerStat.CurHp, PlayerStat.MaxHp);
+		OwnerController->ClientUpdateStaminaBar(PlayerStat.CurStamina, PlayerStat.MaxStamina);
+		OwnerController->ClientUpdateSoulsCount(PlayerStat.SoulsCount);
+	}), 1.f, false);
 }
 
+////////////////////////////////////////////////////////////////////////////
+//// 타이머 관련
 
-void UStatComponent::Heal(float HealAmount)
+void UStatComponent::PlayStaminaTimer(bool bDrain)
 {
-	if (HealAmount <= 0.0f || Hp <= 0.0f)
+	ClearStaminaTimers();
+
+	if (bDrain)
+	{
+		OwnerCharacter->GetWorldTimerManager().SetTimer(StaminaDrainTimer, this, &UStatComponent::DrainStamina, 0.25f, true, 0.1f);
+	}
+
+	else
+	{
+		OwnerCharacter->GetWorldTimerManager().SetTimer(StaminaRecoveryTimer, this, &UStatComponent::RecoveryStamina, 0.25f, true, 2.f);
+	}
+}
+
+void UStatComponent::ClearStaminaTimers()
+{
+	OwnerCharacter->GetWorldTimerManager().ClearTimer(StaminaDrainTimer);
+	OwnerCharacter->GetWorldTimerManager().ClearTimer(StaminaRecoveryTimer);
+}
+
+void UStatComponent::RecoveryStamina()
+{
+	AddStaminaValue(RecoveryRate);
+}
+
+void UStatComponent::DrainStamina()
+{
+	AddStaminaValue(DrainRate);
+}
+
+////////////////////////////////////////////////////////////////////////////
+//// 스텟 
+
+void UStatComponent::HandleTakeAnyDamage(AActor * DamagedActor, float Damage, const UDamageType * Type, AController * InstigatedBy, AActor * DamageCauser)
+{
+	if (Damage <= 0.f || DamageCauser == nullptr)
 	{
 		return;
 	}
 
+	if (OwnerCharacter->IsBlocked(DamageCauser)) // 블럭에 성공한다면
+	{
+		OwnerCharacter->PlayBlockEffect();
 
-	Hp += HealAmount;
-	UE_LOG(LogTemp, Log, TEXT("Hp Changed: %s (+%s)"), *FString::SanitizeFloat(Hp), *FString::SanitizeFloat(HealAmount));
+		return;
+	}
 
-	OnHpChanged.Broadcast(this, Hp, nullptr, nullptr, nullptr);
+	PlayerStat.CurHp -= Damage;
+	OnHpChanged.Broadcast(Damage, Type, InstigatedBy, DamageCauser);
+
+	if (OwnerController)
+	{
+		OwnerController->ClientUpdateHpBar(PlayerStat.CurHp, PlayerStat.MaxHp);
+	}
 }
 
-float UStatComponent::GetHp() const
+void UStatComponent::AddStaminaValue(float Value)
 {
-	return Hp;
+	PlayerStat.CurStamina += Value;
+
+	if (PlayerStat.CurStamina <= 0.f)
+	{
+		PlayerStat.CurStamina = 0.f;
+
+		if (OwnerCharacter->IsSprinting())
+		{
+			OwnerCharacter->GetWorldTimerManager().ClearTimer(StaminaDrainTimer);
+
+			OwnerCharacter->Sprint(false);
+		}
+	}
+
+	else if (PlayerStat.CurStamina > PlayerStat.MaxStamina)
+	{
+		PlayerStat.CurStamina = PlayerStat.MaxStamina;
+
+		OwnerCharacter->GetWorldTimerManager().ClearTimer(StaminaRecoveryTimer);
+	}
+
+	if (OwnerController)
+	{
+		OwnerController->ClientUpdateStaminaBar(PlayerStat.CurStamina, PlayerStat.MaxStamina);
+	}
+
 }
 
+void UStatComponent::AddSoulsValue(float Value)
+{
+	PlayerStat.SoulsCount += Value;
+	if (OwnerController)
+	{
+		OwnerController->ClientUpdateSoulsCount(PlayerStat.SoulsCount);
+	}
+}
+
+
+void UStatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UStatComponent, PlayerStat);
+}

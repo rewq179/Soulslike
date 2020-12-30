@@ -24,8 +24,7 @@ UTargetComponent::UTargetComponent()
 
 	DetectRange = 1200.f;
 	
-	SetIsReplicated(true);
-	// ...
+	SetIsReplicatedByDefault(true);
 }
 
 void UTargetComponent::Initialize()

@@ -17,10 +17,6 @@ class SOULSLIKE_API UBTTask_ChargeAttack : public UBTTaskNode
 public:
 	UBTTask_ChargeAttack();
 
-	/** 몽타주 섹션 이름에 들어갈 숫자. Attack_? */
-	UPROPERTY(EditAnywhere, Category = "Value")
-	int32 AttackNumber;
-
 protected:
 	EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;

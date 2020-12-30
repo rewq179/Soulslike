@@ -110,8 +110,7 @@ UENUM(BlueprintType)
 enum class EPlayerAttack : uint8
 {
 	PATK_LightAttack UMETA(DisplayName = "LightAttack"),
-	PATK_HeavyAttack UMETA(DisplayName = "HeavyAttack"),
-	PATK_Blocking UMETA(DisplayName = "Blocking")
+	PATK_HeavyAttack UMETA(DisplayName = "HeavyAttack")
 };
 
 USTRUCT(BlueprintType)
@@ -182,12 +181,17 @@ enum class EMonsterAttack : uint8
 {
 	MATK_LightAttack UMETA(DisplayName = "Light Attack"),
 	MATK_HeavyAttack UMETA(DisplayName = "Heavy Attack"),
+	MATK_ChargeAttack UMETA(DisplayName = "Charge Attack"),
 	MATK_RangeAttack UMETA(DisplayName = "Range Attack"),
-	MATK_ChargeAttack UMETA(DisplayName = "Charge Attack")
+	MATK_None UMETA(DisplayName = "None")
 };
+
 
 DECLARE_MULTICAST_DELEGATE(FOnAggroMoitionEndDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnLightAttackEndDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnHeavyAttackEndDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnRangeAttackEndDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnChargeAttackEndDelegate);
+
+DECLARE_DELEGATE_OneParam(FMouseClickDelegate, EPlayerAttack);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnHpChangedDelegate, float, Hp, const class UDamageType*, DamageType, class AController*, InstigatedBy, AActor*, DamageCauser);

@@ -3,6 +3,7 @@
 #include "Player/SoulCharacter.h"
 #include "Player/SoulPlayerController.h"
 #include "Player/TargetComponent.h"
+#include "Player/StatComponent.h"
 
 #include "Interact/PickUpActor.h"
 
@@ -25,8 +26,8 @@
 
 #include "Animation/AnimInstance.h"
 #include "TimerManager.h"
-
 #include "Net/UnrealNetwork.h"
+
 ASoulCharacter::ASoulCharacter()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -42,13 +43,6 @@ ASoulCharacter::ASoulCharacter()
 	MoveSpeed = 500.f;
 	SprintSpeed = 800.f;
 	bSprinting = false;
-
-	// 스텟 초기화
-	PlayerStat.MaxHp = 500.f;
-	PlayerStat.CurHp = PlayerStat.MaxHp;
-	PlayerStat.MaxStamina = 200.f;
-	PlayerStat.CurStamina = PlayerStat.MaxStamina;
-
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
@@ -74,18 +68,13 @@ ASoulCharacter::ASoulCharacter()
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
 	TargetComponent = CreateDefaultSubobject<UTargetComponent>("TargetComponent");
-
+	StatComponent = CreateDefaultSubobject<UStatComponent>("StatComponent");
 	Tags.Add(FName("Player"));
 }
 
 void ASoulCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		OnTakeAnyDamage.AddDynamic(this, &ASoulCharacter::HandleTakeAnyDamage);
-	}
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -98,8 +87,8 @@ void ASoulCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	check(PlayerInputComponent);
 
 	// 좌클릭 :: 약공격, 우클릭 :: 강공격
-	PlayerInputComponent->BindAction<FMouseClickDelegate>("LeftClick", IE_Released, this, &ASoulCharacter::ServerTryToActivateAbility, EPlayerAttack::PATK_LightAttack);
-	PlayerInputComponent->BindAction<FMouseClickDelegate>("RightClick", IE_Released, this, &ASoulCharacter::ServerTryToActivateAbility, EPlayerAttack::PATK_HeavyAttack);
+	PlayerInputComponent->BindAction<FMouseClickDelegate>("LeftClick", IE_Released, this, &ASoulCharacter::StartAttack, EPlayerAttack::PATK_LightAttack);
+	PlayerInputComponent->BindAction<FMouseClickDelegate>("RightClick", IE_Released, this, &ASoulCharacter::StartAttack, EPlayerAttack::PATK_HeavyAttack);
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ASoulCharacter::StartSprint);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ASoulCharacter::EndSprint);
 	PlayerInputComponent->BindAction("Roll", IE_Released, this, &ASoulCharacter::StartRoll);
@@ -128,47 +117,13 @@ void ASoulCharacter::PossessedBy(AController* NewController)
 			TargetComponent->Initialize();
 		}
 
-		FTimerHandle WaitHandle;
-		float WaitTime = 1.f;
-		GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
+		if (StatComponent)
 		{
-
-			SoulPC->ClientUpdateHpBar(PlayerStat.CurHp, PlayerStat.MaxHp);
-			SoulPC->ClientUpdateStaminaBar(PlayerStat.CurStamina, PlayerStat.MaxStamina);
-			SoulPC->ClientUpdateSoulsCount(PlayerStat.SoulsCount);
-		}), WaitTime, false);
+			StatComponent->Initialize();
+			StatComponent->OnHpChanged.AddDynamic(this, &ASoulCharacter::OnHpChanged);
+		}
 	}
 }
-
-////////////////////////////////////////////////////////////////////////////
-//// 타이머 관련
-
-void ASoulCharacter::PlayStaminaTimer(bool bDrain)
-{
-	ClearStaminaTimers();
-
-	if (bDrain)
-	{
-		GetWorldTimerManager().SetTimer(StaminaDrainTimer, this, &ASoulCharacter::DrainStamina, 0.25f, true, 0.1f);
-		/*GetWorldTimerManager().SetTimer(StaminaTimer, FTimerDelegate::CreateLambda([=]()
-		{
-			AddStaminaValue(-20.5f);
-		}), 0.25f, true, 0.1f);*/
-	}
-
-	else
-	{
-		GetWorldTimerManager().SetTimer(StaminaRecoveryTimer, this, &ASoulCharacter::RecoveryStamina, 0.25f, true, 2.f);
-	}
-}
-
-void ASoulCharacter::ClearStaminaTimers()
-{
-	GetWorldTimerManager().ClearTimer(StaminaDrainTimer);
-	GetWorldTimerManager().ClearTimer(StaminaRecoveryTimer);
-
-}
-
 
 ////////////////////////////////////////////////////////////////////////////
 //// BindAxis
@@ -177,12 +132,10 @@ void ASoulCharacter::MoveForward(float Value)
 {
 	if ((Controller != NULL) && (Value != 0.0f) && bMoveable)
 	{
-		// find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
-
-		// get forward vector
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+
 		AddMovementInput(Direction, Value);
 	}
 }
@@ -191,13 +144,10 @@ void ASoulCharacter::MoveRight(float Value)
 {
 	if ((Controller != NULL) && (Value != 0.0f) && bMoveable)
 	{
-		// find out which way is right
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
-
-		// get right vector 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		// add movement in that direction
+
 		AddMovementInput(Direction, Value);
 	}
 }
@@ -240,14 +190,8 @@ void ASoulCharacter::AddControllerPitchInput(float Val)
 {
 	if (Controller && Controller->IsLocalPlayerController())
 	{
-		if (bLockCamera)
+		if (Val != 0.f && !bLockCamera)
 		{
-
-		}
-
-		else if (Val != 0.f && !bLockCamera)
-		{
-
 			APlayerController* const PC = CastChecked<APlayerController>(Controller);
 			PC->AddPitchInput(Val);
 		}
@@ -259,7 +203,10 @@ void ASoulCharacter::AddControllerPitchInput(float Val)
 
 void ASoulCharacter::StartSprint()
 {
-	Sprint(true);
+	if (bMoveable)
+	{
+		Sprint(true);
+	}
 }
 
 void ASoulCharacter::EndSprint()
@@ -271,7 +218,7 @@ void ASoulCharacter::Sprint(bool bSprint)
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		PlayStaminaTimer(bSprint);
+		StatComponent->PlayStaminaTimer(bSprint);
 
 		SetSprinting(bSprint);
 		SetMaxWalkSpeed(bSprint);
@@ -323,31 +270,24 @@ void ASoulCharacter::SetMaxWalkSpeed(bool bSprint)
 	}
 }
 
-void ASoulCharacter::RecoveryStamina()
-{
-	AddStaminaValue(1.5f);
-
-	UE_LOG(LogTemp, Log, TEXT("Recovery"));
-}
-
-void ASoulCharacter::DrainStamina()
-{
-	AddStaminaValue(-3.2f);
-
-	UE_LOG(LogTemp, Log, TEXT("Drain"));
-}
-
 ////////////////////////////////////////////////////////////////////////////
 //// 구르기
 
 void ASoulCharacter::StartRoll()
 {
-	if (!bRolling && PlayerStat.CurStamina >= RollCost) // 구르기 중복 불가능
+	if (bMoveable && !bRolling && StatComponent->GetCurStamina() >= RollCost) // 구르기 중복 불가능
 	{
-		ClearStaminaTimers();
+		StatComponent->ClearStaminaTimers();
 
 		ServerRoll();
 	}
+}
+
+void ASoulCharacter::EndRoll()
+{
+	SetRolling(false);
+
+	StatComponent->PlayStaminaTimer(false);
 }
 
 bool ASoulCharacter::ServerRoll_Validate()
@@ -357,12 +297,11 @@ bool ASoulCharacter::ServerRoll_Validate()
 
 void ASoulCharacter::ServerRoll_Implementation()
 {
-	AddStaminaValue(-RollCost);
+	StatComponent->AddStaminaValue(-RollCost);
 	SetRolling(true);
 
 	MulticastRoll();
 }
-
 
 void ASoulCharacter::MulticastRoll_Implementation()
 {
@@ -381,13 +320,6 @@ void ASoulCharacter::SetRolling(bool bRoll)
 	OnRep_Rolling();
 }
 
-void ASoulCharacter::EndRoll()
-{
-	SetRolling(false);
-
-	PlayStaminaTimer(false);
-}
-
 void ASoulCharacter::OnRep_Rolling()
 {
 	OnUpdateRolling(bRolling);
@@ -396,44 +328,53 @@ void ASoulCharacter::OnRep_Rolling()
 ////////////////////////////////////////////////////////////////////////////
 //// 공격
 
-bool ASoulCharacter::ServerTryToActivateAbility_Validate(EPlayerAttack Attack)
+void  ASoulCharacter::StartAttack(EPlayerAttack Attack)
+{
+	if (bMoveable)
+	{
+		PlayerAttack = Attack;
+
+		Sprint(false);
+
+		ServerAttack();
+	}
+}
+
+bool ASoulCharacter::ServerAttack_Validate()
 {
 	return true;
 }
 
-void ASoulCharacter::ServerTryToActivateAbility_Implementation(EPlayerAttack Attack)
+void ASoulCharacter::ServerAttack_Implementation()
 {
 	if (bAttacking || bRolling || bDead || bBlocking)
 	{
 		return;
 	}
 
-	switch (Attack)
+	switch (PlayerAttack)
 	{
 	case EPlayerAttack::PATK_LightAttack:
-		if (PlayerStat.CurStamina < LightAttackCost)
+		if (StatComponent->GetCurStamina() < LightAttackCost)
 			return;
 		
-		AddStaminaValue(-LightAttackCost);
+		StatComponent->AddStaminaValue(-LightAttackCost);
 		MulticastPlayMontage(LightAttackMontages[0], 1.f);
 		break;
 
 	case EPlayerAttack::PATK_HeavyAttack:
-		if (PlayerStat.CurStamina < HeavyAttackCost)
+		if (StatComponent->GetCurStamina() < HeavyAttackCost)
 			return;
 
-		AddStaminaValue(-HeavyAttackCost);
+		StatComponent->AddStaminaValue(-HeavyAttackCost);
 		MulticastPlayMontage(HeavyAttackMontage, 1.f);
-		break;
-
-	case EPlayerAttack::PATK_Blocking:
 		break;
 
 	default:
 		break;
 	}
 
-	ClearStaminaTimers();
+	StatComponent->ClearStaminaTimers();
 	bAttacking = true;
 	bMoveable = false;
 }
@@ -443,7 +384,52 @@ void ASoulCharacter::EndAttack()
 	bAttacking = false;
 	bMoveable = true;
 
-	PlayStaminaTimer(false);
+	StatComponent->PlayStaminaTimer(false);
+}
+
+
+void ASoulCharacter::LightAttack()
+{
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		CreateOverlapSphere(130.f);
+	}
+}
+
+void ASoulCharacter::HeavyAttack()
+{
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		CreateOverlapSphere(130.f);
+	}
+}
+
+void ASoulCharacter::CreateOverlapSphere(float Radius)
+{
+	TArray<AActor*> OverlappedActors;
+
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
+	TArray<AActor*>IgnoreTypes;
+	IgnoreTypes.Add(GetOwner());
+	FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * Radius * 1.5f;
+
+	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), SphereLocation, Radius, ObjectTypes, nullptr, IgnoreTypes, OverlappedActors);
+
+	DrawDebugSphere(GetWorld(), SphereLocation, Radius, 12, FColor::Red, false, 3.f, 2.f);
+
+	for (auto& Actor : OverlappedActors)
+	{
+		if (Actor->ActorHasTag("Enemy"))
+		{
+			UGameplayStatics::ApplyDamage(Actor, 30.f, GetController(), this, DamageType);
+		}
+	}
+
+	if (OverlappedActors.Num() > 0)
+	{
+		MulticastPlaySound(HitSound);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -527,137 +513,21 @@ void ASoulCharacter::EquipWeapon(AActor* Item)
 	OnRep_Weapon();
 }
 
-void ASoulCharacter::LightAttack()
+////////////////////////////////////////////////////////////////////////////
+//// 체력 관련
+
+void ASoulCharacter::StartDead()
 {
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		TArray<AActor*> OverlappedActors;
 
-		TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
-		TArray<AActor*>IgnoreTypes;
-		IgnoreTypes.Add(GetOwner());
-		float Radius = 130.f;
-		FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * Radius * 1.5f;
-
-		UKismetSystemLibrary::SphereOverlapActors(GetWorld(), SphereLocation, Radius, ObjectTypes, nullptr, IgnoreTypes, OverlappedActors);
-
-		DrawDebugSphere(GetWorld(), SphereLocation, Radius, 12, FColor::Red, false, 3.f, 2.f);
-
-		for (auto& Actor : OverlappedActors)
-		{
-			if (Actor->ActorHasTag("Enemy"))
-			{
-				UGameplayStatics::ApplyDamage(Actor, 350.f, GetController(), this, DamageType);
-			}
-		}
-
-		if (OverlappedActors.Num() > 0)
-		{
-			MulticastPlayHitSound();
-		}
-	}
 }
 
 
-void ASoulCharacter::HeavyAttack()
+void ASoulCharacter::OnHpChanged(float Damage, const UDamageType * Type, AController * InstigatedBy, AActor * DamageCauser)
 {
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		TArray<AActor*> OverlappedActors;
-
-		TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
-		TArray<AActor*>IgnoreTypes;
-		IgnoreTypes.Add(GetOwner());
-		float Radius = 130.f;
-		FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * Radius * 1.5f;
-
-		UKismetSystemLibrary::SphereOverlapActors(GetWorld(), SphereLocation, Radius, ObjectTypes, nullptr, IgnoreTypes, OverlappedActors);
-
-		DrawDebugSphere(GetWorld(), SphereLocation, Radius, 12, FColor::Red, false, 3.f, 2.f);
-
-		for (auto& Actor : OverlappedActors)
-		{
-			if (Actor->ActorHasTag("Enemy"))
-			{
-				UGameplayStatics::ApplyDamage(Actor, 350.f, GetController(), this, DamageType);
-			}
-		}
-
-		if (OverlappedActors.Num() > 0)
-		{
-			MulticastPlayHitSound();
-		}
-	}
-}
-
-bool ASoulCharacter::MulticastPlayHitSound_Validate()
-{
-	return true;
-}
-
-void ASoulCharacter::MulticastPlayHitSound_Implementation()
-{
-	UGameplayStatics::PlaySoundAtLocation(GetWorld(), HitSound, GetActorLocation(), 1.f);
-	//UGameplayStatics::PlaySound2D(this, HitSound, 0.5f);
-}
-
-void ASoulCharacter::HandleTakeAnyDamage(AActor * DamagedActor, float Damage, const UDamageType * Type, AController * InstigatedBy, AActor * DamageCauser)
-{
-	if (Damage <= 0.f || DamageCauser == nullptr)
-	{
-		return;
-	}
-
-	if (CheckBlockDirection(DamageCauser)) // 블럭에 성공한다면
-	{
-		MulticastPlayBlockEffect();
-
-		return;
-	}
-
-	// Update health clamped
-	PlayerStat.CurHp -= Damage;
-	if (SoulPC)
-	{
-		SoulPC->ClientUpdateHpBar(PlayerStat.CurHp, PlayerStat.MaxHp);
-	}
-
-	if (PlayerStat.CurHp <= 0.f)
+	if (StatComponent->GetCurHp() <= 0.f)
 	{
 		ServerDeath();
 	}
-}
-
-void ASoulCharacter::AddStaminaValue(float Value)
-{
-	PlayerStat.CurStamina += Value;
-
-	if (PlayerStat.CurStamina <= 0.f)
-	{
-		PlayerStat.CurStamina = 0.f;
-
-		if (bSprinting)
-		{
-			GetWorldTimerManager().ClearTimer(StaminaDrainTimer);
-		
-			Sprint(false);
-		}
-	}
-
-	else if (PlayerStat.CurStamina > PlayerStat.MaxStamina) 
-	{
-		PlayerStat.CurStamina = PlayerStat.MaxStamina;
-		
-		GetWorldTimerManager().ClearTimer(StaminaRecoveryTimer);
-	}
-
-	if (SoulPC)
-	{
-		SoulPC->ClientUpdateStaminaBar(PlayerStat.CurStamina, PlayerStat.MaxStamina);
-	}
-
 }
 
 bool ASoulCharacter::ServerDeath_Validate()
@@ -683,22 +553,41 @@ void ASoulCharacter::ServerDeath_Implementation()
 
 void ASoulCharacter::OnRep_Dead()
 {
-	GetMesh()->PlayAnimation(DeathAnim, false);
+	MulticastPlayMontage(DeathMontage, 1.f);
+}
 
-	GetCapsuleComponent()->SetCollisionProfileName("Ragdoll");
-	/*
-	GetMesh()->SetCollisionProfileName("Ragdoll");
+void ASoulCharacter::HitReaction(float StunTime, FVector KnockBack, bool bKnockDown)
+{
+	if (!bDead)
+	{
+		bMoveable = false;
+		LaunchCharacter(KnockBack * 100.f, false, false);
 
-	GetMesh()->SetSimulatePhysics(true);
-	GetMesh()->WakeRigidBody();*/
+		if (bKnockDown)
+		{
+			MulticastPlayMontage(KnockDownMontage, 1.f);
+		}
+
+		else
+		{
+			MulticastPlayMontage(KnockBackMontage, 1.f);
+		}
+
+		FTimerHandle WaitHandle;
+		float WaitTime = 2.f;
+		GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
+		{
+			bMoveable = true;
+		}), WaitTime, false);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// 블럭
+//// 막기
 
 void ASoulCharacter::StartBlock()
 {
-	if (PlayerStat.CurStamina < BlockCost)
+	if (StatComponent->GetCurStamina() < BlockCost)
 	{
 		return;
 	}
@@ -712,7 +601,7 @@ void ASoulCharacter::EndBlock()
 	bMoveable = true;
 	ServerBlock(false);
 
-	PlayStaminaTimer(false);
+	StatComponent->PlayStaminaTimer(false);
 }
 
 bool ASoulCharacter::ServerBlock_Validate(bool bBlock)
@@ -720,13 +609,12 @@ bool ASoulCharacter::ServerBlock_Validate(bool bBlock)
 	return true;
 }
 
-
 void ASoulCharacter::ServerBlock_Implementation(bool bBlock)
 {
 	if (bBlock)
 	{
-		AddStaminaValue(-BlockCost);
-		ClearStaminaTimers();
+		StatComponent->AddStaminaValue(-BlockCost);
+		StatComponent->ClearStaminaTimers();
 	}
 
 	bBlocking = bBlock;
@@ -738,7 +626,7 @@ void ASoulCharacter::OnRep_Blocking()
 	OnUpdateBlock();
 }
 
-bool ASoulCharacter::CheckBlockDirection(AActor* Enemy)
+bool ASoulCharacter::IsBlocked(AActor* Enemy)
 {
 	if (!bBlocking)
 	{
@@ -759,6 +647,13 @@ bool ASoulCharacter::CheckBlockDirection(AActor* Enemy)
 	}
 
 	return false;
+}
+
+void ASoulCharacter::PlayBlockEffect()
+{
+	MulticastPlaySound(BlockSound);
+	MulticastPlayParticle(BlockParticle);
+	MulticastPlayMontage(BlockMontage, 1.f);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -784,19 +679,6 @@ void ASoulCharacter::StartTarget()
 	}
 }
 
-bool ASoulCharacter::MulticastSpawnSouls_Validate()
-{
-	return true;
-}
-
-void ASoulCharacter::MulticastSpawnSouls_Implementation()
-{
-	if (SoulParticle)
-	{
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SoulParticle, GetActorLocation(), GetActorRotation(), true);
-	}
-}
-
 void ASoulCharacter::SetLockCamera(AActor* InTarget, bool bLock)
 {
 	if (bLock)
@@ -814,57 +696,18 @@ void ASoulCharacter::SetLockCamera(AActor* InTarget, bool bLock)
 	}
 }
 
-void ASoulCharacter::SpawnSouls(int32 SoulsValue)
+////////////////////////////////////////////////////////////////////////////
+//// 소울
+
+void ASoulCharacter::AddSoulsValue(int32 Value)
 {
-	PlayerStat.SoulsCount += SoulsValue;
-	if (SoulPC)
-	{
-		SoulPC->ClientUpdateSoulsCount(PlayerStat.SoulsCount);
-	}
+	StatComponent->AddSoulsValue(Value);
 
-	MulticastSpawnSouls();
-}
-
-bool ASoulCharacter::MulticastPlayBlockEffect_Validate()
-{
-	return true;
-}
-
-void ASoulCharacter::MulticastPlayBlockEffect_Implementation()
-{
-	if (BlockParticle)
-	{
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BlockParticle, GetActorLocation());
-	}
-
-	if (BlockSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), BlockSound, GetActorLocation(), 1.f);
-	}
-
-	MulticastPlayMontage(BlockMontage, 1.f);
+	MulticastPlayParticle(SoulParticle);
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// 기타 공용 함수
-
-void ASoulCharacter::SetSoulPlayerController(ASoulPlayerController * InSoulPC)
-{
-	if (SoulPC == nullptr && InSoulPC)
-	{
-		SoulPC = InSoulPC;
-		bMoveable = true;
-
-		FTimerHandle WaitHandle;
-		float WaitTime = 0.5f;
-		GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
-		{
-			SoulPC->ClientUpdateHpBar(PlayerStat.CurHp, PlayerStat.MaxHp);
-			SoulPC->ClientUpdateStaminaBar(PlayerStat.CurStamina, PlayerStat.MaxStamina);
-			SoulPC->ClientUpdateSoulsCount(PlayerStat.SoulsCount);
-		}), WaitTime, false);
-	}
-}
+//// 기타 
 
 bool ASoulCharacter::MulticastPlayMontage_Validate(UAnimMontage * AnimMontage, float PlayRate, FName AnimName)
 {
@@ -881,21 +724,45 @@ void ASoulCharacter::MulticastPlayMontage_Implementation(UAnimMontage * AnimMont
 	}
 }
 
+bool ASoulCharacter::MulticastPlaySound_Validate(USoundBase* Sound)
+{
+	return true;
+}
+
+void ASoulCharacter::MulticastPlaySound_Implementation(USoundBase* Sound)
+{
+	if (Sound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), Sound, GetActorLocation(), 1.f);
+	}
+}
+
+bool ASoulCharacter::MulticastPlayParticle_Validate(UParticleSystem* Particle)
+{
+	return true;
+}
+
+void ASoulCharacter::MulticastPlayParticle_Implementation(UParticleSystem* Particle)
+{
+	if (Particle)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Particle, GetActorLocation());
+	}
+}
 
 void ASoulCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ASoulCharacter, bMoveable);
-	DOREPLIFETIME(ASoulCharacter, bSprinting);
+	DOREPLIFETIME(ASoulCharacter, bDead);
 	DOREPLIFETIME(ASoulCharacter, bRolling);
+	DOREPLIFETIME(ASoulCharacter, bMoveable);
+	DOREPLIFETIME(ASoulCharacter, bBlocking);
 	DOREPLIFETIME(ASoulCharacter, bAttacking);
+	DOREPLIFETIME(ASoulCharacter, bSprinting);
+	DOREPLIFETIME(ASoulCharacter, bLockCamera);
 	DOREPLIFETIME(ASoulCharacter, CurrentPickUpActor);
 	DOREPLIFETIME(ASoulCharacter, CurrentWeapon);
 	DOREPLIFETIME(ASoulCharacter, EquipInfo);
-	DOREPLIFETIME(ASoulCharacter, PlayerStat);
-	DOREPLIFETIME(ASoulCharacter, bDead);
-	DOREPLIFETIME(ASoulCharacter, bBlocking);
 	DOREPLIFETIME(ASoulCharacter, Target);
-	DOREPLIFETIME(ASoulCharacter, bLockCamera);
 }
