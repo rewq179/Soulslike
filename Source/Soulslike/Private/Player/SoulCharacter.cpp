@@ -5,7 +5,9 @@
 #include "Player/TargetComponent.h"
 #include "Player/StatComponent.h"
 
+#include "Enemy/Enemy.h"
 #include "Interact/PickUpActor.h"
+#include "Interact/InteractDoor.h"
 
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
@@ -130,7 +132,7 @@ void ASoulCharacter::PossessedBy(AController* NewController)
 
 void ASoulCharacter::MoveForward(float Value)
 {
-	if ((Controller != NULL) && (Value != 0.0f) && bMoveable)
+	if ((Controller != NULL) && (Value != 0.0f) && bMoveable && !bPlayingScene)
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
@@ -142,7 +144,7 @@ void ASoulCharacter::MoveForward(float Value)
 
 void ASoulCharacter::MoveRight(float Value)
 {
-	if ((Controller != NULL) && (Value != 0.0f) && bMoveable)
+	if ((Controller != NULL) && (Value != 0.0f) && bMoveable && !bPlayingScene)
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
@@ -154,19 +156,14 @@ void ASoulCharacter::MoveRight(float Value)
 
 void ASoulCharacter::AddControllerYawInput(float Val)
 {
-	if (Controller && Controller->IsLocalPlayerController())
+	if (Controller && Controller->IsLocalPlayerController() && !bPlayingScene)
 	{
 		if (bLockCamera)
 		{
 			auto CameraLocation = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->GetCameraLocation();
 			auto TargetLocation = Target->GetActorLocation();
 
-			float PitchConst = 10.f;
-
-			if (CameraLocation.Z >= TargetLocation.Z)
-			{
-				PitchConst *= -1;
-			}
+			float PitchConst = -15.f;
 
 			CameraLocation.Z = 0.f;
 			TargetLocation.Z = 0.f;
@@ -188,7 +185,7 @@ void ASoulCharacter::AddControllerYawInput(float Val)
 
 void ASoulCharacter::AddControllerPitchInput(float Val)
 {
-	if (Controller && Controller->IsLocalPlayerController())
+	if (Controller && Controller->IsLocalPlayerController() && !bPlayingScene)
 	{
 		if (Val != 0.f && !bLockCamera)
 		{
@@ -203,7 +200,7 @@ void ASoulCharacter::AddControllerPitchInput(float Val)
 
 void ASoulCharacter::StartSprint()
 {
-	if (bMoveable)
+	if (bMoveable && !bPlayingScene)
 	{
 		Sprint(true);
 	}
@@ -275,7 +272,7 @@ void ASoulCharacter::SetMaxWalkSpeed(bool bSprint)
 
 void ASoulCharacter::StartRoll()
 {
-	if (bMoveable && !bRolling && StatComponent->GetCurStamina() >= RollCost) // 구르기 중복 불가능
+	if (bMoveable && !bPlayingScene && !bRolling && StatComponent->GetCurStamina() >= RollCost) // 구르기 중복 불가능
 	{
 		StatComponent->ClearStaminaTimers();
 
@@ -330,7 +327,7 @@ void ASoulCharacter::OnRep_Rolling()
 
 void  ASoulCharacter::StartAttack(EPlayerAttack Attack)
 {
-	if (bMoveable)
+	if (bMoveable && !bPlayingScene)
 	{
 		PlayerAttack = Attack;
 
@@ -442,12 +439,17 @@ bool ASoulCharacter::ServerInteractActor_Validate()
 
 void ASoulCharacter::ServerInteractActor_Implementation()
 {
-	if (CurrentPickUpActor == nullptr)
+	if (CurrentDoor)
 	{
+		CurrentDoor->InteractDoor();
+
 		return;
 	}
 
-	HandlePickUp();
+	if (CurrentPickUpActor)
+	{
+		HandlePickUp();
+	}
 }
 
 void ASoulCharacter::SetPickUpActor(APickUpActor* PickUpActor)
@@ -469,6 +471,18 @@ void ASoulCharacter::SetPickUpActor(APickUpActor* PickUpActor)
 	{
 		SoulPC->ClientShowPickUpName(CurrentPickUpActor->PickUpInfo.Name);
 	}
+}
+
+void ASoulCharacter::SetInteractDoor(AInteractDoor * DoorActor)
+{
+	if (DoorActor == nullptr)
+	{
+		CurrentDoor = nullptr;
+	
+		return;
+	}
+
+	CurrentDoor = DoorActor;
 }
 
 void ASoulCharacter::HandlePickUp()
@@ -518,7 +532,7 @@ void ASoulCharacter::EquipWeapon(AActor* Item)
 
 void ASoulCharacter::StartDead()
 {
-
+	GetMesh()->bPauseAnims = true;
 }
 
 
@@ -558,28 +572,30 @@ void ASoulCharacter::OnRep_Dead()
 
 void ASoulCharacter::HitReaction(float StunTime, FVector KnockBack, bool bKnockDown)
 {
-	if (!bDead)
+	if (bDead || bRolling || bBlocking)
 	{
-		bMoveable = false;
-		LaunchCharacter(KnockBack * 100.f, false, false);
-
-		if (bKnockDown)
-		{
-			MulticastPlayMontage(KnockDownMontage, 1.f);
-		}
-
-		else
-		{
-			MulticastPlayMontage(KnockBackMontage, 1.f);
-		}
-
-		FTimerHandle WaitHandle;
-		float WaitTime = 2.f;
-		GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
-		{
-			bMoveable = true;
-		}), WaitTime, false);
+		return;
 	}
+
+	bMoveable = false;
+	LaunchCharacter(KnockBack * 100.f, false, false);
+
+	if (bKnockDown)
+	{
+		MulticastPlayMontage(KnockDownMontage, 1.f);
+	}
+
+	else
+	{
+		MulticastPlayMontage(KnockBackMontage, 1.f);
+	}
+
+	FTimerHandle WaitHandle;
+	float WaitTime = 2.f;
+	GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
+	{
+		bMoveable = true;
+	}), WaitTime, false);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -587,7 +603,7 @@ void ASoulCharacter::HitReaction(float StunTime, FVector KnockBack, bool bKnockD
 
 void ASoulCharacter::StartBlock()
 {
-	if (StatComponent->GetCurStamina() < BlockCost)
+	if (bMoveable && !bPlayingScene && StatComponent->GetCurStamina() < BlockCost)
 	{
 		return;
 	}
@@ -654,6 +670,46 @@ void ASoulCharacter::PlayBlockEffect()
 	MulticastPlaySound(BlockSound);
 	MulticastPlayParticle(BlockParticle);
 	MulticastPlayMontage(BlockMontage, 1.f);
+}
+
+////////////////////////////////////////////////////////////////////////////
+//// 보스
+
+void ASoulCharacter::SetBossEnemy(AEnemy* InEnemy)
+{
+	if (InEnemy == nullptr)
+	{
+		BossEnemy->OnEnemyHpChanged.RemoveDynamic(this, &ASoulCharacter::OnEnemyHpChanged);
+		BossEnemy = nullptr;
+
+		if (SoulPC)
+		{
+			SoulPC->ClientShowEnemyHpBar(false);
+		}
+	}
+
+	else
+	{
+		BossEnemy = InEnemy;
+		bPlayingScene = true;
+
+		BossEnemy->OnEnemyHpChanged.AddDynamic(this, &ASoulCharacter::OnEnemyHpChanged);
+
+		if (SoulPC)
+		{
+			SoulPC->ClientShowEnemyHpBar(true);
+			SoulPC->ClientUpdateBossName(BossEnemy->GetName());
+			SoulPC->ClientUpdateBossHp(BossEnemy->GetCurHp(), BossEnemy->GetMaxHp());
+		}
+	}
+}
+
+void ASoulCharacter::OnEnemyHpChanged(float CurHp, float MaxHp)
+{
+	if (SoulPC)
+	{
+		SoulPC->ClientUpdateBossHp(CurHp, MaxHp);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -760,9 +816,11 @@ void ASoulCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(ASoulCharacter, bBlocking);
 	DOREPLIFETIME(ASoulCharacter, bAttacking);
 	DOREPLIFETIME(ASoulCharacter, bSprinting);
+	DOREPLIFETIME(ASoulCharacter, bPlayingScene);
 	DOREPLIFETIME(ASoulCharacter, bLockCamera);
+	DOREPLIFETIME(ASoulCharacter, CurrentDoor); 
 	DOREPLIFETIME(ASoulCharacter, CurrentPickUpActor);
-	DOREPLIFETIME(ASoulCharacter, CurrentWeapon);
+	DOREPLIFETIME(ASoulCharacter, CurrentWeapon); 
 	DOREPLIFETIME(ASoulCharacter, EquipInfo);
 	DOREPLIFETIME(ASoulCharacter, Target);
 }

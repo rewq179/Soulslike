@@ -193,5 +193,7 @@ DECLARE_MULTICAST_DELEGATE(FOnHeavyAttackEndDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnRangeAttackEndDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnChargeAttackEndDelegate);
 
+
 DECLARE_DELEGATE_OneParam(FMouseClickDelegate, EPlayerAttack);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnHpChangedDelegate, float, Hp, const class UDamageType*, DamageType, class AController*, InstigatedBy, AActor*, DamageCauser);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnemyHpChangedDelegate, float, CurHp, float, MaxHp);

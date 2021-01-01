@@ -31,9 +31,23 @@ void ASoulPlayerController::ClientUpdateSoulsCount_Implementation(int32 SoulsCou
 	OnUpdateSoulsCount(SoulsCount);
 }
 
+
+void ASoulPlayerController::ClientShowEnemyHpBar_Implementation(bool bActive)
+{
+	OnUpdateShowEnemyHpBar(bActive);
+}
+
+void ASoulPlayerController::ClientUpdateBossName_Implementation(const FText& Name)
+{
+	OnUpdateBossName(Name);
+}
+
+void ASoulPlayerController::ClientUpdateBossHp_Implementation(float CurHp, float MaxHp)
+{
+	OnUpdateBossHp(CurHp, MaxHp);
+}
+
 void ASoulPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	//DOREPLIFETIME(ASoulPlayerController, bSprinting);
 }

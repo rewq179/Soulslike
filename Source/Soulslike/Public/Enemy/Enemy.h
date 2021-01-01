@@ -109,19 +109,22 @@ public:
 
 	UFUNCTION()
 	void StartAggro();
-	
+
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Status)
+	bool bBossEnemy;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Status)
 	EMonsterAttack MonsterAttack;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Status)
 	TArray<float> AttackDamage;
 
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Status)
 	bool bRangeDelay;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Status)
 	float RangeDelayTime;
 
 	UFUNCTION(BlueprintCallable)
@@ -148,12 +151,16 @@ public:
 	void CreateOverlapSphere(float Radius, float Height, bool bKnockDown);
 
 protected:
+	/** 몬스터의 이름 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Status)
+	FText Name;
+
 	/** 몬스터의 현재 체력 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Status)
 	float CurHp;
 
 	/** 몬스터의 현재 체력 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Status)
 	float MaxHp;
 
 	UFUNCTION()
@@ -161,28 +168,38 @@ protected:
 
 protected:
 	/** 사망시 플레이어에게 줄 XP */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Status)
 	int32 SoulsValue;
 
 	//** True : 죽음, False : 살아있음 */
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Status)
 	bool bDead;
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerDeath(AActor* DamageCauser);
-	
+
+	UFUNCTION(BlueprintCallable)
+	void StartDead();
+
 	//** BP에서 ABP_SoulCharacter의 bool값 설정 */
-	UFUNCTION(BlueprintImplementableEvent, Category = Combat)
+	UFUNCTION(BlueprintImplementableEvent, Category = Status)
 	void OnUpdateDeath();
 
 public:
+	FORCEINLINE FText GetName() { return Name; }
+	FORCEINLINE float GetCurHp() { return CurHp; }
+	FORCEINLINE float GetMaxHp() { return MaxHp; }
 	FORCEINLINE float GetDetectDistance() { return DetectDistance; }
 	FORCEINLINE float GetMeleeDistance() { return MeleeDistance; }
 	FORCEINLINE float GetRangeDistance() { return RangeDistance; }
 	FORCEINLINE float GetDamage() { return AttackDamage[(int)MonsterAttack]; }
 	FORCEINLINE bool IsDead() { return bDead; }
+	FORCEINLINE bool IsBossEnemy() { return bBossEnemy; }
 
 	FORCEINLINE void SetMonsterAttack(EMonsterAttack Attack) { MonsterAttack = Attack; }
+
+	/** Enemy의 체력이 변화하면 SoulPC에서 UMG 값 변경해줌 */
+	FOnEnemyHpChangedDelegate OnEnemyHpChanged;
 
 	/** Attack 애니메이션 종료시, BT에게 종료되었다는 정보를 준다. */
 	FOnAggroMoitionEndDelegate OnAggroMoitionEnd;

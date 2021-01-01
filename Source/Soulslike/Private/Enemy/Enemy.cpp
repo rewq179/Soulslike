@@ -144,17 +144,30 @@ void AEnemy::SetLightCollision(bool bActive)
 ////////////////////////////////////////////////////////////////////////////
 //// Çàµ¿ Æ®¸®
 
-void AEnemy::StartAggro()
+void AEnemy::StartAggro() // ½ÃÀÛ ¾Ö´Ï¸ÞÀÌ¼Ç, ÇÃ·¹ÀÌ¾î ¸ØÃã, ¹® ´ÝÈû
 {
 	MulticastPlayMontage(AggroMontage, 1.f);
 
-	FTimerHandle WaitHandle;
-	float WaitTime = AggroMontage->GetPlayLength();
-	GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
+	if (Target)
 	{
-		OnAggroMoitionEnd.Broadcast();
+		if (auto const Player = Cast<ASoulCharacter>(Target))
+		{
+			Player->SetBossEnemy(this);
+		}
 
-	}), WaitTime, false);
+		FTimerHandle WaitHandle;
+		float WaitTime = AggroMontage->GetPlayLength();
+		GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
+		{
+			OnAggroMoitionEnd.Broadcast();
+
+			if (auto const Player = Cast<ASoulCharacter>(Target))
+			{
+				Player->SetPlayingScene(false);
+			}
+
+		}), WaitTime, false);
+	}
 }
 
 void AEnemy::StartAttack(EMonsterAttack Attack, int32 AttackNumber, bool bFirstAttack)
@@ -345,11 +358,17 @@ void AEnemy::HandleTakeAnyDamage(AActor * DamagedActor, float Damage, const UDam
 
 	// Update health clamped
 	CurHp -= Damage;
+	OnEnemyHpChanged.Broadcast(CurHp, MaxHp);
 
 	if (CurHp <= 0.f)
 	{
 		ServerDeath(DamageCauser);
 	}
+}
+
+void AEnemy::StartDead()
+{
+	GetMesh()->bPauseAnims = true;
 }
 
 
@@ -375,6 +394,7 @@ void AEnemy::ServerDeath_Implementation(AActor* DamageCauser)
 
 		if (auto const Player = Cast<ASoulCharacter>(DamageCauser))
 		{
+			Player->SetBossEnemy(nullptr);
 			Player->AddSoulsValue(SoulsValue);
 		}
 

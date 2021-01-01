@@ -99,7 +99,7 @@ void UStatComponent::DrainStamina()
 
 void UStatComponent::HandleTakeAnyDamage(AActor * DamagedActor, float Damage, const UDamageType * Type, AController * InstigatedBy, AActor * DamageCauser)
 {
-	if (Damage <= 0.f || DamageCauser == nullptr)
+	if (Damage <= 0.f || DamageCauser == nullptr || OwnerCharacter->IsRoll())
 	{
 		return;
 	}

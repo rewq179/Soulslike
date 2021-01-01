@@ -47,6 +47,24 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnUpdateSoulsCount(int32 SoulsCount);
 
+	UFUNCTION(Client, Reliable)
+	void ClientShowEnemyHpBar(bool bActive);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnUpdateShowEnemyHpBar(bool bActive);
+
+	UFUNCTION(Client, Reliable)
+	void ClientUpdateBossName(const FText& Name);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnUpdateBossName(const FText& Name);
+
+	UFUNCTION(Client, Reliable)
+	void ClientUpdateBossHp(float CurHp, float MaxHp);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnUpdateBossHp(float CurHp, float MaxHp);
+
 	/** 네트워크 설정 */
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

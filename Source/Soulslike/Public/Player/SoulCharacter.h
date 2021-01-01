@@ -12,7 +12,9 @@ class ASoulPlayerController;
 class UTargetComponent;
 class UStatComponent;
 class APickUpActor;
+class AInteractDoor;
 class AWeapon;
+class AEnemy;
 class USpringArmComponent;
 class UCameraComponent;
 class UAnimMontage;
@@ -121,6 +123,10 @@ protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = Status)
 	bool bMoveable;
 
+	/** True : 캐릭터 및 카메라 이동 불가능, False : 가능*/
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = Status)
+	bool bPlayingScene;
+
 	/** True : 전력질주(이동속도 800), False : 일반(이동솏도 500) */
 	UPROPERTY(ReplicatedUsing = OnRep_Sprinting, VisibleAnywhere, BlueprintReadOnly, Category = Status)
 	bool bSprinting;
@@ -188,11 +194,15 @@ protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = PickUpActor)
 	APickUpActor* CurrentPickUpActor;
 
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = PickUpActor)
+	AInteractDoor* CurrentDoor;
+
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerInteractActor();
 
 public:
 	void SetPickUpActor(APickUpActor* PickUpActor);
+	void SetInteractDoor(AInteractDoor* DoorActor);
 
 	void HandlePickUp();
 
@@ -226,7 +236,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void HeavyAttack();
-
+	
 	void CreateOverlapSphere(float Radius);
 	
 protected:
@@ -277,6 +287,16 @@ public:
 
 protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
+	AEnemy* BossEnemy;
+
+public:
+	void SetBossEnemy(AEnemy* InEnemy);
+
+	UFUNCTION()
+	void OnEnemyHpChanged(float CurHp, float MaxHp);
+
+protected:
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
 	AActor* Target;
 
 	/** True : 타게팅중, False : 일반  */
@@ -298,7 +318,10 @@ public:
 
 public:
 	FORCEINLINE bool IsDead() const { return bDead; }
+	FORCEINLINE bool IsRoll() const { return bRolling; }
 	FORCEINLINE bool IsSprinting() const { return bSprinting; }
+	FORCEINLINE void SetMoveable(bool bMove) { bMoveable = bMove; }
+	FORCEINLINE void SetPlayingScene(bool bScene) { bPlayingScene = bScene; }
 
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
