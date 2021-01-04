@@ -11,12 +11,12 @@
 class ASoulPlayerController;
 class UTargetComponent;
 class UStatComponent;
-class APickUpActor;
-class AInteractDoor;
+class UInteractComponent;
 class AWeapon;
 class AEnemy;
 class USpringArmComponent;
 class UCameraComponent;
+
 class UAnimMontage;
 
 UCLASS(config = Game)
@@ -68,7 +68,7 @@ class ASoulCharacter : public ACharacter
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Sound, meta = (AllowPrivateAccess = "true"))
 	USoundBase* BlockSound;
-	   
+
 	float MoveSpeed;
 	float SprintSpeed;
 	float BaseTurnRate;
@@ -80,6 +80,7 @@ public:
 
 	UTargetComponent* TargetComponent;
 	UStatComponent* StatComponent;
+	UInteractComponent* InteractComponent;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	TSubclassOf<UDamageType> DamageType;
@@ -191,27 +192,11 @@ public:
 	void EndAttack();
 
 protected:
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = PickUpActor)
-	APickUpActor* CurrentPickUpActor;
-
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = PickUpActor)
-	AInteractDoor* CurrentDoor;
-
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerInteractActor();
 
-public:
-	void SetPickUpActor(APickUpActor* PickUpActor);
-	void SetInteractDoor(AInteractDoor* DoorActor);
-
-	void HandlePickUp();
-
 protected:
-	/** */
-	UPROPERTY(ReplicatedUsing = OnRep_Weapon, BlueprintReadOnly, Category = Equip)
-	AActor* CurrentWeapon;
-
-	UPROPERTY(Replicated)
+		UPROPERTY(Replicated)
 	FEquipInfo EquipInfo;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Cost)
@@ -220,16 +205,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Cost)
 	float HeavyAttackCost;
 	
-	/** RefNotify */
-	UFUNCTION()
-	void OnRep_Weapon();
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat)
+	float LightAttackRadius;
 
-	/** BP에서 ABP_SoulCharacter의 bool값 설정 */
-	UFUNCTION(BlueprintImplementableEvent, Category = Equip)
-	void OnUpdateWeapon();
-
-public:
-	void EquipWeapon(AActor* Item);
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat)
+	float HeavyAttackRadius;
 
 	UFUNCTION(BlueprintCallable)
 	void LightAttack();
@@ -237,7 +217,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void HeavyAttack();
 	
-	void CreateOverlapSphere(float Radius);
+	void ApplyDamageToActorInOverlapSphere(TArray<AActor*>& OverlappedActors);
 	
 protected:
 	/** True : 죽음, False : 살아있음 */
@@ -322,6 +302,7 @@ public:
 	FORCEINLINE bool IsSprinting() const { return bSprinting; }
 	FORCEINLINE void SetMoveable(bool bMove) { bMoveable = bMove; }
 	FORCEINLINE void SetPlayingScene(bool bScene) { bPlayingScene = bScene; }
+	FORCEINLINE FEquipInfo GetEquipInfo() { return EquipInfo; }
 
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }

@@ -4,10 +4,10 @@
 #include "Player/SoulPlayerController.h"
 #include "Player/TargetComponent.h"
 #include "Player/StatComponent.h"
+#include "Player/InteractComponent.h"
+#include "System/SoulFunctionLibrary.h"
 
 #include "Enemy/Enemy.h"
-#include "Interact/PickUpActor.h"
-#include "Interact/InteractDoor.h"
 
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
@@ -17,11 +17,7 @@
 #include "GameFramework/SpringArmComponent.h"
 
 #include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
-
-#include "Containers/EnumAsByte.h"
-#include "DrawDebugHelpers.h"
 
 #include "Engine/Engine.h"
 #include "Engine/SkeletalMeshSocket.h"
@@ -45,6 +41,9 @@ ASoulCharacter::ASoulCharacter()
 	MoveSpeed = 500.f;
 	SprintSpeed = 800.f;
 	bSprinting = false;
+
+	LightAttackRadius = 150.f;
+	HeavyAttackRadius = 200.f;
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
@@ -71,6 +70,7 @@ ASoulCharacter::ASoulCharacter()
 
 	TargetComponent = CreateDefaultSubobject<UTargetComponent>("TargetComponent");
 	StatComponent = CreateDefaultSubobject<UStatComponent>("StatComponent");
+	InteractComponent = CreateDefaultSubobject<UInteractComponent>("InteractComponent");
 	Tags.Add(FName("Player"));
 }
 
@@ -123,6 +123,11 @@ void ASoulCharacter::PossessedBy(AController* NewController)
 		{
 			StatComponent->Initialize();
 			StatComponent->OnHpChanged.AddDynamic(this, &ASoulCharacter::OnHpChanged);
+		}
+
+		if (InteractComponent)
+		{
+			InteractComponent->Initialize();
 		}
 	}
 }
@@ -200,7 +205,9 @@ void ASoulCharacter::AddControllerPitchInput(float Val)
 
 void ASoulCharacter::StartSprint()
 {
-	if (bMoveable && !bPlayingScene)
+	// 움직일수 없는 상태(공격, 구르기, 블럭), 씬이 진행중이거나, 움직이지 않는다면
+
+	if (bMoveable && !bPlayingScene && GetCharacterMovement()->Velocity.Size() != 0) 
 	{
 		Sprint(true);
 	}
@@ -272,7 +279,9 @@ void ASoulCharacter::SetMaxWalkSpeed(bool bSprint)
 
 void ASoulCharacter::StartRoll()
 {
-	if (bMoveable && !bPlayingScene && !bRolling && StatComponent->GetCurStamina() >= RollCost) // 구르기 중복 불가능
+	// 움직일 수 없는 상태, 씬이 진행되거나, 구르는 중이거나, 코스트가 부족한 경우
+
+	if (bMoveable && !bPlayingScene && !bRolling && StatComponent->GetCurStamina() >= RollCost) 
 	{
 		StatComponent->ClearStaminaTimers();
 
@@ -327,6 +336,10 @@ void ASoulCharacter::OnRep_Rolling()
 
 void  ASoulCharacter::StartAttack(EPlayerAttack Attack)
 {
+	// 움직일 수 없는 상태, 씬이 진행되거나, 구르는 중이거나
+	
+	// 코스트는 LightAttack, HeavyAttack에 따라 다르므로, 다음 메소드에서 검사함.
+
 	if (bMoveable && !bPlayingScene)
 	{
 		PlayerAttack = Attack;
@@ -389,7 +402,13 @@ void ASoulCharacter::LightAttack()
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		CreateOverlapSphere(130.f);
+		TArray<AActor*> OverlappedActors;
+
+		const FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * LightAttackRadius;
+
+		USoulFunctionLibrary::CreateOverlapSphere(GetWorld(), SphereLocation, LightAttackRadius, AEnemy::StaticClass(), GetOwner(), OverlappedActors);
+
+		ApplyDamageToActorInOverlapSphere(OverlappedActors);
 	}
 }
 
@@ -397,24 +416,18 @@ void ASoulCharacter::HeavyAttack()
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		CreateOverlapSphere(130.f);
+		TArray<AActor*> OverlappedActors;
+
+		const FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * HeavyAttackRadius;
+
+		USoulFunctionLibrary::CreateOverlapSphere(GetWorld(), SphereLocation, HeavyAttackRadius, AEnemy::StaticClass(), GetOwner(), OverlappedActors);
+
+		ApplyDamageToActorInOverlapSphere(OverlappedActors);
 	}
 }
 
-void ASoulCharacter::CreateOverlapSphere(float Radius)
+void ASoulCharacter::ApplyDamageToActorInOverlapSphere(TArray<AActor*>& OverlappedActors)
 {
-	TArray<AActor*> OverlappedActors;
-
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
-	TArray<AActor*>IgnoreTypes;
-	IgnoreTypes.Add(GetOwner());
-	FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * Radius * 1.5f;
-
-	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), SphereLocation, Radius, ObjectTypes, nullptr, IgnoreTypes, OverlappedActors);
-
-	DrawDebugSphere(GetWorld(), SphereLocation, Radius, 12, FColor::Red, false, 3.f, 2.f);
-
 	for (auto& Actor : OverlappedActors)
 	{
 		if (Actor->ActorHasTag("Enemy"))
@@ -439,92 +452,7 @@ bool ASoulCharacter::ServerInteractActor_Validate()
 
 void ASoulCharacter::ServerInteractActor_Implementation()
 {
-	if (CurrentDoor)
-	{
-		CurrentDoor->InteractDoor();
-
-		return;
-	}
-
-	if (CurrentPickUpActor)
-	{
-		HandlePickUp();
-	}
-}
-
-void ASoulCharacter::SetPickUpActor(APickUpActor* PickUpActor)
-{
-	if (PickUpActor == nullptr)
-	{
-		CurrentPickUpActor = nullptr;
-		
-		if (SoulPC)
-		{
-			SoulPC->ClientShowPickUpName(FText::GetEmpty());
-		}
-
-		return;
-	}
-
-	CurrentPickUpActor = PickUpActor;
-	if (SoulPC)
-	{
-		SoulPC->ClientShowPickUpName(CurrentPickUpActor->PickUpInfo.Name);
-	}
-}
-
-void ASoulCharacter::SetInteractDoor(AInteractDoor * DoorActor)
-{
-	if (DoorActor == nullptr)
-	{
-		CurrentDoor = nullptr;
-	
-		return;
-	}
-
-	CurrentDoor = DoorActor;
-}
-
-void ASoulCharacter::HandlePickUp()
-{
-	switch (CurrentPickUpActor->GetPickUpType())
-	{
-	case EPickUpType::PICK_Weapon:
-		if (!EquipInfo.bWeaponEquiped)
-		{
-			EquipWeapon(CurrentPickUpActor);
-		}
-		break;
-
-	case EPickUpType::PICK_Souls:
-		if (!EquipInfo.bSoulsEquiped)
-		{
-		}
-		break;
-
-	case EPickUpType::PICK_Armor:
-		if (!EquipInfo.bArmorEquiped)
-		{
-		}
-		break;
-
-	default:
-		break;
-	}
-}
-
-void ASoulCharacter::OnRep_Weapon()
-{
-	CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WeaponSocket");
-
-}
-
-void ASoulCharacter::EquipWeapon(AActor* Item)
-{
-	CurrentWeapon = Item;
-	EquipInfo.bWeaponEquiped = true;
-
-	OnRep_Weapon();
+	InteractComponent->InteractActor();
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -818,9 +746,6 @@ void ASoulCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(ASoulCharacter, bSprinting);
 	DOREPLIFETIME(ASoulCharacter, bPlayingScene);
 	DOREPLIFETIME(ASoulCharacter, bLockCamera);
-	DOREPLIFETIME(ASoulCharacter, CurrentDoor); 
-	DOREPLIFETIME(ASoulCharacter, CurrentPickUpActor);
-	DOREPLIFETIME(ASoulCharacter, CurrentWeapon); 
 	DOREPLIFETIME(ASoulCharacter, EquipInfo);
 	DOREPLIFETIME(ASoulCharacter, Target);
 }

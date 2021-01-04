@@ -7,19 +7,25 @@
 
 #include "Player/SoulCharacter.h"
 
+#include "System/SoulFunctionLibrary.h"
+
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/ArrowComponent.h"
+#include "Components/WidgetComponent.h"
+
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
-#include "DrawDebugHelpers.h"
 
 #include "TimerManager.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimSequenceBase.h"
+
+#include "UObject/ConstructorHelpers.h"
+
 #include "Net/UnrealNetwork.h"
 #include "Engine/World.h"
 
@@ -65,6 +71,15 @@ AEnemy::AEnemy()
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	
+	// 타겟팅 ㅇ 표시
+	/*WidgetComponent = CreateDefaultSubobject<UWidgetComponent>("WidgetComponent");
+	static ConstructorHelpers::FClassFinder<UUserWidget> WidgetObj(TEXT("Game/Blueprints/Widget/WB_Targeting"));
+	if (WidgetObj.Succeeded())
+	{
+		WidgetComponent->SetWidgetClass(WidgetObj.Class);
+	}*/
+
+	// 태그 설정
 	Tags.Add(FName("Enemy"));
 
 	SoulsValue = 1;
@@ -74,13 +89,15 @@ AEnemy::AEnemy()
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	SetMovementState(EMovementState::STATE_Walk);
 
+	//WidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 100.0f));
+	//WidgetComponent->SetVisibility(false);
 	WeaponMesh->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Weapon_R_Socket");
-	
+
 	LightCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnOverlapBegin);
-	
+
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		OnTakeAnyDamage.AddDynamic(this, &AEnemy::HandleTakeAnyDamage);
@@ -139,6 +156,48 @@ void AEnemy::SetLightCollision(bool bActive)
 	{
 		LightCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////
+//// 인터페이스
+
+
+void AEnemy::LightAttackAnimStart_Implementation(bool bStart)
+{
+	SetLightCollision(bStart);
+}
+
+void AEnemy::HeavyAttackAnimStart_Implementation(float Radius, float Height, bool bKnockDown)
+{
+	HeavyAttack(Radius, Height, bKnockDown);
+}
+
+void AEnemy::ChargeAttackAnimStart_Implementation(float Radius, float Height, bool bKnockDown)
+{
+	ChargeAttack(Radius, Height, bKnockDown);
+
+}
+
+void AEnemy::RangeAttackAnimStart_Implementation()
+{
+	RangeAttack();
+}
+
+void AEnemy::HandAttackAnimStart_Implementation(float Radius, float Height, bool bKnockDown)
+{
+	// 나중에 HandAttack() 함수 만들면 수정
+
+	HeavyAttack(Radius, Height, bKnockDown);
+}
+
+void AEnemy::PlayEffect_Implementation(UParticleSystem * InParticle, USoundBase * InSound, FTransform InTransform)
+{
+	PlayEffectAtTransform(InParticle, InSound, InTransform);
+}
+
+void AEnemy::DeadAnimStart_Implementation()
+{
+	StartDead();
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -271,7 +330,13 @@ void AEnemy::HeavyAttack(float Radius, float Height, bool bKnockDown)
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		CreateOverlapSphere(Radius, 1.f, bKnockDown);
+		TArray<AActor*> OverlappedActors;
+
+		const FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * 150.f;
+
+		USoulFunctionLibrary::CreateOverlapSphere(GetWorld(), SphereLocation, 150.f, ASoulCharacter::StaticClass(), GetOwner(), OverlappedActors);
+
+		ApplyDamageToActorInOverlapSphere(OverlappedActors, Height, bKnockDown);
 	}
 }
 
@@ -279,7 +344,32 @@ void AEnemy::ChargeAttack(float Radius, float Height, bool bKnockDown)
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		CreateOverlapSphere(Radius, 1.f, bKnockDown);
+		TArray<AActor*> OverlappedActors;
+
+		const FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * 150.f;
+
+		USoulFunctionLibrary::CreateOverlapSphere(GetWorld(), SphereLocation, 150.f, ASoulCharacter::StaticClass(), GetOwner(), OverlappedActors);
+
+		ApplyDamageToActorInOverlapSphere(OverlappedActors, Height, bKnockDown);
+	}
+}
+
+void AEnemy::ApplyDamageToActorInOverlapSphere(TArray<AActor*>& OverlappedActors, float Height, bool bKnockDown)
+{
+	for (auto& Actor : OverlappedActors)
+	{
+		if (Actor->ActorHasTag("Player"))
+		{
+			UGameplayStatics::ApplyDamage(Actor, GetDamage(), GetController(), this, DamageType);
+
+			if (auto const Player = Cast<ASoulCharacter>(Actor))
+			{
+				FVector UnitVector = UKismetMathLibrary::GetDirectionUnitVector(GetActorLocation(), Actor->GetActorLocation());
+				UnitVector.Z += Height;
+
+				Player->HitReaction(1.f, UnitVector, bKnockDown);
+			}
+		}
 	}
 }
 
@@ -300,7 +390,6 @@ void AEnemy::RangeAttack()
 	}
 }
 
-
 void AEnemy::PlayEffectAtTransform(UParticleSystem* InParticle, USoundBase* InSound, FTransform Transform)
 {
 	if (InParticle)
@@ -314,37 +403,6 @@ void AEnemy::PlayEffectAtTransform(UParticleSystem* InParticle, USoundBase* InSo
 	}
 }
 
-void AEnemy::CreateOverlapSphere(float Radius, float Height, bool bKnockDown)
-{
-	TArray<AActor*> OverlappedActors;
-
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
-
-	TArray<AActor*>IgnoreTypes;
-	IgnoreTypes.Add(GetOwner());
-
-	FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * 100;
-
-	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), SphereLocation, Radius, ObjectTypes, ASoulCharacter::StaticClass(), IgnoreTypes, OverlappedActors);
-	DrawDebugSphere(GetWorld(), SphereLocation, Radius, 12, FColor::Red, false, 3.f, 2.f);
-
-	for (auto& Actor : OverlappedActors)
-	{
-		if (Actor->ActorHasTag("Player"))
-		{
-			UGameplayStatics::ApplyDamage(Actor, GetDamage(), GetController(), this, DamageType);
-
-			if (auto const Player = Cast<ASoulCharacter>(Actor))
-			{
-				FVector UnitVector = UKismetMathLibrary::GetDirectionUnitVector(GetActorLocation(), Actor->GetActorLocation());
-				UnitVector.Z += Height;
-
-				Player->HitReaction(1.f, UnitVector, bKnockDown);
-			}
-		}
-	}
-}
 
 ////////////////////////////////////////////////////////////////////////////
 //// 스텟 변화

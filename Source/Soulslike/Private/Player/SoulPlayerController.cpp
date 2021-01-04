@@ -10,9 +10,12 @@ ASoulPlayerController::ASoulPlayerController()
 
 }
 
+////////////////////////////////////////////////////////////////////////////
+//// 플레이어 체력바 위젯
+
 void ASoulPlayerController::ClientShowPickUpName_Implementation(const FText& PickUpName)
 {
-	OnUpdateShowPickUpName(PickUpName);
+	OnShowPickUpName(PickUpName);
 }
 
 void ASoulPlayerController::ClientUpdateHpBar_Implementation(float CurHp, float MaxHp)
@@ -31,10 +34,12 @@ void ASoulPlayerController::ClientUpdateSoulsCount_Implementation(int32 SoulsCou
 	OnUpdateSoulsCount(SoulsCount);
 }
 
+////////////////////////////////////////////////////////////////////////////
+//// 적의 체력바 위젯
 
 void ASoulPlayerController::ClientShowEnemyHpBar_Implementation(bool bActive)
 {
-	OnUpdateShowEnemyHpBar(bActive);
+	OnShowEnemyHpBar(bActive);
 }
 
 void ASoulPlayerController::ClientUpdateBossName_Implementation(const FText& Name)
@@ -46,6 +51,23 @@ void ASoulPlayerController::ClientUpdateBossHp_Implementation(float CurHp, float
 {
 	OnUpdateBossHp(CurHp, MaxHp);
 }
+
+////////////////////////////////////////////////////////////////////////////
+//// 상호작용
+
+void ASoulPlayerController::ClientShowInteractMessage_Implementation(bool bActive)
+{
+	OnShowInteractMessage(bActive);
+}
+
+void ASoulPlayerController::ClientUpdateInteractMessage_Implementation(const FText& Name, const FVector& ActorLocation)
+{
+	OnShowInteractMessage(true);
+	OnUpdateInteractMessage(Name, ActorLocation);
+}
+
+////////////////////////////////////////////////////////////////////////////
+//// 기타
 
 void ASoulPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "EnemyAnimNotifyInterface.h"
 #include "DataType.h"
 #include "Enemy.generated.h"
 
@@ -14,7 +15,6 @@ class AEnemyProjectile;
 class UAnimationAsset;
 class ASoulCharacter;
 class USoundCue;
-
 /**
 * Enemy가 보유한 데이터들을 바탕으로 전투 및 애니메이션들을 재생한다.
 * AI 분야를 제외한 모든 데이터, 함수가 해당 클래스에 속한다.
@@ -22,7 +22,7 @@ class USoundCue;
 
 
 UCLASS()
-class SOULSLIKE_API AEnemy : public ACharacter
+class SOULSLIKE_API AEnemy : public ACharacter, public IEnemyAnimNotifyInterface
 {
 	GENERATED_BODY()
 
@@ -67,27 +67,16 @@ public:
 	TSubclassOf<UDamageType> DamageType;
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+				
+protected:
 	/** 몬스터의 기본 이동속도 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement)
 	float WalkSpeed;
-	
+
 	/** 달리기 이동속도 = WalkSpeed * SpeedMultiplier */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement)
 	float SpeedMultiplier;
-
-	/** 적의 상태(대기, 걷기, 달리기) */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
-	EMovementState MovementState;
-
-public:
-	void SetMovementState(EMovementState State);
-		
-protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Target)
-	AActor* Target;
 
 	/** 탐지 가능한 거리 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Target)
@@ -101,7 +90,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Target)
 	float RangeDistance;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Target)
+	AActor* Target;
+
+	/** 적의 상태(대기, 걷기, 달리기) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
+	EMovementState MovementState;
+
 public:
+	void SetMovementState(EMovementState State);
+
 	void SetTarget(AActor* InTarget);
 
 	UFUNCTION()
@@ -109,6 +107,35 @@ public:
 
 	UFUNCTION()
 	void StartAggro();
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Anim_Notify")
+	void LightAttackAnimStart(bool bStart);
+	virtual void LightAttackAnimStart_Implementation(bool bStart) override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Anim_Notify")
+	void HeavyAttackAnimStart(float Radius, float Height, bool bKnockDown);
+	virtual void HeavyAttackAnimStart_Implementation(float Radius, float Height, bool bKnockDown) override;
+
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Anim_Notify")
+	void ChargeAttackAnimStart(float Radius, float Height, bool bKnockDown);
+	virtual void ChargeAttackAnimStart_Implementation(float Radius, float Height, bool bKnockDown) override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Anim_Notify")
+	void RangeAttackAnimStart();
+	virtual void RangeAttackAnimStart_Implementation() override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Anim_Notify")
+	void HandAttackAnimStart(float Radius, float Height, bool bKnockDown);
+	virtual void HandAttackAnimStart_Implementation(float Radius, float Height, bool bKnockDown) override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Anim_Notify")
+	void PlayEffect(UParticleSystem* InParticle, USoundBase* InSound, FTransform InTransform);
+	virtual void PlayEffect_Implementation(UParticleSystem* InParticle, USoundBase* InSound, FTransform InTransform) override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Anim_Notify")
+	void DeadAnimStart();
+	virtual void DeadAnimStart_Implementation() override;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Status)
@@ -127,7 +154,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Status)
 	float RangeDelayTime;
 
-	UFUNCTION(BlueprintCallable)
 	void SetLightCollision(bool bActive);
 
 	UFUNCTION()
@@ -136,19 +162,16 @@ public:
 	UFUNCTION()
 	void BrocastAttackEnd(float DelayTime);
 
-	UFUNCTION(BlueprintCallable)
 	void HeavyAttack(float Radius, float Height, bool bKnockDown);
 
-	UFUNCTION(BlueprintCallable)
-	void RangeAttack();
-
-	UFUNCTION(BlueprintCallable)
 	void ChargeAttack(float Radius, float Height, bool bKnockDown);
 
-	UFUNCTION(BlueprintCallable)
+	void ApplyDamageToActorInOverlapSphere(TArray<AActor*>& OverlappedActors, float Height, bool bKnockDown);
+
+	void RangeAttack();
+
 	void PlayEffectAtTransform(UParticleSystem* InParticle, USoundBase* InSound, FTransform Transform);
 
-	void CreateOverlapSphere(float Radius, float Height, bool bKnockDown);
 
 protected:
 	/** 몬스터의 이름 */
@@ -178,7 +201,6 @@ protected:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerDeath(AActor* DamageCauser);
 
-	UFUNCTION(BlueprintCallable)
 	void StartDead();
 
 	//** BP에서 ABP_SoulCharacter의 bool값 설정 */

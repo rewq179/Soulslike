@@ -29,16 +29,38 @@ AInteractActor::AInteractActor()
 	SphereComponent->SetupAttachment(GetRootComponent());
 	SphereComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	SphereComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+
+	// 태크 설정
+	Tags.Add(FName("Interact"));
 }
 
 // Called when the game starts or when spawned
 void AInteractActor::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &AInteractActor::OnOverlapBegin);
 	SphereComponent->OnComponentEndOverlap.AddDynamic(this, &AInteractActor::OnOverlapEnd);
 }
+
+void AInteractActor::Interact()
+{
+
+}
+
+void AInteractActor::SetRenderCustomDepth(ASoulCharacter* InPlayer, bool bTrue)
+{
+
+}
+
+FText AInteractActor::GetInteractMessage()
+{
+	return FText();
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+//// 기타
 
 void AInteractActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {

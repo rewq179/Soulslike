@@ -9,13 +9,12 @@
 /**
  * 
  */
+
 UCLASS()
 class SOULSLIKE_API AInteractDoor : public AInteractActor
 {
 	GENERATED_BODY()
 	
-	FTimerHandle DoorTimer;
-
 public:
 	AInteractDoor();
 
@@ -25,32 +24,41 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components)
 	UStaticMeshComponent* DoorRight;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components)
+	UBoxComponent* BoxComponent;
+
+	virtual void Interact() override;
+	virtual void SetRenderCustomDepth(ASoulCharacter* InPlayer, bool bTrue) override;
+	virtual FText GetInteractMessage() override;
+
 protected:
-	UPROPERTY(ReplicatedUsing = OnRep_Opening, VisibleAnywhere, BlueprintReadOnly, Category = Door)
-	bool bOpened;
+	virtual void BeginPlay() override;
 
 	/** 문이 완전히 열리는데 걸리는 시간 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Door)
 	float OpenTime;
-
-	UFUNCTION()
-	void OnRep_Opening();
+	
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Door)
+	bool bOpened;
 
 public:
-	void StartTimer(bool bOpen);
-
-	void InteractDoor();
-	void CloseDoor();
+	void InteractDoor(bool bOpen);
 
 	UFUNCTION(NetMulticast, Reliable, WithValidation)
 	void MulticastDoorMoveTo(UStaticMeshComponent* Door, FVector Location, FRotator Rotator);
-
+	
 public:
-	FORCEINLINE bool IsOpening() { return bOpened; }
+	FORCEINLINE bool IsOpened() { return bOpened; }
+
+	UFUNCTION(BlueprintImplementableEvent)
+	bool IsPlayerLocal(ASoulCharacter* Player);
 
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
 
 	virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
+
+	UFUNCTION()
+	void OnBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

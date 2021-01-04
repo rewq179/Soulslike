@@ -24,7 +24,7 @@ public:
 	void ClientShowPickUpName(const FText& PickUpName);
 
 	UFUNCTION(BlueprintImplementableEvent)
-	void OnUpdateShowPickUpName(const FText& PickUpName);
+	void OnShowPickUpName(const FText& PickUpName);
 
 	UFUNCTION(Client, Reliable)
 	void ClientUpdateHpBar(float CurHp, float MaxHp);
@@ -40,18 +40,19 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void ShowDeadScreenWidget();
-
+	
 	UFUNCTION(Client, Reliable)
 	void ClientUpdateSoulsCount(int32 SoulsCount);
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnUpdateSoulsCount(int32 SoulsCount);
 
+public:
 	UFUNCTION(Client, Reliable)
 	void ClientShowEnemyHpBar(bool bActive);
 
 	UFUNCTION(BlueprintImplementableEvent)
-	void OnUpdateShowEnemyHpBar(bool bActive);
+	void OnShowEnemyHpBar(bool bActive);
 
 	UFUNCTION(Client, Reliable)
 	void ClientUpdateBossName(const FText& Name);
@@ -65,6 +66,20 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnUpdateBossHp(float CurHp, float MaxHp);
 
+public:
+	UFUNCTION(Client, Reliable)
+	void ClientShowInteractMessage(bool bActive);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnShowInteractMessage(bool bActive);
+
+	UFUNCTION(Client, Reliable)
+	void ClientUpdateInteractMessage(const FText& Name, const FVector& ActorLocation);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnUpdateInteractMessage(const FText& Name, const FVector& ActorLocation);
+
+public:
 	/** 네트워크 설정 */
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

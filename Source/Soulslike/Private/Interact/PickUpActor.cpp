@@ -2,8 +2,9 @@
 
 
 #include "Interact/PickUpActor.h"
-#include "Player/SoulCharacter.h"
 
+#include "Player/SoulCharacter.h"
+#include "Player/InteractComponent.h"
 
 // Sets default values
 APickUpActor::APickUpActor()
@@ -22,10 +23,10 @@ void APickUpActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		auto Character = Cast<ASoulCharacter>(OtherActor);
-		if (Character)
+		auto Player = Cast<ASoulCharacter>(OtherActor);
+		if (Player)
 		{
-			Character->SetPickUpActor(this);
+			Player->InteractComponent->SetPickUpActor(this);
 		}
 	}
 }
@@ -34,10 +35,10 @@ void APickUpActor::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		auto Character = Cast<ASoulCharacter>(OtherActor);
-		if (Character)
+		auto Player = Cast<ASoulCharacter>(OtherActor);
+		if (Player)
 		{
-			Character->SetPickUpActor(nullptr);
+			Player->InteractComponent->SetPickUpActor(nullptr);
 		}
 	}
 }
