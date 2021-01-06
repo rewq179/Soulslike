@@ -1,14 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
 #include "BTTask_LightAttack.generated.h"
 
-
 /**
- * ¿ëµµ : Á¶Á¾µÇ°í ÀÖ´Â PawnÀÇ LightAtatck ¾Ö´Ï¸ŞÀÌ¼ÇÀ» Àç»ı/µ¥¹ÌÁö Àû¿ë/»óÅÂÀÌ»ó Àû¿ëÀ» ÅëÇÕÀûÀ¸·Î Ã³¸®ÇÏ±â À§ÇÔ
+ * ìš©ë„ : ì¡°ì¢…ë˜ê³  ìˆëŠ” Pawnì˜ LightAtatck ì• ë‹ˆë©”ì´ì…˜ì„ ì¬ìƒ/ë°ë¯¸ì§€ ì ìš©/ìƒíƒœì´ìƒ ì ìš©ì„ í†µí•©ì ìœ¼ë¡œ ì²˜ë¦¬í•˜ê¸° ìœ„í•¨
  */
 
 
@@ -21,11 +18,9 @@ public:
 	UBTTask_LightAttack();
 	
 protected:
-	EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
-	void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
+	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
 private:
-
-	/** PawnÀÇ °ø°İ ¾Ö´Ï¸ŞÀÌ¼ÇÀÌ ÁøÇàÁßÀÎ°¡? : True¸é ¾ÆÁ÷ ÁøÇàÁß */
 	bool bAttacking;
 };

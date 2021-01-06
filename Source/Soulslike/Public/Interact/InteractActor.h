@@ -18,10 +18,10 @@ class SOULSLIKE_API AInteractActor : public AActor
 	GENERATED_BODY()
 	
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components)
 	UStaticMeshComponent* Mesh;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components)
 	USphereComponent* SphereComponent;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Interact)
@@ -30,7 +30,7 @@ protected:
 	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadOnly, Category = Interact)
 	EInteractType InteractType;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Door)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Interact)
 	bool bInteracted;
 
 public:	
@@ -45,8 +45,8 @@ public:
 	virtual FText GetInteractMessage();
 
 public:
-	FORCEINLINE bool IsInteracted() { return bInteracted; }
-	FORCEINLINE EInteractType GetInteractType() { return InteractType; }
+	FORCEINLINE bool IsInteracted() const { return bInteracted; }
+	FORCEINLINE EInteractType GetInteractType() const { return InteractType; }
 
 	UFUNCTION()
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -54,5 +54,5 @@ public:
 	UFUNCTION()
 	virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

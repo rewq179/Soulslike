@@ -5,6 +5,7 @@
 #include "Player/TargetComponent.h"
 #include "Player/StatComponent.h"
 #include "Player/InteractComponent.h"
+#include "Player/InventoryComponent.h"
 #include "System/SoulFunctionLibrary.h"
 
 #include "Enemy/Enemy.h"
@@ -20,7 +21,6 @@
 #include "Kismet/KismetMathLibrary.h"
 
 #include "Engine/Engine.h"
-#include "Engine/SkeletalMeshSocket.h"
 
 #include "Animation/AnimInstance.h"
 #include "TimerManager.h"
@@ -31,10 +31,10 @@ ASoulCharacter::ASoulCharacter()
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 
-	// Capusle :: ƒ´∏ﬁ∂Û Ignore
+	// Capusle :: Ïπ¥Î©îÎùº Ignore
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
-	// set our turn rates for input
+	// Í∞ÅÏ¢Ö Value ÏÑ§Ï†ï
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
 
@@ -71,26 +71,20 @@ ASoulCharacter::ASoulCharacter()
 	TargetComponent = CreateDefaultSubobject<UTargetComponent>("TargetComponent");
 	StatComponent = CreateDefaultSubobject<UStatComponent>("StatComponent");
 	InteractComponent = CreateDefaultSubobject<UInteractComponent>("InteractComponent");
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
+
 	Tags.Add(FName("Player"));
 }
 
-void ASoulCharacter::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
 ////////////////////////////////////////////////////////////////////////////
-//// Input
-
+//// ÏûÖÎ†•
 
 void ASoulCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
-	// Set up gameplay key bindings
 	check(PlayerInputComponent);
 
-	// ¡¬≈¨∏Ø :: æ‡∞¯∞›, øÏ≈¨∏Ø :: ∞≠∞¯∞›
-	PlayerInputComponent->BindAction<FMouseClickDelegate>("LeftClick", IE_Released, this, &ASoulCharacter::StartAttack, EPlayerAttack::PATK_LightAttack);
-	PlayerInputComponent->BindAction<FMouseClickDelegate>("RightClick", IE_Released, this, &ASoulCharacter::StartAttack, EPlayerAttack::PATK_HeavyAttack);
+	PlayerInputComponent->BindAction<FMouseClickDelegate>("LeftClick", IE_Pressed, this, &ASoulCharacter::StartAttack, EPlayerAttack::Player_LightAttack);
+	PlayerInputComponent->BindAction<FMouseClickDelegate>("RightClick", IE_Pressed, this, &ASoulCharacter::StartAttack, EPlayerAttack::Player_HeavyAttack);
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ASoulCharacter::StartSprint);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ASoulCharacter::EndSprint);
 	PlayerInputComponent->BindAction("Roll", IE_Released, this, &ASoulCharacter::StartRoll);
@@ -98,6 +92,8 @@ void ASoulCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAction("Block", IE_Pressed, this, &ASoulCharacter::StartBlock);
 	PlayerInputComponent->BindAction("Block", IE_Released, this, &ASoulCharacter::EndBlock);
 	PlayerInputComponent->BindAction("Target", IE_Pressed, this, &ASoulCharacter::StartTarget);
+	PlayerInputComponent->BindAction("Potion", IE_Pressed, this, &ASoulCharacter::UsePotion);
+	PlayerInputComponent->BindAction("Inventory", IE_Pressed, this, &ASoulCharacter::ShowInventory);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &ASoulCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ASoulCharacter::MoveRight);
@@ -129,6 +125,11 @@ void ASoulCharacter::PossessedBy(AController* NewController)
 		{
 			InteractComponent->Initialize();
 		}
+
+		if (InventoryComponent)
+		{
+			InventoryComponent->Initialize();
+		}
 	}
 }
 
@@ -137,7 +138,7 @@ void ASoulCharacter::PossessedBy(AController* NewController)
 
 void ASoulCharacter::MoveForward(float Value)
 {
-	if ((Controller != NULL) && (Value != 0.0f) && bMoveable && !bPlayingScene)
+	if ((Controller != nullptr) && (Value != 0.0f) && bMoveable && !bPlayingScene)
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
@@ -149,7 +150,7 @@ void ASoulCharacter::MoveForward(float Value)
 
 void ASoulCharacter::MoveRight(float Value)
 {
-	if ((Controller != NULL) && (Value != 0.0f) && bMoveable && !bPlayingScene)
+	if ((Controller != nullptr) && (Value != 0.0f) && bMoveable && !bPlayingScene)
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
@@ -201,12 +202,10 @@ void ASoulCharacter::AddControllerPitchInput(float Val)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// ¥ﬁ∏Æ±‚
+//// Îã¨Î¶¨Í∏∞
 
 void ASoulCharacter::StartSprint()
 {
-	// øÚ¡˜¿œºˆ æ¯¥¬ ªÛ≈¬(∞¯∞›, ±∏∏£±‚, ∫Ì∑∞), æ¿¿Ã ¡¯«‡¡ﬂ¿Ã∞≈≥™, øÚ¡˜¿Ã¡ˆ æ ¥¬¥Ÿ∏È
-
 	if (bMoveable && !bPlayingScene && GetCharacterMovement()->Velocity.Size() != 0) 
 	{
 		Sprint(true);
@@ -239,16 +238,6 @@ void ASoulCharacter::Sprint(bool bSprint)
 	}
 }
 
-void ASoulCharacter::ServerSprint_Implementation(bool bSprint)
-{
-	Sprint(bSprint);
-}
-
-bool ASoulCharacter::ServerSprint_Validate(bool bSprint)
-{
-	return true;
-}
-
 void ASoulCharacter::SetSprinting(bool bSprint)
 {
 	bSprinting = bSprint;
@@ -256,12 +245,22 @@ void ASoulCharacter::SetSprinting(bool bSprint)
 	OnRep_Sprinting();
 }
 
+bool ASoulCharacter::ServerSprint_Validate(bool bSprint)
+{
+	return true;
+}
+
+void ASoulCharacter::ServerSprint_Implementation(bool bSprint)
+{
+	Sprint(bSprint);
+}
+
 void ASoulCharacter::OnRep_Sprinting()
 {
 	OnUpdateSprinting();
 }
 
-void ASoulCharacter::SetMaxWalkSpeed(bool bSprint)
+void ASoulCharacter::SetMaxWalkSpeed(bool bSprint) const
 {
 	if (bSprint)
 	{
@@ -275,12 +274,10 @@ void ASoulCharacter::SetMaxWalkSpeed(bool bSprint)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// ±∏∏£±‚
+//// Íµ¨Î•¥Í∏∞
 
 void ASoulCharacter::StartRoll()
 {
-	// øÚ¡˜¿œ ºˆ æ¯¥¬ ªÛ≈¬, æ¿¿Ã ¡¯«‡µ«∞≈≥™, ±∏∏£¥¬ ¡ﬂ¿Ã∞≈≥™, ƒ⁄Ω∫∆Æ∞° ∫Œ¡∑«— ∞ÊøÏ
-
 	if (bMoveable && !bPlayingScene && !bRolling && StatComponent->GetCurStamina() >= RollCost) 
 	{
 		StatComponent->ClearStaminaTimers();
@@ -296,9 +293,21 @@ void ASoulCharacter::EndRoll()
 	StatComponent->PlayStaminaTimer(false);
 }
 
+void ASoulCharacter::SetRolling(bool bRoll)
+{
+	bRolling = bRoll;
+
+	OnRep_Rolling();
+}
+
 bool ASoulCharacter::ServerRoll_Validate()
 {
 	return true;
+}
+
+void ASoulCharacter::OnRep_Rolling()
+{
+	OnUpdateRolling(bRolling);
 }
 
 void ASoulCharacter::ServerRoll_Implementation()
@@ -309,62 +318,45 @@ void ASoulCharacter::ServerRoll_Implementation()
 	MulticastRoll();
 }
 
-void ASoulCharacter::MulticastRoll_Implementation()
-{
-	MulticastPlayMontage(RollMontage, 0.8f);
-}
-
 bool ASoulCharacter::MulticastRoll_Validate()
 {
 	return true;
 }
 
-void ASoulCharacter::SetRolling(bool bRoll)
+void ASoulCharacter::MulticastRoll_Implementation()
 {
-	bRolling = bRoll;
-
-	OnRep_Rolling();
+	MulticastPlayMontage(RollMontage, 0.8f);
 }
 
-void ASoulCharacter::OnRep_Rolling()
-{
-	OnUpdateRolling(bRolling);
-}
 
 ////////////////////////////////////////////////////////////////////////////
-//// ∞¯∞›
+//// Í≥µÍ≤©
 
 void  ASoulCharacter::StartAttack(EPlayerAttack Attack)
 {
-	// øÚ¡˜¿œ ºˆ æ¯¥¬ ªÛ≈¬, æ¿¿Ã ¡¯«‡µ«∞≈≥™, ±∏∏£¥¬ ¡ﬂ¿Ã∞≈≥™
-	
-	// ƒ⁄Ω∫∆Æ¥¬ LightAttack, HeavyAttackø° µ˚∂Û ¥Ÿ∏£π«∑Œ, ¥Ÿ¿Ω ∏ﬁº“µÂø°º≠ ∞ÀªÁ«‘.
-
 	if (bMoveable && !bPlayingScene)
 	{
-		PlayerAttack = Attack;
-
 		Sprint(false);
 
-		ServerAttack();
+		ServerAttack(Attack);
 	}
 }
 
-bool ASoulCharacter::ServerAttack_Validate()
+bool ASoulCharacter::ServerAttack_Validate(EPlayerAttack Attack)
 {
 	return true;
 }
 
-void ASoulCharacter::ServerAttack_Implementation()
+void ASoulCharacter::ServerAttack_Implementation(EPlayerAttack Attack)
 {
 	if (bAttacking || bRolling || bDead || bBlocking)
 	{
 		return;
 	}
 
-	switch (PlayerAttack)
+	switch (Attack)
 	{
-	case EPlayerAttack::PATK_LightAttack:
+	case EPlayerAttack::Player_LightAttack:
 		if (StatComponent->GetCurStamina() < LightAttackCost)
 			return;
 		
@@ -372,7 +364,7 @@ void ASoulCharacter::ServerAttack_Implementation()
 		MulticastPlayMontage(LightAttackMontages[0], 1.f);
 		break;
 
-	case EPlayerAttack::PATK_HeavyAttack:
+	case EPlayerAttack::Player_HeavyAttack:
 		if (StatComponent->GetCurStamina() < HeavyAttackCost)
 			return;
 
@@ -443,7 +435,7 @@ void ASoulCharacter::ApplyDamageToActorInOverlapSphere(TArray<AActor*>& Overlapp
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// æ∆¿Ã≈€ ∑Á∆√
+//// ÏÉÅÌò∏ ÏûëÏö©
 
 bool ASoulCharacter::ServerInteractActor_Validate()
 {
@@ -456,13 +448,12 @@ void ASoulCharacter::ServerInteractActor_Implementation()
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// √º∑¬ ∞¸∑√
+//// ÏÇ¨Îßù
 
 void ASoulCharacter::StartDead()
 {
 	GetMesh()->bPauseAnims = true;
 }
-
 
 void ASoulCharacter::OnHpChanged(float Damage, const UDamageType * Type, AController * InstigatedBy, AActor * DamageCauser)
 {
@@ -527,7 +518,7 @@ void ASoulCharacter::HitReaction(float StunTime, FVector KnockBack, bool bKnockD
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// ∏∑±‚
+//// Î∏îÎü≠
 
 void ASoulCharacter::StartBlock()
 {
@@ -570,7 +561,7 @@ void ASoulCharacter::OnRep_Blocking()
 	OnUpdateBlock();
 }
 
-bool ASoulCharacter::IsBlocked(AActor* Enemy)
+bool ASoulCharacter::IsBlocked(AActor* Enemy) const
 {
 	if (!bBlocking)
 	{
@@ -601,7 +592,7 @@ void ASoulCharacter::PlayBlockEffect()
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// ∫∏Ω∫
+//// Î≥¥Ïä§ Î™¨Ïä§ÌÑ∞
 
 void ASoulCharacter::SetBossEnemy(AEnemy* InEnemy)
 {
@@ -626,7 +617,7 @@ void ASoulCharacter::SetBossEnemy(AEnemy* InEnemy)
 		if (SoulPC)
 		{
 			SoulPC->ClientShowEnemyHpBar(true);
-			SoulPC->ClientUpdateBossName(BossEnemy->GetName());
+			SoulPC->ClientUpdateBossName(BossEnemy->GetEnemyName());
 			SoulPC->ClientUpdateBossHp(BossEnemy->GetCurHp(), BossEnemy->GetMaxHp());
 		}
 	}
@@ -641,7 +632,7 @@ void ASoulCharacter::OnEnemyHpChanged(float CurHp, float MaxHp)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// ≈∏∞Ÿ∆√
+//// ÌÉÄÍ≤üÌåÖ
 
 void ASoulCharacter::StartTarget()
 {
@@ -681,7 +672,31 @@ void ASoulCharacter::SetLockCamera(AActor* InTarget, bool bLock)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// º“øÔ
+//// ÏïÑÏù¥ÌÖú
+
+void ASoulCharacter::UsePotion()
+{
+	if (InventoryComponent)
+	{
+
+	}
+}
+
+void ASoulCharacter::ShowInventory()
+{
+	UE_LOG(LogTemp, Log,TEXT("Click Inventory"));
+	
+	if (InventoryComponent)
+	{
+		if(	InventoryComponent->OwnerController)
+		{
+			InventoryComponent->OwnerController->ClientShowInventory(true);
+		}
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////
+//// ÔøΩ“øÔøΩ
 
 void ASoulCharacter::AddSoulsValue(int32 Value)
 {
@@ -691,14 +706,14 @@ void ASoulCharacter::AddSoulsValue(int32 Value)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// ±‚≈∏ 
+//// ÔøΩÔøΩ≈∏ 
 
 bool ASoulCharacter::MulticastPlayMontage_Validate(UAnimMontage * AnimMontage, float PlayRate, FName AnimName)
 {
 	return true;
 }
 
-void ASoulCharacter::MulticastPlayMontage_Implementation(UAnimMontage * AnimMontage, float PlayRate, FName AnimName = NAME_None)
+void ASoulCharacter::MulticastPlayMontage_Implementation(UAnimMontage * AnimMontage, float PlayRate, FName AnimName)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -737,7 +752,7 @@ void ASoulCharacter::MulticastPlayParticle_Implementation(UParticleSystem* Parti
 void ASoulCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
+	
 	DOREPLIFETIME(ASoulCharacter, bDead);
 	DOREPLIFETIME(ASoulCharacter, bRolling);
 	DOREPLIFETIME(ASoulCharacter, bMoveable);

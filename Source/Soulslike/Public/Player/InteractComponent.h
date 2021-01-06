@@ -18,16 +18,13 @@ class SOULSLIKE_API UInteractComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:	
-	// Sets default values for this component's properties
 	UInteractComponent();
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	/** º“¿Ø¡ﬂ¿Œ Pawn */
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Components)
 	ASoulCharacter* OwnerCharacter;
 
-	/** º“¿Ø¡ﬂ¿Œ Pawn¿« ƒøΩ∫≈“ Controller  */
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Components)
 	ASoulPlayerController* OwnerController;
 
@@ -56,7 +53,7 @@ protected:
 	UFUNCTION()
 	void OnRep_Weapon();
 
-	/** BPø°º≠ ABP_SoulCharacter¿« bool∞™ º≥¡§ */
+	/** BPÏóêÏÑú ABP_SoulCharacterÏùò boolÍ∞í ÏÑ§Ï†ï */
 	UFUNCTION(BlueprintImplementableEvent, Category = Equip)
 	void OnUpdateWeapon();
 
@@ -77,7 +74,5 @@ public:
 	void CheckInteractActor();
 	void SetInteractActor();
 
-public:
-	/** ≥◊∆Æøˆ≈© º≥¡§ */
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

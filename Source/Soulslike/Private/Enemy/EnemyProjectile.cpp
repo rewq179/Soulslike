@@ -27,7 +27,7 @@ AEnemyProjectile::AEnemyProjectile()
 	DefaultSceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("DeafultSceneRoot"));;
 	RootComponent = DefaultSceneRoot;
 
-	// Sphere Component :: ¸ğµç ¹İÀÀÀº Ignore, Pawn°ú Worldµé¸¸ ¿À¹ö·¦
+	// Sphere Component :: ëª¨ë“  ë°˜ì‘ì€ Ignore, Pawnê³¼ Worldë“¤ë§Œ ì˜¤ë²„ë©
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
 	SphereComponent->SetupAttachment(GetRootComponent());
 	SphereComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -36,9 +36,9 @@ AEnemyProjectile::AEnemyProjectile()
 	SphereComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Overlap);
 	SphereComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
-	// ±×¸®°í cppÆÄÀÏ¿¡ ObjectType ³Ö´Â ¹æ¹ıÀ» ¸ô¶ó¼­ BP¿¡ Àû¿ëÇØ¾ßÇÔ.
-	// µû·Î Projectile ¿ÀºêÁ§Æ® Å¸ÀÔÀ» ¸¸µé¾ú°í,
-	// ±âº»ÀûÀ¸·Î Overlap »óÅÂ, µ¿ÀÏÇÑ Projectile ³¢¸®´Â Ignore
+	// ê·¸ë¦¬ê³  cppíŒŒì¼ì— ObjectType ë„£ëŠ” ë°©ë²•ì„ ëª°ë¼ì„œ BPì— ì ìš©í•´ì•¼í•¨.
+	// ë”°ë¡œ Projectile ì˜¤ë¸Œì íŠ¸ íƒ€ì…ì„ ë§Œë“¤ì—ˆê³ ,
+	// ê¸°ë³¸ì ìœ¼ë¡œ Overlap ìƒíƒœ, ë™ì¼í•œ Projectile ë¼ë¦¬ëŠ” Ignore
 
 	Particle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Particle"));
 	Particle->SetupAttachment(GetRootComponent());

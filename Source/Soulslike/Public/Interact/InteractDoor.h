@@ -34,7 +34,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	/** ¹®ÀÌ ¿ÏÀüÈ÷ ¿­¸®´Âµ¥ °É¸®´Â ½Ã°£ */
+	/** ë¬¸ì´ ì™„ì „íˆ ì—´ë¦¬ëŠ”ë° ê±¸ë¦¬ëŠ” ì‹œê°„ */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Door)
 	float OpenTime;
 	
@@ -48,7 +48,7 @@ public:
 	void MulticastDoorMoveTo(UStaticMeshComponent* Door, FVector Location, FRotator Rotator);
 	
 public:
-	FORCEINLINE bool IsOpened() { return bOpened; }
+	FORCEINLINE bool IsOpened() const { return bOpened; }
 
 	UFUNCTION(BlueprintImplementableEvent)
 	bool IsPlayerLocal(ASoulCharacter* Player);
@@ -60,5 +60,5 @@ public:
 	UFUNCTION()
 	void OnBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

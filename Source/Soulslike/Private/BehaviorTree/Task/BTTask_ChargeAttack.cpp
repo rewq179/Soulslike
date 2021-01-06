@@ -31,11 +31,11 @@ EBTNodeResult::Type UBTTask_ChargeAttack::ExecuteTask(UBehaviorTreeComponent& Ow
 	}
 
 
-	Enemy->StartAttack(EMonsterAttack::MATK_ChargeAttack);
+	Enemy->StartAttack(EEnemyAttack::Enemy_ChargeAttack);
 	bCharging = true;
 	Enemy->OnChargeAttackEnd.AddLambda([this]() -> void { bCharging = false; });
 
-	// Â÷Â¡½Ã ¼Óµµ Áõ°¡ »ç¿ë½Ã : Enemy->GetCharacterMovement()->MaxWalkSpeed = Enemy->Status.FollowSpeed * 1.5f;
+	// ï¿½ï¿½Â¡ï¿½ï¿½ ï¿½Óµï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ : Enemy->GetCharacterMovement()->MaxWalkSpeed = Enemy->Status.FollowSpeed * 1.5f;
 
 	return EBTNodeResult::InProgress;
 }
@@ -44,9 +44,9 @@ void UBTTask_ChargeAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 {
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 
-	if (!bCharging) // ÁøÇàÀÌ Á¾·áµÇ¸é ´ÙÀ½ BT¸¦ ½ÇÇà½ÃÅ³ ¼ö ÀÖ´Ù.
+	if (!bCharging) // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ ï¿½ï¿½ï¿½ï¿½ BTï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Å³ ï¿½ï¿½ ï¿½Ö´ï¿½.
 	{
-		// Â÷Â¡½Ã ¼Óµµ Áõ°¡¸é ±âÁ¸ ¼Óµµ·Î ÇØÁà¾ßÇÔ.
+		// ï¿½ï¿½Â¡ï¿½ï¿½ ï¿½Óµï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Óµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
 
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}

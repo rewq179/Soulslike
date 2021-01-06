@@ -17,34 +17,34 @@ bool UBTDecorator_CheckDistance::CalculateRawConditionValue(UBehaviorTreeCompone
 {
 	bool bResult = Super::CalculateRawConditionValue(OwnerComp, NodeMemory);
 
-	auto Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
-	auto Target = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AEnemyAIController::Target));
+	auto const Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
+	auto const Target = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AEnemyAIController::Target));
 
 	if (Enemy == nullptr || Target == nullptr)
 	{
 		return false;
 	}
 
-	float Range;
-	switch (MonsterAttack)
+	float Range = 0.f;
+	switch (EnemyAttack)
 	{
-	case EMonsterAttack::MATK_LightAttack:
+	case EEnemyAttack::Enemy_LightAttack:
 		Range = Enemy->GetMeleeDistance();
 		break;
 
-	case EMonsterAttack::MATK_HeavyAttack:
+	case EEnemyAttack::Enemy_HeavyAttack:
 		Range = Enemy->GetMeleeDistance();
 		break;
 
-	case EMonsterAttack::MATK_ChargeAttack:
+	case EEnemyAttack::Enemy_ChargeAttack:
 		Range = Enemy->GetMeleeDistance();
 		break;
 
-	case EMonsterAttack::MATK_RangeAttack:
+	case EEnemyAttack::Enemy_RangeAttack:
 		Range = Enemy->GetRangeDistance();
 		break;
 
-	case EMonsterAttack::MATK_None:
+	case EEnemyAttack::Enemy_None:
 		Range = Enemy->GetDetectDistance();
 	}
 

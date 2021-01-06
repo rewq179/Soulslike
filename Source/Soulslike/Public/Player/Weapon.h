@@ -23,11 +23,9 @@ class SOULSLIKE_API AWeapon : public AActor
 	UBoxComponent* BoxComponent;
 
 public:	
-	// Sets default values for this actor's properties
 	AWeapon();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
@@ -42,6 +40,5 @@ protected:
 	void ServerAttack();
 
 public:	
-	/** Returns CameraBoom subobject */
-	FORCEINLINE USkeletalMeshComponent* GetSkeletalMesh() { return SkeletalMesh; }
+	FORCEINLINE USkeletalMeshComponent* GetSkeletalMesh() const { return SkeletalMesh; }
 };

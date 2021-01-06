@@ -18,14 +18,14 @@ AInteractDoor::AInteractDoor()
 	Mesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	Mesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 
-	// Box :: ¹®ÀÔÀå½Ã
+	// Box :: ë¬¸ì…ì¥ì‹œ
 	BoxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComponent"));
 	BoxComponent->SetupAttachment(GetRootComponent());
 	BoxComponent->SetGenerateOverlapEvents(true);
 	BoxComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	BoxComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
-	// ¿ßÂÊ ¹® :: Æù¸¸ Block
+	// ìš€ìª½ ë¬¸ :: í°ë§Œ Block
 	DoorLeft = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorLeft"));
 	DoorLeft->SetupAttachment(GetRootComponent());
 	DoorLeft->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
@@ -34,7 +34,7 @@ AInteractDoor::AInteractDoor()
 	DoorLeft->SetGenerateOverlapEvents(false);
 	DoorLeft->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
-	// ¿À¸¥ÂÊ ¹® :: Æù¸¸ Block
+	// ì˜¤ë¥¸ìª½ ë¬¸ :: í°ë§Œ Block
 	DoorRight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorLight"));
 	DoorRight->SetupAttachment(GetRootComponent());
 	DoorRight->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
@@ -42,15 +42,13 @@ AInteractDoor::AInteractDoor()
 	DoorRight->SetGenerateOverlapEvents(false);
 	DoorRight->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
-
-
-	InteractType = EInteractType::INTERACT_Door;
+	InteractType = EInteractType::Interact_Door;
 
 	OpenTime = 0.5f;
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// ¿À¹ö¶óÀÌµå
+//// ì˜¤ë²„ë¼ì´ë“œ
 
 void AInteractDoor::BeginPlay()
 {
@@ -88,7 +86,7 @@ FText AInteractDoor::GetInteractMessage()
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// ¹®
+//// ë¬¸
 
 void AInteractDoor::InteractDoor(bool bOpen)
 {
@@ -107,7 +105,7 @@ void AInteractDoor::InteractDoor(bool bOpen)
 
 
 ////////////////////////////////////////////////////////////////////////////
-//// ¹®ÀÇ È¸Àü ÀÌµ¿
+//// ë¬¸ì˜ íšŒì „ ì´ë™
 
 bool AInteractDoor::MulticastDoorMoveTo_Validate(UStaticMeshComponent* Door, FVector Location, FRotator Rotator)
 {
@@ -123,7 +121,7 @@ void AInteractDoor::MulticastDoorMoveTo_Implementation(UStaticMeshComponent* Doo
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// ¿À¹ö·¦
+//// ì˜¤ë²„ë©
 
 void AInteractDoor::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -160,7 +158,6 @@ void AInteractDoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	//DOREPLIFETIME(AInteractDoor, DoorLeft);
 	DOREPLIFETIME(AInteractDoor, bOpened);
 }
 

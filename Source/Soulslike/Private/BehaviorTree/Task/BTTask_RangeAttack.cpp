@@ -28,7 +28,7 @@ EBTNodeResult::Type UBTTask_RangeAttack::ExecuteTask(UBehaviorTreeComponent& Own
 		return EBTNodeResult::Failed;
 	}
 
-	Enemy->StartAttack(EMonsterAttack::MATK_RangeAttack);
+	Enemy->StartAttack(EEnemyAttack::Enemy_RangeAttack);
 	bAttacking = true;
 	Enemy->OnRangeAttackEnd.AddLambda([this]() -> void { bAttacking = false; });
 
@@ -39,7 +39,7 @@ void UBTTask_RangeAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 {
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 
-	if (!bAttacking) // ÁøÇàÀÌ Á¾·áµÇ¸é ´ÙÀ½ BT¸¦ ½ÇÇà½ÃÅ³ ¼ö ÀÖ´Ù.
+	if (!bAttacking) // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ ï¿½ï¿½ï¿½ï¿½ BTï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Å³ ï¿½ï¿½ ï¿½Ö´ï¿½.
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}

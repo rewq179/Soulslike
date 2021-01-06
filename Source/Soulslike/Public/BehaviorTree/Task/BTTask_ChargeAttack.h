@@ -7,7 +7,7 @@
 #include "BTTask_ChargeAttack.generated.h"
 
 /**
- * ¿ëµµ : Á¶Á¾µÇ°í ÀÖ´Â PawnÀÇ ChargingAttack ¾Ö´Ï¸ŞÀÌ¼ÇÀ» Àç»ı/µ¥¹ÌÁö Àû¿ë/»óÅÂÀÌ»ó Àû¿ëÀ» ÅëÇÕÀûÀ¸·Î Ã³¸®ÇÏ±â À§ÇÔ
+ * ìš©ë„ : ì¡°ì¢…ë˜ê³  ìˆëŠ” Pawnì˜ ChargingAttack ì• ë‹ˆë©”ì´ì…˜ì„ ì¬ìƒ/ë°ë¯¸ì§€ ì ìš©/ìƒíƒœì´ìƒ ì ìš©ì„ í†µí•©ì ìœ¼ë¡œ ì²˜ë¦¬í•˜ê¸° ìœ„í•¨
  */
 UCLASS()
 class SOULSLIKE_API UBTTask_ChargeAttack : public UBTTaskNode
@@ -18,10 +18,10 @@ public:
 	UBTTask_ChargeAttack();
 
 protected:
-	EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
-	void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
+	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
 private:
-	/** PawnÀÇ °ø°İ ¾Ö´Ï¸ŞÀÌ¼ÇÀÌ ÁøÇàÁßÀÎ°¡? : True¸é ¾ÆÁ÷ ÁøÇàÁß */
+	/** True : ì•„ì§ ì§„í–‰ì¤‘ */
 	bool bCharging;
 };

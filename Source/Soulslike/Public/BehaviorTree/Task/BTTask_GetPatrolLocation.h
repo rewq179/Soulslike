@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,7 +5,7 @@
 #include "BTTask_GetPatrolLocation.generated.h"
 
 /**
- * ¿ëµµ : PawnÀÇ Á¤Âû ÁöÁ¡(FVector)À» ¾ò±â À§ÇÔ
+ * ìš©ë„ : Pawnì˜ ì •ì°° ì§€ì (FVector)ì„ ì–»ê¸° ìœ„í•¨
  */
 
 UCLASS()
@@ -18,9 +16,9 @@ class SOULSLIKE_API UBTTask_GetPatrolLocation : public UBTTaskNode
 public:
 	UBTTask_GetPatrolLocation();
 
-	/** Origin À§Ä¡¿¡¼­ ¡¾ MaxRange¸¸Å­ÀÇ ¹üÀ§ ÁöÁ¤ */
+	/** Origin ìœ„ì¹˜ì—ì„œ Â± MaxRangeë§Œí¼ì˜ ë²”ìœ„ ì§€ì • */
 	UPROPERTY(EditAnywhere, Category = "Value")
-		float MaxRange;
+	float MaxRange;
 
 protected:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;

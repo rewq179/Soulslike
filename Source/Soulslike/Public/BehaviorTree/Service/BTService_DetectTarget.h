@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,7 +5,7 @@
 #include "BTService_DetectTarget.generated.h"
 
 /**
- * ¿ëµµ : DetectRange ¾È¿¡ ÀÖ´Â ÇÃ·¹ÀÌ¾î¸¦ Âü±â À§ÇÔ.
+ * ìš©ë„ : DetectRange ì•ˆì— ìˆëŠ” í”Œë ˆì´ì–´ë¥¼ ì°¾ê¸° ìœ„í•¨.
  */
 
 UCLASS()

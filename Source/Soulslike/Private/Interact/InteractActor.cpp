@@ -9,14 +9,13 @@
 
 #include "Net/UnrealNetwork.h"
 
-// Sets default values
 AInteractActor::AInteractActor()
 {
 	bReplicates = true;
-	bCanBeDamaged = false;
+	SetCanBeDamaged(false);
 	SetReplicateMovement(true);
 
-	// Mesh :: ¸ğµç ¹İÀÀÀÌ Ingore. ´Ù¸¸ ¿ùµå ½ºÅÂÆ½ÀÌ³ª ´ÙÀÌ³ª¹ÍÀº Block
+	// Mesh :: ëª¨ë“  ë°˜ì‘ì´ Ingore. ë‹¤ë§Œ ì›”ë“œ ìŠ¤íƒœí‹±ì´ë‚˜ ë‹¤ì´ë‚˜ë¯¹ì€ Block
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetGenerateOverlapEvents(false);
 	Mesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
@@ -24,17 +23,16 @@ AInteractActor::AInteractActor()
 	Mesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);
 	RootComponent = Mesh;
 
-	// Sphere :: ¸ğµç ¹İÀÀÀÌ Ignore. ´Ù¸¸ PawnÀº Overlap
+	// Sphere :: ëª¨ë“  ë°˜ì‘ì´ Ignore. ë‹¤ë§Œ Pawnì€ Overlap
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
 	SphereComponent->SetupAttachment(GetRootComponent());
 	SphereComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	SphereComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
-	// ÅÂÅ© ¼³Á¤
+
 	Tags.Add(FName("Interact"));
 }
 
-// Called when the game starts or when spawned
 void AInteractActor::BeginPlay()
 {
 	Super::BeginPlay();
@@ -42,6 +40,9 @@ void AInteractActor::BeginPlay()
 	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &AInteractActor::OnOverlapBegin);
 	SphereComponent->OnComponentEndOverlap.AddDynamic(this, &AInteractActor::OnOverlapEnd);
 }
+
+////////////////////////////////////////////////////////////////////////////
+//// ìƒì†
 
 void AInteractActor::Interact()
 {
@@ -60,7 +61,7 @@ FText AInteractActor::GetInteractMessage()
 
 
 ////////////////////////////////////////////////////////////////////////////
-//// ±âÅ¸
+//// ê¸°íƒ€
 
 void AInteractActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {

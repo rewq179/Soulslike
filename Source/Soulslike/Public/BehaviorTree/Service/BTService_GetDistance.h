@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,7 +5,7 @@
 #include "BTService_GetDistance.generated.h"
 
 /**
- * ¿ëµµ : Á¶Á¾µÇ°í ÀÖ´Â Pawn°ú Å¸°ÙÀÇ °Å¸®Â÷ÀÌ¸¦ ±¸ÇÏ±â À§ÇÔ.
+ * ìš©ë„ : ì¡°ì¢…ë˜ê³  ìˆëŠ” Pawnê³¼ íƒ€ê²Ÿì˜ ê±°ë¦¬ì°¨ì´ë¥¼ êµ¬í•˜ê¸° ìœ„í•¨.
  */
 
 UCLASS()

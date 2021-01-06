@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,9 +5,9 @@
 #include "EnemyAIController.generated.h"
 
 /**
- * Behavior Tree¿¡¼­ »ç¿ëµÉ Blackboard¿Í BehaviorTree¸¦ ¸ğ¾Æ³õ¾Ò´Ù.
- * ¸ó½ºÅÍµéÀº °¢°¢ÀÇ BP_EnemyAI¸¦ ¼ÒÀ¯ÇÑ´Ù.
- */
+* Behavior Treeì—ì„œ ì‚¬ìš©ë  Blackboardì™€ BehaviorTreeë¥¼ ëª¨ì•„ë†“ì•˜ë‹¤.
+* ëª¬ìŠ¤í„°ë“¤ì€ ê°ê°ì˜ BP_EnemyAIë¥¼ ì†Œìœ í•œë‹¤.
+*/
 
 UCLASS()
 class SOULSLIKE_API AEnemyAIController : public AAIController
@@ -29,18 +27,18 @@ public:
 	static const FName FirstAttack;
 
 protected:
-	/** »ç¿ëµÉ ºí·¢º¸µå ¿¡¼Â */
+	/** ì‚¬ìš©ë  ë¸”ë™ë³´ë“œ ì—ì…‹ */
 	UPROPERTY(EditDefaultsOnly, Category = "BT")
 	class UBlackboardData* BBAsset;
 
-	/** »ç¿ëµÉ ÇàµµÆ®¸® ¿¡¼Â */
+	/** ì‚¬ìš©ë  í–‰ë„íŠ¸ë¦¬ ì—ì…‹ */
 	UPROPERTY(EditDefaultsOnly, Category = "BT")
 	class UBehaviorTree* BTAsset;
 
 public:
-	virtual void OnPossess(APawn* InPawn) override; // 4.22ºÎÅÍ´Â OnPosses´Ù. Áö±İÀº Possess¸¦ »ç¿ëÇØ¾ßÇÑ´Ù. ¾Æ´Ï¸é GetPawn()À¸·Î PawnÀ» ¾òÀ» ¼ö ¾øÀ½.
+	virtual void OnPossess(APawn* InPawn) override; 
 
-	void StartBehaviorTree();
+	void StartBehaviorTree() const;
 
-	void StopBehaviorTree();
+	void StopBehaviorTree() const;
 };

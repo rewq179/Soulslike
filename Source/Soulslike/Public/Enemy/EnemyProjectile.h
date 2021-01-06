@@ -28,39 +28,37 @@ public:
 	// Sets default values for this actor's properties
 	AEnemyProjectile();
 
-	/** ¹ß»çÃ¼ÀÇ Å©±â */
+	/** ë°œì‚¬ì²´ì˜ í¬ê¸° */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components)
 	USphereComponent* SphereComponent;
 
-	/** ¹ß»çÃ¼°¡ ³¯¶ó°¡°í ÀÖ´Â µ¿¾È Àç»ıÇÒ ÆÄÆ¼Å¬ */
+	/** ë°œì‚¬ì²´ê°€ ë‚ ë¼ê°€ê³  ìˆëŠ” ë™ì•ˆ ì¬ìƒí•  íŒŒí‹°í´ */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Particle)
 	UParticleSystemComponent* Particle;
 
-	/** ¹ß»çÃ¼°¡ ´ë»óÀ» Åë°íÇÒ ¶§ º¸¿©ÁÙ ÆÄÆ¼Å¬ */
+	/** ë°œì‚¬ì²´ê°€ ëŒ€ìƒì„ í†µê³ í•  ë•Œ ë³´ì—¬ì¤„ íŒŒí‹°í´ */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Particle)
 	UParticleSystem* HitParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile")
 	TSubclassOf<UDamageType> DamageType;
 
-	/** ¹ß»çÃ¼°¡ ´ë»ó¿¡°Ô °¡ÇÒ µ¥¹ÌÁö */
+	/** ë°œì‚¬ì²´ê°€ ëŒ€ìƒì—ê²Œ ê°€í•  ë°ë¯¸ì§€ */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile")
 	float Damage;
 
-	/** True : ´ë»óÀ» ¸ÂÃã, False : ¸ø¸ÂÃã */
+	/** True : ëŒ€ìƒì„ ë§ì¶¤, False : ëª»ë§ì¶¤ */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Projectile")
 	bool bHit;
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:	
-
 	UFUNCTION()
 	void OnActorDestroyed(AActor* DestroyedActor);
 
-	/** ¹ß»çÃ¼°¡ ´ë»óÀ» ¸ÂÃß¸é ½ÇÇàÇÑ´Ù. */
+	/** ë°œì‚¬ì²´ê°€ ëŒ€ìƒì„ ë§ì¶”ë©´ ì‹¤í–‰í•œë‹¤. */
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayParticle();
 

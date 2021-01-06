@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,8 +5,8 @@
 #include "BTService_GetPatternNumber.generated.h"
 
 /**
- * ¿ëµµ : ÇÏÀ§ BT¸¦ È®·ü¿¡ µû¶ó ½ÇÇà½ÃÅ°±â À§ÇÔ.
- * ¹æ¹ı : 0~99Áß ÇÑ°³ÀÇ ¼ıÀÚ¸¦ °í¸£°í, Percents¿¡ Æ÷ÇÔµÇ´Â Index¸¦ ÅëÇØ ÇØ´ç BT¸¦ ½ÇÇà½ÃÅ²´Ù.
+* ìš©ë„ : í•˜ìœ„ BTë¥¼ í™•ë¥ ì— ë”°ë¼ ì‹¤í–‰ì‹œí‚¤ê¸° ìœ„í•¨.
+* ë°©ë²• : 0~99ì¤‘ í•œê°œì˜ ìˆ«ìë¥¼ ê³ ë¥´ê³ , Percentsì— í¬í•¨ë˜ëŠ” Indexë¥¼ í†µí•´ í•´ë‹¹ BTë¥¼ ì‹¤í–‰ì‹œí‚¨ë‹¤.
  */
 
 UCLASS()
@@ -19,7 +17,7 @@ class SOULSLIKE_API UBTService_GetPatternNumber : public UBTService
 public:
 	UBTService_GetPatternNumber();
 
-	/** ÇÏÀ§ BTÀÇ ¹ß»ıÈ®·üÀ» ÀÇ¹ÌÇÏ¸ç, ÃÑÇÕÀº 100ÀÌ¿©¾ßÇÑ´Ù. */
+	/** ï¿½ï¿½ï¿½ï¿½ BTï¿½ï¿½ ï¿½ß»ï¿½È®ï¿½ï¿½ï¿½ï¿½ ï¿½Ç¹ï¿½ï¿½Ï¸ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 100ï¿½Ì¿ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½. */
 	UPROPERTY(EditAnywhere, Category = "Value")
 	TArray<int32> Percents;
 

@@ -12,10 +12,11 @@ class ASoulPlayerController;
 class UTargetComponent;
 class UStatComponent;
 class UInteractComponent;
+class UInventoryComponent;
 class AWeapon;
 class AEnemy;
-class USpringArmComponent;
 class UCameraComponent;
+class USpringArmComponent;
 
 class UAnimMontage;
 
@@ -24,7 +25,6 @@ class ASoulCharacter : public ACharacter
 {
 	GENERATED_BODY()
 	
-	/** Ä¿½ºÅÒ ÇÃ·¹ÀÌ¾î ÄÁÆ®·Ñ·¯ */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Class, meta = (AllowPrivateAccess = "true"))
 	ASoulPlayerController* SoulPC;
 
@@ -34,6 +34,9 @@ class ASoulCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
 
+	////////////////////////////////////////////////////////////////////////////
+	//// ëª½íƒ€ì£¼
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Montage, meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* RollMontage;
 
@@ -55,64 +58,89 @@ class ASoulCharacter : public ACharacter
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Montage, meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* KnockBackMontage;
 
-	/** ºí·°ÇÒ ¶§ º¸¿©ÁÙ ÆÄÆ¼Å¬ */
+	////////////////////////////////////////////////////////////////////////////
+	//// íŒŒí‹°í´
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Particle, meta = (AllowPrivateAccess = "true"))
 	UParticleSystem* BlockParticle;
 
-	/** ¼Ò¿ïÀ» »ı¼ºÇÒ ¶§ º¸¿©ÁÙ ÆÄÆ¼Å¬ */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Particle, meta = (AllowPrivateAccess = "true"))
 	UParticleSystem* SoulParticle;
 
+	////////////////////////////////////////////////////////////////////////////
+	//// íŒŒí‹°í´
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Sound, meta = (AllowPrivateAccess = "true"))
 	USoundBase* HitSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Sound, meta = (AllowPrivateAccess = "true"))
 	USoundBase* BlockSound;
 
-	float MoveSpeed;
-	float SprintSpeed;
 	float BaseTurnRate;
 	float BaseLookUpRate;
 
+protected:
+	/** True : ì´ë™ê°€ëŠ¥, False : ì´ë™ ë¶ˆê°€ëŠ¥ */
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = Status)
+	bool bMoveable;
+
+	/** True : ìºë¦­í„° ë° ì¹´ë©”ë¼ ì´ë™ ë¶ˆê°€ëŠ¥, False : ê°€ëŠ¥*/
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = Status)
+	bool bPlayingScene;
+
+	/** í”Œë ˆì´ì–´ì˜ ì´ë™ì†ë„ */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Status)
+	float MoveSpeed;
+
+	/** í”Œë ˆì´ì–´ì˜ ë‹¬ë¦¬ê¸° ì†ë„ */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Status)
+	float SprintSpeed;
+
 public:
-	/** Constructor */
 	ASoulCharacter();
 
 	UTargetComponent* TargetComponent;
 	UStatComponent* StatComponent;
 	UInteractComponent* InteractComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components)
+	UInventoryComponent* InventoryComponent;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	TSubclassOf<UDamageType> DamageType;
 
 protected:
-	virtual void BeginPlay() override;
-
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void PossessedBy(AController* NewController) override;
 
-	/** ÁÂÃø ½ÃÇÁÆ®Å° */
+	/** Left Shift ì…ë ¥ */
 	void StartSprint();
 	void EndSprint();
 
-	/** ½ºÆäÀÌ½º¹Ù */
+	/** Space Bar ì…ë ¥ */
 	void StartRoll();
 	UFUNCTION(BlueprintCallable)
 	void EndRoll();
 
+	/** Left or Right ë§ˆìš°ìŠ¤ ì…ë ¥ */
 	void StartAttack(EPlayerAttack Attack);
-
-	/** VÅ° */
+	
+	UFUNCTION(BlueprintCallable)
+    void EndAttack();
+	
+	/** Ví‚¤ ì…ë ¥ */
 	void StartBlock();
 	UFUNCTION(BlueprintCallable)
 	void EndBlock();
 
-	/** TÅ° ÀÔ·Â */
+	/** Tab í‚¤ ì…ë ¥ */
 	void StartTarget();
 	
 	UFUNCTION(BlueprintCallable)
 	void StartDead();
+
+	void UsePotion();
+	void ShowInventory();
 	
 	void MoveForward(float Value);
 	void MoveRight(float Value);
@@ -120,26 +148,16 @@ protected:
 	virtual void AddControllerPitchInput(float Val) override;
 
 protected:
-	/** True : ÀÌµ¿°¡´É, False : ÀÌµ¿ ºÒ°¡´É */
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = Status)
-	bool bMoveable;
-
-	/** True : Ä³¸¯ÅÍ ¹× Ä«¸Ş¶ó ÀÌµ¿ ºÒ°¡´É, False : °¡´É*/
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = Status)
-	bool bPlayingScene;
-
-	/** True : Àü·ÂÁúÁÖ(ÀÌµ¿¼Óµµ 800), False : ÀÏ¹İ(ÀÌµ¿™µµ 500) */
+	////////////////////////////////////////////////////////////////////////////
+	//// ìŠ¤í”„ë¦°íŠ¸
+	
+	/** True : ì „ë ¥ì§ˆì£¼(ì´ë™ì†ë„ 800), False : ì¼ë°˜(ì´ë™ì†ë„ 500) */
 	UPROPERTY(ReplicatedUsing = OnRep_Sprinting, VisibleAnywhere, BlueprintReadOnly, Category = Status)
 	bool bSprinting;
 
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerSprint(bool bSprint);
-
-	/** RefNotify */
 	UFUNCTION()
 	void OnRep_Sprinting();
 
-	/** BP¿¡¼­ ABP_SoulCharacterÀÇ bool°ª ¼³Á¤ */
 	UFUNCTION(BlueprintImplementableEvent, Category = Status)
 	void OnUpdateSprinting();
 
@@ -147,25 +165,27 @@ public:
 	void Sprint(bool bSprint);
 	void SetSprinting(bool bSprint);
 	
-	void SetMaxWalkSpeed(bool bSprint);
-	
+	UFUNCTION(Server, Reliable, WithValidation)
+    void ServerSprint(bool bSprint);
+		
+	void SetMaxWalkSpeed(bool bSprint) const;
 
 protected:
+	////////////////////////////////////////////////////////////////////////////
+	//// êµ¬ë¥´ê¸°
+	
+	/** True : êµ¬ë¥´ê¸°ì¤‘, False : ì¼ë°˜  */
+	UPROPERTY(ReplicatedUsing = OnRep_Rolling, VisibleAnywhere, BlueprintReadOnly, Category = Status)
+	bool bRolling;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Cost)
 	float RollCost;
 
-	/** True : ±¸¸£±âÁß, False : ÀÏ¹İ  */
-	UPROPERTY(ReplicatedUsing = OnRep_Rolling, VisibleAnywhere, BlueprintReadOnly, Category = Status)
-	bool bRolling;
-
-	/** RefNotify */
 	UFUNCTION()
 	void OnRep_Rolling();
 
-	/** BP¿¡¼­ ABP_SoulCharacterÀÇ bool°ª ¼³Á¤ */
 	UFUNCTION(BlueprintImplementableEvent, Category = Status)
 	void OnUpdateRolling(bool bRoll);
-
 
 public:
 	void SetRolling(bool bRoll);
@@ -177,27 +197,12 @@ public:
 	void MulticastRoll();
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat)
-	EPlayerAttack PlayerAttack;
-
-	/** True : °ø°İÁß, False : ÀÏ¹İ */
+	////////////////////////////////////////////////////////////////////////////
+	//// ê³µê²©
+	
+	/** True : ê³µê²©ì¤‘, False : ì¼ë°˜ */
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Status)
 	bool bAttacking;
-
-public:
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerAttack();
-	
-	UFUNCTION(BlueprintCallable)
-	void EndAttack();
-
-protected:
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerInteractActor();
-
-protected:
-		UPROPERTY(Replicated)
-	FEquipInfo EquipInfo;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Cost)
 	float LightAttackCost;
@@ -210,62 +215,82 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat)
 	float HeavyAttackRadius;
+	
+public:
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerAttack(EPlayerAttack Attack);
 
 	UFUNCTION(BlueprintCallable)
-	void LightAttack();
+    void LightAttack();
 
 	UFUNCTION(BlueprintCallable)
-	void HeavyAttack();
+    void HeavyAttack();
 	
 	void ApplyDamageToActorInOverlapSphere(TArray<AActor*>& OverlappedActors);
 	
+	////////////////////////////////////////////////////////////////////////////
+	//// ìƒí˜¸ ì‘ìš©
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerInteractActor();
+
 protected:
-	/** True : Á×À½, False : »ì¾ÆÀÖÀ½ */
+	UPROPERTY(Replicated)
+	FEquipInfo EquipInfo;
+
+	////////////////////////////////////////////////////////////////////////////
+	//// ì‚¬ë§
+	
+	/** True : ì£½ìŒ, False : ì‚´ì•„ìˆìŒ */
 	UPROPERTY(ReplicatedUsing = OnRep_Dead, BlueprintReadOnly, Category = Stat)
 	bool bDead;
 
 	UFUNCTION()
+    void OnRep_Dead();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = Stat)
+    void OnUpdateDeath();
+	
+
+	UFUNCTION()
 	void OnHpChanged(float Damage, const UDamageType * Type, AController * InstigatedBy, AActor * DamageCauser);
 
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerDeath();
-	
-	/** RefNotify */
-	UFUNCTION()
-	void OnRep_Dead();
-
 public:
-	/** BP¿¡¼­ ABP_SoulCharacterÀÇ bool°ª ¼³Á¤ */
-	UFUNCTION(BlueprintImplementableEvent, Category = Stat)
-	void OnUpdateDeath();
+	UFUNCTION(Server, Reliable, WithValidation)
+    void ServerDeath();
+
+	void HitReaction(float StunTime, FVector KnockBack, bool bKnockDown);
 	
 protected:
+	////////////////////////////////////////////////////////////////////////////
+	//// ë¸”ëŸ­
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Cost)
 	float BlockCost;
 
-	/** True : ºí·°Áß, False : ÀÏ¹İ  */
+	/** True : ë¸”ëŸ­ì¤‘, False : ì¼ë°˜  */
 	UPROPERTY(ReplicatedUsing = OnRep_Blocking, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
 	bool bBlocking;
 
-	/** RefNotify */
 	UFUNCTION()
 	void OnRep_Blocking();
 
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerBlock(bool bBlock);
+	UFUNCTION(BlueprintImplementableEvent, Category = Stat)
+    void OnUpdateBlock();
 
 public:
-	/** °ø°İ¹æÇâ°ú ºí·°¹æÇâÀÌ ³Ê¹« Æ²¾îÁ®ÀÖÀ¸¸é ¾ÈµÊ. */
+	UFUNCTION(Server, Reliable, WithValidation)
+    void ServerBlock(bool bBlock);
+	
+	/** ê³µê²©ë°©í–¥ê³¼ ë¸”ëŸ­ë°©í–¥ì´ ë„ˆë¬´ í‹€ì–´ì ¸ìˆìœ¼ë©´ ì•ˆë¨. */
 	UFUNCTION()
-	bool IsBlocked(AActor* Enemy);
+	bool IsBlocked(AActor* Enemy) const;
 
 	void PlayBlockEffect();
 
-	/** BP¿¡¼­ ABP_SoulCharacterÀÇ bool°ª ¼³Á¤ */
-	UFUNCTION(BlueprintImplementableEvent, Category = Stat)
-	void OnUpdateBlock();
-
 protected:
+	////////////////////////////////////////////////////////////////////////////
+	//// ë³´ìŠ¤ ëª¬ìŠ¤í„°
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
 	AEnemy* BossEnemy;
 
@@ -276,37 +301,38 @@ public:
 	void OnEnemyHpChanged(float CurHp, float MaxHp);
 
 protected:
+	////////////////////////////////////////////////////////////////////////////
+	//// íƒ€ê²ŸíŒ…
+	
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
 	AActor* Target;
 
-	/** True : Å¸°ÔÆÃÁß, False : ÀÏ¹İ  */
+	/** True : íƒ€ê²ŒíŒ…ì¤‘, False : ì¼ë°˜  */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat)
 	bool bTargeting;
 
-	/** True : Ä«¸Ş¶ó Àá±İ, False, Ä«¸Ş¶ó Àá±İ ÇØÁ¦ */
+	/** True : ì¹´ë©”ë¼ ì ê¸ˆ, False, ì¹´ë©”ë¼ ì ê¸ˆ í•´ì œ */
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
 	bool bLockCamera;
 
 public:
 	void SetLockCamera(AActor* InTarget, bool bLock);
 
-public:
-	/** Soul »ı¼º */
 	void AddSoulsValue(int32 Value);
 
-	void HitReaction(float StunTime, FVector KnockBack, bool bKnockDown);
-
-public:
+	// ê²Œí„°
 	FORCEINLINE bool IsDead() const { return bDead; }
 	FORCEINLINE bool IsRoll() const { return bRolling; }
 	FORCEINLINE bool IsSprinting() const { return bSprinting; }
-	FORCEINLINE void SetMoveable(bool bMove) { bMoveable = bMove; }
-	FORCEINLINE void SetPlayingScene(bool bScene) { bPlayingScene = bScene; }
-	FORCEINLINE FEquipInfo GetEquipInfo() { return EquipInfo; }
-
+	FORCEINLINE FEquipInfo GetEquipInfo() const { return EquipInfo; }
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	
+	// ì„¸í„°
+	FORCEINLINE void SetMoveable(const bool bMove) { bMoveable = bMove; }
+	FORCEINLINE void SetPlayingScene(const bool bScene) { bPlayingScene = bScene; }
 
+	// ë©€í‹° ìºìŠ¤íŠ¸
 	UFUNCTION(NetMulticast, Reliable, WithValidation)
 	void MulticastPlayMontage(UAnimMontage* AnimMontage, float PlayRate, FName AnimName = NAME_None);
 
@@ -316,6 +342,5 @@ public:
 	UFUNCTION(NetMulticast, Reliable, WithValidation)
 	void MulticastPlayParticle(UParticleSystem* Particle);
 
-	/** ³×Æ®¿öÅ© ¼³Á¤ */
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

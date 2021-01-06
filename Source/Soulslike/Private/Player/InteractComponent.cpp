@@ -4,8 +4,7 @@
 #include "Player/InteractComponent.h"
 #include "Player/SoulCharacter.h"
 #include "Player/SoulPlayerController.h"
-
-#include "System/SoulFunctionLibrary.h"
+#include "Player/InventoryComponent.h"
 
 #include "Interact/InteractActor.h"
 #include "Interact/InteractDoor.h"
@@ -13,12 +12,10 @@
 
 #include "Engine/World.h"
 #include "Camera/CameraComponent.h"
-#include "Kismet/KismetMathLibrary.h"
-#include "GameFramework/Character.h"
-#include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
 
 #include "Net/UnrealNetwork.h"
+#include "Player/InventoryComponent.h"
 
 UInteractComponent::UInteractComponent()
 {
@@ -37,7 +34,7 @@ void UInteractComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 
 
 ////////////////////////////////////////////////////////////////////////////
-////  ÃÊ±âÈ­
+////  ì´ˆê¸°í™”
 
 void UInteractComponent::Initialize()
 {
@@ -53,7 +50,7 @@ void UInteractComponent::Initialize()
 }
 
 ////////////////////////////////////////////////////////////////////////////
-////  ·çÆÃ
+////  ë£¨íŒ…
 
 void UInteractComponent::InteractActor()
 {
@@ -72,21 +69,14 @@ void UInteractComponent::InteractActor()
 
 void UInteractComponent::SetPickUpActor(APickUpActor* PickUpActor)
 {
-	if (OwnerController == nullptr)
-	{
-		return;
-	}
-
 	if (PickUpActor == nullptr)
 	{
 		CurrentPickUpActor = nullptr;
-		OwnerController->ClientShowPickUpName(FText::GetEmpty());
 
 		return;
 	}
 
 	CurrentPickUpActor = PickUpActor;
-	OwnerController->ClientShowPickUpName(CurrentPickUpActor->PickUpInfo.Name);
 }
 
 void UInteractComponent::SetInteractDoor(AInteractDoor* DoorActor)
@@ -103,32 +93,11 @@ void UInteractComponent::SetInteractDoor(AInteractDoor* DoorActor)
 
 void UInteractComponent::HandlePickUp()
 {
-	FEquipInfo EquipInfo = OwnerCharacter->GetEquipInfo();
-
-	switch (CurrentPickUpActor->GetPickUpType())
+	if(OwnerCharacter && OwnerCharacter->InventoryComponent)
 	{
-	case EPickUpType::PICK_Weapon:
-		if (!EquipInfo.bWeaponEquiped)
-		{
-			EquipWeapon(CurrentPickUpActor);
-		}
-		break;
-
-	case EPickUpType::PICK_Souls:
-		if (!EquipInfo.bSoulsEquiped)
-		{
-		}
-		break;
-
-	case EPickUpType::PICK_Armor:
-		if (!EquipInfo.bArmorEquiped)
-		{
-		}
-		break;
-
-	default:
-		break;
+		OwnerCharacter->InventoryComponent->AddItem(CurrentPickUpActor->GetItemTable());
 	}
+	
 }
 
 void UInteractComponent::OnRep_Weapon()
@@ -139,13 +108,13 @@ void UInteractComponent::OnRep_Weapon()
 void UInteractComponent::EquipWeapon(AActor* Item)
 {
 	CurrentWeapon = Item;
-	//EquipInfo.bWeaponEquiped = true;
+	//EquipInfo.bEquipWeapon = true;
 
 	OnRep_Weapon();
 }
 
 ////////////////////////////////////////////////////////////////////////////
-////  »óÈ£ÀÛ¿ë ¹°Ã¼ Ã£±â
+////  ìƒí˜¸ì‘ìš© ë¬¼ì²´ ì°¾ê¸°
 
 void UInteractComponent::CheckInteractActor()
 {
@@ -156,7 +125,7 @@ void UInteractComponent::CheckInteractActor()
 		return;
 	}
 
-	if (CurActor != LastActor) // ±âÁ¸²« Off
+	if (CurActor != LastActor) // ê¸°ì¡´ê»€ Off
 	{
 		bActorChanged = true;
 
@@ -169,7 +138,7 @@ void UInteractComponent::CheckInteractActor()
 		}
 	}
 
-	if (CurActor) // ÇöÀç´Â On
+	if (CurActor) // í˜„ì¬ëŠ” On
 	{
 		LastActor = CurActor;
 

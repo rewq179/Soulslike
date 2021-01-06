@@ -15,7 +15,6 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/ArrowComponent.h"
-#include "Components/WidgetComponent.h"
 
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
@@ -23,8 +22,6 @@
 #include "TimerManager.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimSequenceBase.h"
-
-#include "UObject/ConstructorHelpers.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Engine/World.h"
@@ -35,14 +32,14 @@ AEnemy::AEnemy()
 	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
 	WeaponMesh->SetupAttachment(GetMesh());
 
-	// Light Collision :: Ã³À½¿£ ¹İÀÀX, ¸ğµç ¹İÀÀÀº Ignore, Pawn¸¸ ¿À¹ö·¦
+	// Light Collision :: ì²˜ìŒì—” ë°˜ì‘X, ëª¨ë“  ë°˜ì‘ì€ Ignore, Pawnë§Œ ì˜¤ë²„ë©
 	LightCollision = CreateDefaultSubobject<USphereComponent>(TEXT("Light"));
 	LightCollision->SetupAttachment(GetMesh());
 	LightCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	LightCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	LightCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
-	// ProjectilePoint :: ¿ø°Å¸® °ø°İÀÌ »ı¼ºµÇ´Â À§Ä¡
+	// ProjectilePoint :: ì›ê±°ë¦¬ ê³µê²©ì´ ìƒì„±ë˜ëŠ” ìœ„ì¹˜
 	ProjectilePoint = CreateDefaultSubobject<UArrowComponent>(TEXT("LaunchPoint"));
 	ProjectilePoint->SetupAttachment(GetMesh());
 
@@ -61,17 +58,17 @@ AEnemy::AEnemy()
 	GetCharacterMovement()->bUseRVOAvoidance = true;
 	GetCharacterMovement()->AvoidanceConsiderationRadius = 200.f;
 
-	// Capusle :: Ä«¸Ş¶ó Ignore
+	// Capusle :: ì¹´ë©”ë¼ Ignore
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 
-	// Mesh :: ¸ğµç ¹İÀÀÀÌ Ingore. 
+	// Mesh :: ëª¨ë“  ë°˜ì‘ì´ Ingore. 
 	GetMesh()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 
-	// WeaponMesh :: ¸ğµç ¹İÀÀÀÌ Ingore. 
+	// WeaponMesh :: ëª¨ë“  ë°˜ì‘ì´ Ingore. 
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	
-	// Å¸°ÙÆÃ ¤· Ç¥½Ã
+	// íƒ€ê²ŸíŒ… ã…‡ í‘œì‹œ
 	/*WidgetComponent = CreateDefaultSubobject<UWidgetComponent>("WidgetComponent");
 	static ConstructorHelpers::FClassFinder<UUserWidget> WidgetObj(TEXT("Game/Blueprints/Widget/WB_Targeting"));
 	if (WidgetObj.Succeeded())
@@ -79,7 +76,7 @@ AEnemy::AEnemy()
 		WidgetComponent->SetWidgetClass(WidgetObj.Class);
 	}*/
 
-	// ÅÂ±× ¼³Á¤
+	// íƒœê·¸ ì„¤ì •
 	Tags.Add(FName("Enemy"));
 
 	SoulsValue = 1;
@@ -90,7 +87,7 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SetMovementState(EMovementState::STATE_Walk);
+	SetMovementState(EMovementState::State_Walk);
 
 	//WidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 100.0f));
 	//WidgetComponent->SetVisibility(false);
@@ -113,15 +110,15 @@ void AEnemy::SetMovementState(EMovementState State)
 
 	switch (MovementState)
 	{
-	case EMovementState::STATE_Idle:
+	case EMovementState::State_Idle:
 		GetCharacterMovement()->MaxWalkSpeed = 0.f;
 		break;
 
-	case EMovementState::STATE_Walk:
+	case EMovementState::State_Walk:
 		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 		break;
 
-	case EMovementState::STATE_Run:
+	case EMovementState::State_Run:
 		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed * SpeedMultiplier;
 		break;
 
@@ -134,7 +131,7 @@ void AEnemy::SetTarget(AActor * InTarget)
 {
 	Target = InTarget; 
 
-	SetMovementState(EMovementState::STATE_Run);
+	SetMovementState(EMovementState::State_Run);
 }
 
 void AEnemy::ClearTarget()
@@ -142,7 +139,7 @@ void AEnemy::ClearTarget()
 	Target = nullptr;
 
 	SetActorEnableCollision(false);
-	SetMovementState(EMovementState::STATE_Walk);
+	SetMovementState(EMovementState::State_Walk);
 }
 
 void AEnemy::SetLightCollision(bool bActive)
@@ -159,7 +156,7 @@ void AEnemy::SetLightCollision(bool bActive)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// ÀÎÅÍÆäÀÌ½º
+//// ì¸í„°í˜ì´ìŠ¤
 
 
 void AEnemy::LightAttackAnimStart_Implementation(bool bStart)
@@ -185,7 +182,7 @@ void AEnemy::RangeAttackAnimStart_Implementation()
 
 void AEnemy::HandAttackAnimStart_Implementation(float Radius, float Height, bool bKnockDown)
 {
-	// ³ªÁß¿¡ HandAttack() ÇÔ¼ö ¸¸µé¸é ¼öÁ¤
+	// ë‚˜ì¤‘ì— HandAttack() í•¨ìˆ˜ ë§Œë“¤ë©´ ìˆ˜ì •
 
 	HeavyAttack(Radius, Height, bKnockDown);
 }
@@ -201,9 +198,9 @@ void AEnemy::DeadAnimStart_Implementation()
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// Çàµ¿ Æ®¸®
+//// í–‰ë™ íŠ¸ë¦¬
 
-void AEnemy::StartAggro() // ½ÃÀÛ ¾Ö´Ï¸ŞÀÌ¼Ç, ÇÃ·¹ÀÌ¾î ¸ØÃã, ¹® ´İÈû
+void AEnemy::StartAggro() // ì‹œì‘ ì• ë‹ˆë©”ì´ì…˜, í”Œë ˆì´ì–´ ë©ˆì¶¤, ë¬¸ ë‹«í˜
 {
 	MulticastPlayMontage(AggroMontage, 1.f);
 
@@ -229,7 +226,7 @@ void AEnemy::StartAggro() // ½ÃÀÛ ¾Ö´Ï¸ŞÀÌ¼Ç, ÇÃ·¹ÀÌ¾î ¸ØÃã, ¹® ´İÈû
 	}
 }
 
-void AEnemy::StartAttack(EMonsterAttack Attack, int32 AttackNumber, bool bFirstAttack)
+void AEnemy::StartAttack(EEnemyAttack Attack, int32 AttackNumber, bool bFirstAttack)
 {
 	if (Target == nullptr)
 	{
@@ -240,29 +237,29 @@ void AEnemy::StartAttack(EMonsterAttack Attack, int32 AttackNumber, bool bFirstA
 
 	SetMonsterAttack(Attack);
 	int32 MontageNumber;
-	float DelayTime;
+	float DelayTime = 0.f;
 
-	switch (MonsterAttack)
+	switch (EnemyAttack)
 	{
-	case EMonsterAttack::MATK_LightAttack:
+	case EEnemyAttack::Enemy_LightAttack:
 		MontageNumber = FMath::RandRange(0, LightAttackMontages.Num() - 1);
 		MulticastPlayMontage(LightAttackMontages[MontageNumber], 1.f);
 		DelayTime = LightAttackMontages[MontageNumber]->GetPlayLength() + 0.2f;
 		break;
 
-	case EMonsterAttack::MATK_HeavyAttack:
+	case EEnemyAttack::Enemy_HeavyAttack:
 		MontageNumber = FMath::RandRange(0, HeavyAttackMontages.Num() - 1);
 		MulticastPlayMontage(HeavyAttackMontages[MontageNumber], 1.f);
 		DelayTime = HeavyAttackMontages[MontageNumber]->GetPlayLength() + 0.2f;
 		break;
 
-	case EMonsterAttack::MATK_ChargeAttack:
+	case EEnemyAttack::Enemy_ChargeAttack:
 		MontageNumber = FMath::RandRange(0, ChargeAttackMontages.Num() - 1);
 		MulticastPlayMontage(ChargeAttackMontages[MontageNumber], 1.f);
 		DelayTime = ChargeAttackMontages[MontageNumber]->GetPlayLength() + 0.2f;
 		break;
 
-	case EMonsterAttack::MATK_RangeAttack:
+	case EEnemyAttack::Enemy_RangeAttack:
 		bRangeDelay = true;
 		MontageNumber = FMath::RandRange(0, RangeAttackMontages.Num() - 1);
 		MulticastPlayMontage(RangeAttackMontages[MontageNumber], 1.f);
@@ -278,7 +275,7 @@ void AEnemy::StartAttack(EMonsterAttack Attack, int32 AttackNumber, bool bFirstA
 		MulticastPlayMontage(ChargeAttackMontages[AttackNumber], 1.f);
 		DelayTime = ChargeAttackMontages[AttackNumber]->GetPlayLength() + 0.2f;
 
-		GetWorld()->GetTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([&]() // °ø°İ ¸ğ¼Ç ³¡³ª¸é BT¿¡°Ô Á¤º¸Àü´ŞÇÔ
+		GetWorld()->GetTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([&]() // ê³µê²© ëª¨ì…˜ ëë‚˜ë©´ BTì—ê²Œ ì •ë³´ì „ë‹¬í•¨
 		{
 			OnFirstAttackEnd.Broadcast();
 
@@ -287,29 +284,29 @@ void AEnemy::StartAttack(EMonsterAttack Attack, int32 AttackNumber, bool bFirstA
 
 	else
 	{
-		BrocastAttackEnd(DelayTime);
+		AttackEnd(DelayTime);
 	}
 }
 
-void AEnemy::BrocastAttackEnd(float DelayTime)
+void AEnemy::AttackEnd(float DelayTime)
 {
-	GetWorld()->GetTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([&]() // °ø°İ ¸ğ¼Ç ³¡³ª¸é BT¿¡°Ô Á¤º¸Àü´ŞÇÔ
+	GetWorld()->GetTimerManager().SetTimer(AttackTimer, FTimerDelegate::CreateLambda([&]() // ê³µê²© ëª¨ì…˜ ëë‚˜ë©´ BTì—ê²Œ ì •ë³´ì „ë‹¬í•¨
 	{
-		switch (MonsterAttack)
+		switch (EnemyAttack)
 		{
-		case EMonsterAttack::MATK_LightAttack:
+		case EEnemyAttack::Enemy_LightAttack:
 			OnLightAttackEnd.Broadcast();
 			break;
 
-		case EMonsterAttack::MATK_HeavyAttack:
+		case EEnemyAttack::Enemy_HeavyAttack:
 			OnHeavyAttackEnd.Broadcast();
 			break;
 
-		case EMonsterAttack::MATK_ChargeAttack:
+		case EEnemyAttack::Enemy_ChargeAttack:
 			OnChargeAttackEnd.Broadcast();
 			break;
 
-		case EMonsterAttack::MATK_RangeAttack:
+		case EEnemyAttack::Enemy_RangeAttack:
 			OnRangeAttackEnd.Broadcast();
 
 			GetWorld()->GetTimerManager().SetTimer(RangeDelayTimer, FTimerDelegate::CreateLambda([&]()
@@ -405,7 +402,7 @@ void AEnemy::PlayEffectAtTransform(UParticleSystem* InParticle, USoundBase* InSo
 
 
 ////////////////////////////////////////////////////////////////////////////
-//// ½ºÅİ º¯È­
+//// ìŠ¤í…Ÿ ë³€í™”
 
 void AEnemy::HandleTakeAnyDamage(AActor * DamagedActor, float Damage, const UDamageType * Type, AController * InstigatedBy, AActor * DamageCauser)
 {
@@ -461,14 +458,14 @@ void AEnemy::ServerDeath_Implementation(AActor* DamageCauser)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// ±âÅ¸
+//// ê¸°íƒ€
 
 bool AEnemy::MulticastPlayMontage_Validate(UAnimMontage* AnimMontage, float PlayRate, FName AnimName)
 {
 	return true;
 }
 
-void AEnemy::MulticastPlayMontage_Implementation(UAnimMontage* AnimMontage, float PlayRate, FName AnimName = NAME_None)
+void AEnemy::MulticastPlayMontage_Implementation(UAnimMontage* AnimMontage, float PlayRate, FName AnimName)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -478,6 +475,16 @@ void AEnemy::MulticastPlayMontage_Implementation(UAnimMontage* AnimMontage, floa
 	}
 }
 
+
+void AEnemy::ToggleTargetWidget(ASoulCharacter* InCharacter, bool bHide)
+{
+	ShowTargetWidget(InCharacter, bHide);
+}
+
+void AEnemy::ShowTargetWidget_Implementation(ASoulCharacter* InCharacter, bool bHide)
+{
+	
+}
 
 void AEnemy::OnOverlapBegin(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {

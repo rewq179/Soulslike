@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -15,11 +13,11 @@ class AEnemyProjectile;
 class UAnimationAsset;
 class ASoulCharacter;
 class USoundCue;
-/**
-* Enemy°¡ º¸À¯ÇÑ µ¥ÀÌÅÍµéÀ» ¹ÙÅÁÀ¸·Î ÀüÅõ ¹× ¾Ö´Ï¸ŞÀÌ¼ÇµéÀ» Àç»ıÇÑ´Ù.
-* AI ºĞ¾ß¸¦ Á¦¿ÜÇÑ ¸ğµç µ¥ÀÌÅÍ, ÇÔ¼ö°¡ ÇØ´ç Å¬·¡½º¿¡ ¼ÓÇÑ´Ù.
-*/
 
+/**
+* Enemyê°€ ë³´ìœ í•œ ë°ì´í„°ë“¤ì„ ë°”íƒ•ìœ¼ë¡œ ì „íˆ¬ ë° ì• ë‹ˆë©”ì´ì…˜ë“¤ì„ ì¬ìƒí•œë‹¤.
+* AI ë¶„ì•¼ë¥¼ ì œì™¸í•œ ëª¨ë“  ë°ì´í„°, í•¨ìˆ˜ê°€ í•´ë‹¹ í´ë˜ìŠ¤ì— ì†í•œë‹¤.
+*/
 
 UCLASS()
 class SOULSLIKE_API AEnemy : public ACharacter, public IEnemyAnimNotifyInterface
@@ -32,16 +30,19 @@ class SOULSLIKE_API AEnemy : public ACharacter, public IEnemyAnimNotifyInterface
 public:
 	// Sets default values for this character's properties
 	AEnemy();
-	
+
+	/**  */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
 	UStaticMeshComponent* WeaponMesh;
-
+	
+	/**  */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
 	USphereComponent* LightCollision;
-
+	
+	/**  */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
 	UArrowComponent* ProjectilePoint;
-
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Montage)
 	UAnimMontage* AggroMontage;
 
@@ -70,30 +71,30 @@ protected:
 	virtual void BeginPlay() override;
 				
 protected:
-	/** ¸ó½ºÅÍÀÇ ±âº» ÀÌµ¿¼Óµµ */
+	/** ëª¬ìŠ¤í„°ì˜ ê¸°ë³¸ ì´ë™ì†ë„ */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement)
 	float WalkSpeed;
 
-	/** ´Ş¸®±â ÀÌµ¿¼Óµµ = WalkSpeed * SpeedMultiplier */
+	/** ë‹¬ë¦¬ê¸° ì´ë™ì†ë„ = WalkSpeed * SpeedMultiplier */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement)
 	float SpeedMultiplier;
 
-	/** Å½Áö °¡´ÉÇÑ °Å¸® */
+	/** íƒì§€ ê°€ëŠ¥í•œ ê±°ë¦¬ */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Target)
 	float DetectDistance;
 
-	/** ±ÙÁ¢ °ø°İÀÌ °¡´ÉÇÑ °Å¸® */
+	/** ê·¼ì ‘ ê³µê²©ì´ ê°€ëŠ¥í•œ ê±°ë¦¬ */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Target)
 	float MeleeDistance;
 
-	/** ¿ø°Å¸® °ø°İÀÌ °¡´ÉÇÑ °Å¸® */
+	/** ì›ê±°ë¦¬ ê³µê²©ì´ ê°€ëŠ¥í•œ ê±°ë¦¬ */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Target)
 	float RangeDistance;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Target)
 	AActor* Target;
 
-	/** ÀûÀÇ »óÅÂ(´ë±â, °È±â, ´Ş¸®±â) */
+	/** ì ì˜ ìƒíƒœ(ëŒ€ê¸°, ê±·ê¸°, ë‹¬ë¦¬ê¸°) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
 	EMovementState MovementState;
 
@@ -142,7 +143,7 @@ protected:
 	bool bBossEnemy;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Status)
-	EMonsterAttack MonsterAttack;
+	EEnemyAttack EnemyAttack;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Status)
 	TArray<float> AttackDamage;
@@ -157,10 +158,10 @@ public:
 	void SetLightCollision(bool bActive);
 
 	UFUNCTION()
-	void StartAttack(EMonsterAttack Attack, int32 AttackNumber = 0, bool bFirstAttack = false);
+	void StartAttack(EEnemyAttack Attack, int32 AttackNumber = 0, bool bFirstAttack = false);
 
 	UFUNCTION()
-	void BrocastAttackEnd(float DelayTime);
+	void AttackEnd(float DelayTime);
 
 	void HeavyAttack(float Radius, float Height, bool bKnockDown);
 
@@ -174,15 +175,12 @@ public:
 
 
 protected:
-	/** ¸ó½ºÅÍÀÇ ÀÌ¸§ */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Status)
 	FText Name;
 
-	/** ¸ó½ºÅÍÀÇ ÇöÀç Ã¼·Â */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Status)
 	float CurHp;
 
-	/** ¸ó½ºÅÍÀÇ ÇöÀç Ã¼·Â */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Status)
 	float MaxHp;
 
@@ -190,11 +188,9 @@ protected:
 	void HandleTakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* Type, class AController* InstigatedBy, AActor* DamageCauser);
 
 protected:
-	/** »ç¸Á½Ã ÇÃ·¹ÀÌ¾î¿¡°Ô ÁÙ XP */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Status)
 	int32 SoulsValue;
 
-	//** True : Á×À½, False : »ì¾ÆÀÖÀ½ */
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Status)
 	bool bDead;
 
@@ -203,27 +199,27 @@ protected:
 
 	void StartDead();
 
-	//** BP¿¡¼­ ABP_SoulCharacterÀÇ bool°ª ¼³Á¤ */
+	/** BPì—ì„œ ABP_SoulCharacterì˜ boolê°’ ì„¤ì • */
 	UFUNCTION(BlueprintImplementableEvent, Category = Status)
 	void OnUpdateDeath();
 
 public:
-	FORCEINLINE FText GetName() { return Name; }
-	FORCEINLINE float GetCurHp() { return CurHp; }
-	FORCEINLINE float GetMaxHp() { return MaxHp; }
-	FORCEINLINE float GetDetectDistance() { return DetectDistance; }
-	FORCEINLINE float GetMeleeDistance() { return MeleeDistance; }
-	FORCEINLINE float GetRangeDistance() { return RangeDistance; }
-	FORCEINLINE float GetDamage() { return AttackDamage[(int)MonsterAttack]; }
-	FORCEINLINE bool IsDead() { return bDead; }
-	FORCEINLINE bool IsBossEnemy() { return bBossEnemy; }
+	FORCEINLINE FText GetEnemyName() const { return Name; }
+	FORCEINLINE float GetCurHp() const { return CurHp; }
+	FORCEINLINE float GetMaxHp() const { return MaxHp; }
+	FORCEINLINE float GetDetectDistance() const { return DetectDistance; }
+	FORCEINLINE float GetMeleeDistance() const { return MeleeDistance; }
+	FORCEINLINE float GetRangeDistance() const { return RangeDistance; }
+	FORCEINLINE float GetDamage() const { return AttackDamage[(int)EnemyAttack]; }
+	FORCEINLINE bool IsDead() const { return bDead; }
+	FORCEINLINE bool IsBossEnemy() const { return bBossEnemy; }
 
-	FORCEINLINE void SetMonsterAttack(EMonsterAttack Attack) { MonsterAttack = Attack; }
+	FORCEINLINE void SetMonsterAttack(EEnemyAttack Attack) { EnemyAttack = Attack; }
 
-	/** EnemyÀÇ Ã¼·ÂÀÌ º¯È­ÇÏ¸é SoulPC¿¡¼­ UMG °ª º¯°æÇØÁÜ */
+	/** Enemyì˜ ì²´ë ¥ì´ ë³€í™”í•˜ë©´ SoulPCì—ì„œ UMG ê°’ ë³€ê²½í•´ì¤Œ */
 	FOnEnemyHpChangedDelegate OnEnemyHpChanged;
 
-	/** Attack ¾Ö´Ï¸ŞÀÌ¼Ç Á¾·á½Ã, BT¿¡°Ô Á¾·áµÇ¾ú´Ù´Â Á¤º¸¸¦ ÁØ´Ù. */
+	/** Attack ì• ë‹ˆë©”ì´ì…˜ ì¢…ë£Œì‹œ, BTì—ê²Œ ì¢…ë£Œë˜ì—ˆë‹¤ëŠ” ì •ë³´ë¥¼ ì¤€ë‹¤. */
 	FOnAggroMoitionEndDelegate OnAggroMoitionEnd;
 	FOnLightAttackEndDelegate OnLightAttackEnd;
 	FOnHeavyAttackEndDelegate OnHeavyAttackEnd;
@@ -231,12 +227,17 @@ public:
 	FOnChargeAttackEndDelegate OnChargeAttackEnd;
 	FOnChargeAttackEndDelegate OnFirstAttackEnd;
 
+	/** True : WB_Targeting Off, False : WB_Targeting On */
+	void ToggleTargetWidget(ASoulCharacter* InCharacter, bool bHide);
+	
+	UFUNCTION(BlueprintNativeEvent)
+	void ShowTargetWidget(ASoulCharacter* InCharacter, bool bHide);
+
 	UFUNCTION(NetMulticast, Reliable, WithValidation)
 	void MulticastPlayMontage(UAnimMontage* AnimMontage, float PlayRate, FName AnimName = NAME_None);
 
 	UFUNCTION()
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-	/** ³×Æ®¿öÅ© ¼³Á¤ */
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

@@ -21,7 +21,7 @@ UStatComponent::UStatComponent()
 	RecoveryRate = 1.5f;
 	DrainRate = -3.2f;
 
-	// ½ºÅÝ ÃÊ±âÈ­
+	// ìŠ¤í…Ÿ ì´ˆê¸°í™”
 	PlayerStat.MaxHp = 500.f;
 	PlayerStat.CurHp = PlayerStat.MaxHp;
 	PlayerStat.MaxStamina = 200.f;
@@ -61,7 +61,7 @@ void UStatComponent::Initialize()
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// Å¸ÀÌ¸Ó °ü·Ã
+//// íƒ€ì´ë¨¸ ê´€ë ¨
 
 void UStatComponent::PlayStaminaTimer(bool bDrain)
 {
@@ -95,7 +95,7 @@ void UStatComponent::DrainStamina()
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// ½ºÅÝ 
+//// ìŠ¤í…Ÿ 
 
 void UStatComponent::HandleTakeAnyDamage(AActor * DamagedActor, float Damage, const UDamageType * Type, AController * InstigatedBy, AActor * DamageCauser)
 {
@@ -104,7 +104,7 @@ void UStatComponent::HandleTakeAnyDamage(AActor * DamagedActor, float Damage, co
 		return;
 	}
 
-	if (OwnerCharacter->IsBlocked(DamageCauser)) // ºí·°¿¡ ¼º°øÇÑ´Ù¸é
+	if (OwnerCharacter->IsBlocked(DamageCauser)) // ë¸”ëŸ­ì— ì„±ê³µí•œë‹¤ë©´
 	{
 		OwnerCharacter->PlayBlockEffect();
 

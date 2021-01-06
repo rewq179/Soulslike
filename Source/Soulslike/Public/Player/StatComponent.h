@@ -19,18 +19,20 @@ class SOULSLIKE_API UStatComponent : public UActorComponent
 	FTimerHandle StaminaRecoveryTimer;
 
 protected:
+	/** íšŒë³µë˜ëŠ” ìŠ¤íƒœë¯¸ë‚˜ ë¹„ìœ¨ */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat)
 	float RecoveryRate;
+
+	/** ê°ì†Œ ë˜ëŠ” ë¹„ìœ¨ */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat)
 	float DrainRate;
 
 public:	
-	// Sets default values for this component's properties
 	UStatComponent();
 
-	/** ¼ÒÀ¯ÁßÀÎ Pawn */
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = Components)
 	ASoulCharacter* OwnerCharacter;
 
-	/** ¼ÒÀ¯ÁßÀÎ PawnÀÇ Ä¿½ºÅÒ Controller  */
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = Components)
 	ASoulPlayerController* OwnerController;
 
@@ -46,10 +48,10 @@ protected:
 public:
 	FOnHpChangedDelegate OnHpChanged;
 
-	/** True : ½ºÅ×¹Ì³Ê ¼Ò¸ğ Å¸ÀÌ¸Ó, False : È¸º¹ Å¸ÀÌ¸Ó */
+	/** True : ìŠ¤í…Œë¯¸ë„ˆ ì†Œëª¨ íƒ€ì´ë¨¸, False : íšŒë³µ íƒ€ì´ë¨¸ */
 	void PlayStaminaTimer(bool bDrain);
 	
-	/** 2°³ÀÇ ½ºÅ×¹Ì³Ê Å¸ÀÌ¸Ó ¸ğµÎ ÃÊ±âÈ­ */
+	/** 2ê°œì˜ ìŠ¤í…Œë¯¸ë„ˆ íƒ€ì´ë¨¸ ëª¨ë‘ ì´ˆê¸°í™” */
 	void ClearStaminaTimers();
 
 	void RecoveryStamina();
@@ -58,12 +60,11 @@ public:
 	void AddStaminaValue(float Value);
 	void AddSoulsValue(float Value);
 
-	FORCEINLINE float GetCurHp() { return PlayerStat.CurHp; }
-	FORCEINLINE float GetMaxHp() { return PlayerStat.MaxHp; }
-	FORCEINLINE float GetCurStamina() { return PlayerStat.CurStamina; }
-	FORCEINLINE float GetMaxStamina() { return PlayerStat.MaxStamina; }
-	FORCEINLINE float GetSoulsCount() { return PlayerStat.SoulsCount; }
+	FORCEINLINE float GetCurHp() const { return PlayerStat.CurHp; }
+	FORCEINLINE float GetMaxHp() const { return PlayerStat.MaxHp; }
+	FORCEINLINE float GetCurStamina() const { return PlayerStat.CurStamina; }
+	FORCEINLINE float GetMaxStamina() const { return PlayerStat.MaxStamina; }
+	FORCEINLINE float GetSoulsCount() const { return PlayerStat.SoulsCount; }
 
-	/** ³×Æ®¿öÅ© ¼³Á¤ */
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

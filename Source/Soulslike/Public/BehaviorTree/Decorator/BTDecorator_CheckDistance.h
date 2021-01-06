@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -8,7 +6,7 @@
 #include "BTDecorator_CheckDistance.generated.h"
 
 /**
- * ¿ëµµ : Á¶Á¾µÇ°í ÀÖ´Â Pawn°ú Target¿¡ °Å¸®¿¡ µû¶ó °ø°İ(¶óÀÌÆ®, Çìºñ, Â÷Â¡, ¿ø°Å¸®)ÀÌ °¡´ÉÇÑÁö Ã¼Å©ÇÔ
+ * ìš©ë„ : ì¡°ì¢…ë˜ê³  ìˆëŠ” Pawnê³¼ Targetì— ê±°ë¦¬ì— ë”°ë¼ ê³µê²©(ë¼ì´íŠ¸, í—¤ë¹„, ì°¨ì§•, ì›ê±°ë¦¬)ì´ ê°€ëŠ¥í•œì§€ ì²´í¬í•¨
  */
 
 class AEnemy;
@@ -21,9 +19,9 @@ class SOULSLIKE_API UBTDecorator_CheckDistance : public UBTDecorator
 public:
 	UBTDecorator_CheckDistance();
 
-	/** °ø°İÅ¸ÀÔ¿¡ µû¸¥ »ç°Å¸® Ã¼Å©¿¡ »ç¿ëµÊ */
+	/** ê³µê²©íƒ€ì…ì— ë”°ë¥¸ ì‚¬ê±°ë¦¬ ì²´í¬ì— ì‚¬ìš©ë¨ */
 	UPROPERTY(EditAnywhere, Category = "Value")
-	EMonsterAttack MonsterAttack;
+	EEnemyAttack EnemyAttack;
 
 protected:
 	virtual bool CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const override;

@@ -15,14 +15,11 @@ class SOULSLIKE_API UTargetComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:	
-	// Sets default values for this component's properties
 	UTargetComponent();
 
-	/** º“¿Ø¡ﬂ¿Œ Pawn */
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = Components)
 	ASoulCharacter* OwnerCharacter;
 
-	/** º“¿Ø¡ﬂ¿Œ Pawn¿« ƒøΩ∫≈“ Controller  */
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = Components)
 	ASoulPlayerController* OwnerController;
 
@@ -32,16 +29,15 @@ public:
 	void Initialize();
 	
 protected:
-	/** πŸ∂Û∫º ≈∏∞Ÿ */
+	/** Ï∞æÏïÑÎÇ∏ Enemy Îì§ */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Target)
 	TArray<AActor*> TargetActors;
 
-	/** πŸ∂Û∫º ≈∏∞Ÿ */
+	/** Î∞îÎùºÎ≥º ÌÉÄÍ≤ü */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Target)
 	AActor* Target;
 
-	/** True : ≈∏∞‘∆√¡ﬂ, False : ¿œπ›  */
-	//UPROPERTY(ReplicatedUsing = OnRep_Blocking, BlueprintReadOnly, Category = Movement)
+	/** True : ÌÉÄÍ≤åÌåÖÏ§ë, False : ÏùºÎ∞ò  */
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Target)
 	bool bTargeting;
 
@@ -55,8 +51,7 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerSetLock(bool bLock);
 
-	/** ≥◊∆Æøˆ≈© º≥¡§ */
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 
 };

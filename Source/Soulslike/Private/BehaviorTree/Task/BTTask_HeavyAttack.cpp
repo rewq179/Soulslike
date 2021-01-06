@@ -30,7 +30,7 @@ EBTNodeResult::Type UBTTask_HeavyAttack::ExecuteTask(UBehaviorTreeComponent& Own
 	}
 
 	
-	Enemy->StartAttack(EMonsterAttack::MATK_HeavyAttack);
+	Enemy->StartAttack(EEnemyAttack::Enemy_HeavyAttack);
 	bAttacking = true;
 	Enemy->OnHeavyAttackEnd.AddLambda([this]() -> void { bAttacking = false; });
 
@@ -41,7 +41,7 @@ void UBTTask_HeavyAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 {
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 
-	if (!bAttacking) // ÁøÇàÀÌ Á¾·áµÇ¸é ´ÙÀ½ BT¸¦ ½ÇÇà½ÃÅ³ ¼ö ÀÖ´Ù.
+	if (!bAttacking) // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ ï¿½ï¿½ï¿½ï¿½ BTï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Å³ ï¿½ï¿½ ï¿½Ö´ï¿½.
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}

@@ -32,7 +32,7 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 	}
 }
 
-void AEnemyAIController::StartBehaviorTree()
+void AEnemyAIController::StartBehaviorTree() const
 {
 	auto BehaviorTreeComponent = Cast<UBehaviorTreeComponent>(BrainComponent);
 
@@ -42,7 +42,7 @@ void AEnemyAIController::StartBehaviorTree()
 	}
 }
 
-void AEnemyAIController::StopBehaviorTree()
+void AEnemyAIController::StopBehaviorTree() const
 {
 	auto BehaviorTreeComponent = Cast<UBehaviorTreeComponent>(BrainComponent);
 

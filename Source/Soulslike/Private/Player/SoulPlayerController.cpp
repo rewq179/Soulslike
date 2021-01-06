@@ -2,6 +2,7 @@
 
 
 #include "Player/SoulPlayerController.h"
+#include "Player/SoulCharacter.h"
 
 #include "Net/UnrealNetwork.h"
 
@@ -11,12 +12,15 @@ ASoulPlayerController::ASoulPlayerController()
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// «√∑π¿ÃæÓ √º∑¬πŸ ¿ß¡¨
+//// Î£®ÌåÖ
 
 void ASoulPlayerController::ClientShowPickUpName_Implementation(const FText& PickUpName)
 {
 	OnShowPickUpName(PickUpName);
 }
+
+////////////////////////////////////////////////////////////////////////////
+//// ÌîåÎ†àÏù¥Ïñ¥ Ï≤¥Î†•Î∞î
 
 void ASoulPlayerController::ClientUpdateHpBar_Implementation(float CurHp, float MaxHp)
 {
@@ -35,7 +39,7 @@ void ASoulPlayerController::ClientUpdateSoulsCount_Implementation(int32 SoulsCou
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// ¿˚¿« √º∑¬πŸ ¿ß¡¨
+//// Ï†Å Ï≤¥Î†•Î∞î 
 
 void ASoulPlayerController::ClientShowEnemyHpBar_Implementation(bool bActive)
 {
@@ -53,7 +57,7 @@ void ASoulPlayerController::ClientUpdateBossHp_Implementation(float CurHp, float
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// ªÛ»£¿€øÎ
+//// ÏÉÅÌò∏ÏûëÏö©
 
 void ASoulPlayerController::ClientShowInteractMessage_Implementation(bool bActive)
 {
@@ -67,7 +71,20 @@ void ASoulPlayerController::ClientUpdateInteractMessage_Implementation(const FTe
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// ±‚≈∏
+//// Ïù∏Î≤§ÌÜ†Î¶¨
+
+void ASoulPlayerController::ClientShowInventory_Implementation(bool bActive)
+{
+	OnShowInventory(bActive);
+}
+
+void ASoulPlayerController::ClientUpdateInventory_Implementation()
+{
+	OnUpdateInventory();	
+}
+////////////////////////////////////////////////////////////////////////////
+//// Í∏∞ÌÉÄ
+
 
 void ASoulPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {

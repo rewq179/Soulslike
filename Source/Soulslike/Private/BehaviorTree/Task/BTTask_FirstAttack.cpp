@@ -29,7 +29,7 @@ EBTNodeResult::Type UBTTask_FirstAttack::ExecuteTask(UBehaviorTreeComponent& Own
 		return EBTNodeResult::Failed;
 	}
 
-	Enemy->StartAttack(EMonsterAttack::MATK_ChargeAttack, AttackNumber, true);
+	Enemy->StartAttack(EEnemyAttack::Enemy_ChargeAttack, AttackNumber, true);
 	bAttacking = true;
 	Enemy->OnFirstAttackEnd.AddLambda([this]() -> void { bAttacking = false; });
 
@@ -40,7 +40,7 @@ void UBTTask_FirstAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 {
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 
-	if (!bAttacking) // ÁøÇàÀÌ Á¾·áµÇ¸é ´ÙÀ½ BT¸¦ ½ÇÇà½ÃÅ³ ¼ö ÀÖ´Ù.
+	if (!bAttacking) // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ ï¿½ï¿½ï¿½ï¿½ BTï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Å³ ï¿½ï¿½ ï¿½Ö´ï¿½.
 	{
 		OwnerComp.GetBlackboardComponent()->SetValueAsBool(AEnemyAIController::FirstAttack, true);
 

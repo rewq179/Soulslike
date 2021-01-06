@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,7 +5,7 @@
 #include "BTTask_TurnToTarget.generated.h"
 
 /**
- * ¿ëµµ : °ø°İ ¸ğ¼ÇÁß Á¶Á¾µÇ°í ÀÖ´Â PawnÀ» Å¸°ÙÀ» ¹Ù¶óº¸±â À§ÇÔ.
+ * ìš©ë„ : ê³µê²© ëª¨ì…˜ì¤‘ ì¡°ì¢…ë˜ê³  ìˆëŠ” Pawnì„ íƒ€ê²Ÿì„ ë°”ë¼ë³´ê¸° ìœ„í•¨.
  */
 
 UCLASS()
@@ -19,5 +17,5 @@ public:
 	UBTTask_TurnToTarget();
 
 protected:
-	EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 };

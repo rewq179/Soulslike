@@ -17,15 +17,14 @@ class SOULSLIKE_API UBTTask_FirstAttack : public UBTTaskNode
 public:
 	UBTTask_FirstAttack();
 
-	/** ¸ùÅ¸ÁÖ ¼½¼Ç ÀÌ¸§¿¡ µé¾î°¥ ¼ýÀÚ. Attack_? */
+	/** ï¿½ï¿½Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½ï¿½ï¿½ ï¿½ï¿½î°¥ ï¿½ï¿½ï¿½ï¿½. Attack_? */
 	UPROPERTY(EditAnywhere, Category = "Value")
 		int32 AttackNumber;
 
 protected:
-	EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
-	void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
+	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
 private:
-	/** PawnÀÇ °ø°Ý ¾Ö´Ï¸ÞÀÌ¼ÇÀÌ ÁøÇàÁßÀÎ°¡? : True¸é ¾ÆÁ÷ ÁøÇàÁß */
 	bool bAttacking;
 };

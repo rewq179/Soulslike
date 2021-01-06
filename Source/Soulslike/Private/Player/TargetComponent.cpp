@@ -10,14 +10,10 @@
 #include "GameFramework/Pawn.h"
 #include "Kismet/KismetSystemLibrary.h"
 
-#include "DrawDebugHelpers.h"
 #include "Net/UnrealNetwork.h"
-
-#include <EngineGlobals.h>
 
 #include <Runtime/Engine/Classes/Engine/Engine.h>
 
-// Sets default values for this component's properties
 UTargetComponent::UTargetComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
@@ -71,10 +67,9 @@ void UTargetComponent::ServerFindTarget_Implementation()
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
 	TArray<AActor*>IgnoreTypes;
 	IgnoreTypes.Add(GetOwner());
-	FVector SphereLocation = OwnerCharacter->GetActorLocation();
+	const FVector SphereLocation = OwnerCharacter->GetActorLocation();
 
 	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), SphereLocation, DetectRange, ObjectTypes, AEnemy::StaticClass(), IgnoreTypes, OverlappedActors);
-	//DrawDebugSphere(GetWorld(), SphereLocation, DetectRange, 12, FColor::Red, false, 3.f, 2.f);
 
 	TargetActors.Empty();
 	Target = nullptr;
@@ -95,7 +90,7 @@ void UTargetComponent::ServerFindTarget_Implementation()
 
 	for (auto& Actor : TargetActors)
 	{
-		//* Å¸°Ù Á¶°Ç ÃßÈÄ ¼öÁ¤ÇÏ±â
+		//* íƒ€ê²Ÿ ì¡°ê±´ ì¶”í›„ ìˆ˜ì •í•˜ê¸°
 
 		if (Target == nullptr)
 		{
@@ -118,12 +113,28 @@ bool UTargetComponent::ServerSetLock_Validate(bool bLock)
 
 void UTargetComponent::ServerSetLock_Implementation(bool bLock)
 {
+	if (Target == nullptr)
+	{
+		return;
+	}
+
 	if (!bLock)
 	{
+		if (auto const Enemy = Cast<AEnemy>(Target))
+		{
+			Enemy->ToggleTargetWidget(OwnerCharacter, true);
+		}
+
 		Target = nullptr;
 	}
 
 	OwnerCharacter->SetLockCamera(Target, bLock);
+
+	if (auto const Enemy = Cast<AEnemy>(Target))
+	{
+		Enemy->ToggleTargetWidget(OwnerCharacter, false);
+	}
+
 	bTargeting = bLock;
 
 }

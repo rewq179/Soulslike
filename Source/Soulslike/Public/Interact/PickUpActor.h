@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Interact/InteractActor.h"
+#include "DataType.h"
 #include "PickUpActor.generated.h"
 
 UCLASS()
@@ -12,19 +13,27 @@ class SOULSLIKE_API APickUpActor : public AInteractActor
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
 	APickUpActor();
-
+	
+	virtual void Interact() override;
+	virtual void SetRenderCustomDepth(ASoulCharacter* InPlayer, bool bTrue) override;
+	virtual FText GetInteractMessage() override;
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = PickUp)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = PickUp)
 	FPickUpInfo PickUpInfo;
 
-	FORCEINLINE EPickUpType GetPickUpType() { return PickUpInfo.PickUpType; }
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = PickUp)
+	FItemTable ItemTable;
+
+	class UDataTable* ItemDataTable;
+	
+public:
+	FORCEINLINE FPickUpInfo GetPickUpInfo() const {return PickUpInfo;}
+	FORCEINLINE FItemTable GetItemTable() const {return ItemTable;}
+	FORCEINLINE EPickUpType GetPickUpType() const {return PickUpInfo.PickUpType;}
 
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
 
