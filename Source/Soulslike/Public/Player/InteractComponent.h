@@ -45,19 +45,6 @@ public:
 
 	void HandlePickUp();
 
-protected:
-	UPROPERTY(ReplicatedUsing = OnRep_Weapon, BlueprintReadOnly, Category = Equip)
-	AActor* CurrentWeapon;
-
-	/** RefNotify */
-	UFUNCTION()
-	void OnRep_Weapon();
-
-	/** BP에서 ABP_SoulCharacter의 bool값 설정 */
-	UFUNCTION(BlueprintImplementableEvent, Category = Equip)
-	void OnUpdateWeapon();
-
-public:
 	void EquipWeapon(AActor* Item);
 
 protected:

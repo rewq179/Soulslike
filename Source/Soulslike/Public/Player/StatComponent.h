@@ -64,7 +64,7 @@ public:
 	FORCEINLINE float GetMaxHp() const { return PlayerStat.MaxHp; }
 	FORCEINLINE float GetCurStamina() const { return PlayerStat.CurStamina; }
 	FORCEINLINE float GetMaxStamina() const { return PlayerStat.MaxStamina; }
-	FORCEINLINE float GetSoulsCount() const { return PlayerStat.SoulsCount; }
+	FORCEINLINE int32 GetSoulsCount() const { return PlayerStat.SoulsCount; }
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

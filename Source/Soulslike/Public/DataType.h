@@ -58,18 +58,27 @@ struct SOULSLIKE_API FPickUpInfo
 	int32 PickUpId;
 };
 
+UENUM(BlueprintType)
+enum class EItemFilter : uint8
+{
+	Filter_Weapon UMETA(DisplayName = "Sword"),
+	Filter_Shield UMETA(DisplayName = "Shield"),
+	Filter_Armor UMETA(DisplayName = "Armor"),
+	Filter_Potion UMETA(DisplayName = "Potion")
+};
+
 
 UENUM(BlueprintType)
 enum class EItemType : uint8
 {
 	Item_Sword UMETA(DisplayName = "Sword"),
-	Item_Armor UMETA(DisplayName = "Armor"),
+	Item_Shield UMETA(DisplayName = "Sword"),
+	Item_Chest UMETA(DisplayName = "Chest"),
 	Item_Helmet UMETA(DisplayName = "Helmet"),
 	Item_HpPotion UMETA(DisplayName = "HpPotion"),
 	Item_MpPotion UMETA(DisplayName = "MpPotion"),
 	Item_StaminaPotion UMETA(DisplayName = "StaminaPotion")
 };
-
 
 USTRUCT(BlueprintType)
 struct SOULSLIKE_API FItemTable : public FTableRowBase
@@ -78,6 +87,9 @@ struct SOULSLIKE_API FItemTable : public FTableRowBase
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	int32 ID;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	EItemFilter ItemFilter;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	EItemType ItemType;
@@ -96,6 +108,9 @@ struct SOULSLIKE_API FItemTable : public FTableRowBase
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	bool bLocked;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	bool bQuicked;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float Hp;

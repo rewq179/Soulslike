@@ -18,13 +18,21 @@ class SOULSLIKE_API ASoulPlayerController : public APlayerController
 public:
 	ASoulPlayerController();
 
+	/** True : 인벤토리 HUD On, False : Off */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory)
+	bool bInventoryActive;
+
+	/** True : 장비 HUD On, False : Off */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Equipment)
+	bool bEquipmentActive;
+	
 	////////////////////////////////////////////////////////////////////////////
 	//// 루팅
 	
 	UFUNCTION(Client, Reliable)
 	void ClientShowPickUpName(const FText& PickUpName);
 
-	UFUNCTION(BlueprintImplementableEvent, Category = Widget)
+	UFUNCTION(BlueprintImplementableEvent, Category = Interact)
 	void OnShowPickUpName(const FText& PickUpName);
 
 	////////////////////////////////////////////////////////////////////////////
@@ -33,25 +41,25 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientUpdateHpBar(float CurHp, float MaxHp);
 
-	UFUNCTION(BlueprintImplementableEvent, Category = Widget)
+	UFUNCTION(BlueprintImplementableEvent, Category = Player)
 	void OnUpdateHpValue(float CurHp, float MaxHp);
 
 	UFUNCTION(Client, Reliable)
 	void ClientUpdateStaminaBar(float CurStamina, float MaxStamina);
 
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, Category = Player)
 	void OnUpdateStaminaValue(float CurStamina, float MaxStamina);
 
 	UFUNCTION(Client, Reliable)
     void ClientUpdateSoulsCount(int32 SoulsCount);
 
-	UFUNCTION(BlueprintImplementableEvent, Category = Widget)
+	UFUNCTION(BlueprintImplementableEvent, Category = Player)
     void OnUpdateSoulsCount(int32 SoulsCount);
 
 	////////////////////////////////////////////////////////////////////////////
 	//// 플레이어 사망
 	
-	UFUNCTION(BlueprintImplementableEvent, Category = Widget)
+	UFUNCTION(BlueprintImplementableEvent, Category = Player)
 	void ShowDeadScreenWidget();
 
 	////////////////////////////////////////////////////////////////////////////
@@ -60,19 +68,19 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientShowEnemyHpBar(bool bActive);
 
-	UFUNCTION(BlueprintImplementableEvent, Category = Widget)
+	UFUNCTION(BlueprintImplementableEvent, Category = Enemy)
 	void OnShowEnemyHpBar(bool bActive);
 
 	UFUNCTION(Client, Reliable)
 	void ClientUpdateBossName(const FText& Name);
 
-	UFUNCTION(BlueprintImplementableEvent, Category = Widget)
+	UFUNCTION(BlueprintImplementableEvent, Category = Enemy)
 	void OnUpdateBossName(const FText& Name);
 
 	UFUNCTION(Client, Reliable)
 	void ClientUpdateBossHp(float CurHp, float MaxHp);
 
-	UFUNCTION(BlueprintImplementableEvent, Category = Widget)
+	UFUNCTION(BlueprintImplementableEvent, Category = Enemy)
 	void OnUpdateBossHp(float CurHp, float MaxHp);
 
 	////////////////////////////////////////////////////////////////////////////
@@ -81,33 +89,62 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientShowInteractMessage(bool bActive);
 
-	UFUNCTION(BlueprintImplementableEvent, Category = Widget)
+	UFUNCTION(BlueprintImplementableEvent, Category = Interact)
 	void OnShowInteractMessage(bool bActive);
 
 	UFUNCTION(Client, Reliable)
 	void ClientUpdateInteractMessage(const FText& Name, const FVector& ActorLocation);
 
-	UFUNCTION(BlueprintImplementableEvent, Category = Widget)
+	UFUNCTION(BlueprintImplementableEvent, Category = Interact)
 	void OnUpdateInteractMessage(const FText& Name, const FVector& ActorLocation);
 
 	////////////////////////////////////////////////////////////////////////////
-	//// 인벤토리
+             	//// 인벤토리
 	
 	UFUNCTION(Client, Reliable)
-	void ClientShowInventory(bool bActive);
+	void ClientShowInventory();
 
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = Widget)
+	UFUNCTION(BlueprintImplementableEvent, Category = Inventory)
 	void OnShowInventory(bool bActive);
 
 	UFUNCTION(Client, Reliable)
     void ClientUpdateInventory();
 
-	UFUNCTION(BlueprintImplementableEvent, Category = Widget)
+	UFUNCTION(BlueprintImplementableEvent, Category = Inventory)
     void OnUpdateInventory();
 
-	
+	UFUNCTION(Client, Reliable)
+    void ClientUpdateQuickSlot(int32 QuickIndex, UTexture2D* Icon, const FText& Name);
 
+	UFUNCTION(BlueprintImplementableEvent, Category = Inventory)
+    void OnUpdateQuickSlot(int32 QuickIndex, UTexture2D* Icon, const FText& Name);
+
+	UFUNCTION(Client, Reliable)
+    void ClientClearQuickSlot(int32 QuickIndex);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = Inventory)
+    void OnClearQuickSlot(int32 QuickIndex);
+
+	////////////////////////////////////////////////////////////////////////////
+	//// 장비
 	
-public:
+	UFUNCTION(Client, Reliable)
+	void ClientShowEquipment();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = Equipment)
+    void OnShowEquipment(bool bActive);
+
+	UFUNCTION(Client, Reliable)
+    void ClientUpdateEquipmentSlot(int32 EquipIndex, UTexture2D* Icon);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = Equipment)
+    void OnUpdateEquipmentSlot(int32 EquipIndex, UTexture2D* Icon);
+
+	UFUNCTION(Client, Reliable)
+    void ClientClearEquipmentSlot(int32 EquipIndex);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = Equipment)
+    void OnClearEquipmentSlot(int32 EquipIndex);
+	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

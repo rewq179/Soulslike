@@ -73,18 +73,50 @@ void ASoulPlayerController::ClientUpdateInteractMessage_Implementation(const FTe
 ////////////////////////////////////////////////////////////////////////////
 //// 인벤토리
 
-void ASoulPlayerController::ClientShowInventory_Implementation(bool bActive)
+void ASoulPlayerController::ClientShowInventory_Implementation()
 {
-	OnShowInventory(bActive);
+	bInventoryActive = !bInventoryActive;
+	
+	OnShowInventory(bInventoryActive);
 }
 
 void ASoulPlayerController::ClientUpdateInventory_Implementation()
 {
 	OnUpdateInventory();	
 }
+
+void ASoulPlayerController::ClientUpdateQuickSlot_Implementation(int32 QuickIndex, UTexture2D* Icon, const FText& Name)
+{
+	OnUpdateQuickSlot(QuickIndex, Icon, Name);
+}
+
+void ASoulPlayerController::ClientClearQuickSlot_Implementation(int32 QuickIndex)
+{
+	OnClearQuickSlot(QuickIndex);	
+}
+
+////////////////////////////////////////////////////////////////////////////
+//// 장비
+
+void ASoulPlayerController::ClientShowEquipment_Implementation()
+{
+	bEquipmentActive = !bEquipmentActive;
+
+	OnShowEquipment(bEquipmentActive);
+}
+
+void ASoulPlayerController::ClientUpdateEquipmentSlot_Implementation(int32 QuickIndex, UTexture2D* Icon)
+{
+	OnUpdateEquipmentSlot(QuickIndex, Icon);
+}
+
+void ASoulPlayerController::ClientClearEquipmentSlot_Implementation(int32 EquipIndex)
+{
+	OnClearEquipmentSlot(EquipIndex);
+}
+
 ////////////////////////////////////////////////////////////////////////////
 //// 기타
-
 
 void ASoulPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {

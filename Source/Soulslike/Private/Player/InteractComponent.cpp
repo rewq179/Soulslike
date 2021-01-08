@@ -100,19 +100,6 @@ void UInteractComponent::HandlePickUp()
 	
 }
 
-void UInteractComponent::OnRep_Weapon()
-{
-	//CurrentWeapon->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "WeaponSocket");
-}
-
-void UInteractComponent::EquipWeapon(AActor* Item)
-{
-	CurrentWeapon = Item;
-	//EquipInfo.bEquipWeapon = true;
-
-	OnRep_Weapon();
-}
-
 ////////////////////////////////////////////////////////////////////////////
 ////  상호작용 물체 찾기
 
@@ -200,5 +187,4 @@ void UInteractComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 
 	DOREPLIFETIME(UInteractComponent, CurrentDoor);
 	DOREPLIFETIME(UInteractComponent, CurrentPickUpActor);
-	DOREPLIFETIME(UInteractComponent, CurrentWeapon);
 }

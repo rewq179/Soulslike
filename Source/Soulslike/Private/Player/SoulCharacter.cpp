@@ -34,6 +34,12 @@ ASoulCharacter::ASoulCharacter()
 	// Capusle :: 카메라 Ignore
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
+	// 무기 Mesh 설정
+	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
+	WeaponMesh->SetupAttachment(GetMesh());
+	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	
 	// 각종 Value 설정
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
@@ -77,6 +83,93 @@ ASoulCharacter::ASoulCharacter()
 }
 
 ////////////////////////////////////////////////////////////////////////////
+//// 인터페이스
+
+UInventoryComponent* ASoulCharacter::GetInventoryComponent_Implementation()
+{
+	return InventoryComponent;
+}
+
+UStatComponent* ASoulCharacter::GetStatComponent_Implementation()
+{
+	return StatComponent;
+}
+
+int32 ASoulCharacter::GetSoulsCount_Implementation()
+{
+	if(StatComponent)
+	{
+		return StatComponent->GetSoulsCount();
+	}
+
+	return -1;
+}
+
+void ASoulCharacter::UseItem_Implementation(int32 SlotIndex)
+{
+	if(InventoryComponent)
+	{
+		InventoryComponent->UseItem(SlotIndex);
+	}
+}
+
+void ASoulCharacter::UnEquipItem_Implementation(int32 EquipIndex)
+{
+	if(InventoryComponent)
+	{
+		InventoryComponent->UnEquipEquipmentItem(EquipIndex);
+	}
+}
+
+void ASoulCharacter::SwapItem_Implementation(int32 FromIndex, int32 ToIndex)
+{
+	if(InventoryComponent)
+	{
+		InventoryComponent->SwapItem(FromIndex, ToIndex);
+	}
+}
+
+void ASoulCharacter::MoveItem_Implementation(int32 FromIndex, int32 ToIndex)
+{
+	if(InventoryComponent)
+	{
+		InventoryComponent->MoveItem(FromIndex, ToIndex);
+	}
+}
+
+void ASoulCharacter::RemoveItemAt_Implementation(int32 SlotIndex, int32 Count)
+{
+	if(InventoryComponent)
+	{
+		InventoryComponent->RemoveItemAt(SlotIndex, Count);
+	}	
+}
+
+void ASoulCharacter::LockItemAt_Implementation(int32 SlotIndex)
+{
+	if(InventoryComponent)
+	{
+		InventoryComponent->LockItemAt(SlotIndex);
+	}	
+}
+
+void ASoulCharacter::SetQuickItemAt_Implementation(int32 SlotIndex)
+{
+	if(InventoryComponent)
+	{
+		InventoryComponent->SetQuickItemAt(SlotIndex);
+	}	
+}
+
+void ASoulCharacter::SortItem_Implementation()
+{
+	if(InventoryComponent)
+	{
+		InventoryComponent->SortItem();
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////
 //// 입력
 
 void ASoulCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
@@ -92,8 +185,9 @@ void ASoulCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAction("Block", IE_Pressed, this, &ASoulCharacter::StartBlock);
 	PlayerInputComponent->BindAction("Block", IE_Released, this, &ASoulCharacter::EndBlock);
 	PlayerInputComponent->BindAction("Target", IE_Pressed, this, &ASoulCharacter::StartTarget);
-	PlayerInputComponent->BindAction("Potion", IE_Pressed, this, &ASoulCharacter::UsePotion);
+	PlayerInputComponent->BindAction("Potion", IE_Pressed, this, &ASoulCharacter::UseQuickPotion);
 	PlayerInputComponent->BindAction("Inventory", IE_Pressed, this, &ASoulCharacter::ShowInventory);
+	PlayerInputComponent->BindAction("Equipment", IE_Pressed, this, &ASoulCharacter::ShowEquipment);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &ASoulCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ASoulCharacter::MoveRight);
@@ -109,6 +203,9 @@ void ASoulCharacter::PossessedBy(AController* NewController)
 	{
 		SoulPC = InSoulPC;
 		bMoveable = true;
+
+		WeaponMesh->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Weapon_R_Socket");
+		WeaponMesh->SetVisibility(false);
 
 		if (TargetComponent)
 		{
@@ -336,8 +433,11 @@ void  ASoulCharacter::StartAttack(EPlayerAttack Attack)
 {
 	if (bMoveable && !bPlayingScene)
 	{
-		Sprint(false);
-
+		if(bSprinting)
+		{
+			Sprint(false);
+		}
+		
 		ServerAttack(Attack);
 	}
 }
@@ -674,39 +774,47 @@ void ASoulCharacter::SetLockCamera(AActor* InTarget, bool bLock)
 ////////////////////////////////////////////////////////////////////////////
 //// 아이템
 
-void ASoulCharacter::UsePotion()
+void ASoulCharacter::UseQuickPotion() 
 {
 	if (InventoryComponent)
 	{
-
+		InventoryComponent->UseQuickItem(3);
 	}
 }
 
-void ASoulCharacter::ShowInventory()
+void ASoulCharacter::ShowInventory() 
 {
-	UE_LOG(LogTemp, Log,TEXT("Click Inventory"));
-	
-	if (InventoryComponent)
+	if (InventoryComponent && InventoryComponent->OwnerController)
 	{
-		if(	InventoryComponent->OwnerController)
-		{
-			InventoryComponent->OwnerController->ClientShowInventory(true);
-		}
+		InventoryComponent->OwnerController->ClientShowInventory();
+	}
+}
+
+void ASoulCharacter::ShowEquipment() 
+{
+	if (InventoryComponent && InventoryComponent->OwnerController)
+	{
+		InventoryComponent->OwnerController->ClientShowEquipment();
 	}
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// �ҿ�
+//// 소울
 
 void ASoulCharacter::AddSoulsValue(int32 Value)
 {
 	StatComponent->AddSoulsValue(Value);
 
+	if (InventoryComponent && InventoryComponent->OwnerController)
+	{
+		InventoryComponent->OwnerController->OnUpdateInventory();
+	}
+	
 	MulticastPlayParticle(SoulParticle);
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// ��Ÿ 
+//// 멀티캐스트 :: 공용
 
 bool ASoulCharacter::MulticastPlayMontage_Validate(UAnimMontage * AnimMontage, float PlayRate, FName AnimName)
 {
@@ -753,6 +861,7 @@ void ASoulCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
+	DOREPLIFETIME(ASoulCharacter, WeaponMesh);
 	DOREPLIFETIME(ASoulCharacter, bDead);
 	DOREPLIFETIME(ASoulCharacter, bRolling);
 	DOREPLIFETIME(ASoulCharacter, bMoveable);

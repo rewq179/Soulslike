@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "DataType.h"
+#include "Player/PlayerComponentInterface.h"
+#include "StatComponent.h"
+
 
 #include "SoulCharacter.generated.h"
 
@@ -21,7 +24,7 @@ class USpringArmComponent;
 class UAnimMontage;
 
 UCLASS(config = Game)
-class ASoulCharacter : public ACharacter
+class ASoulCharacter : public ACharacter, public IPlayerComponentInterface
 {
 	GENERATED_BODY()
 	
@@ -80,6 +83,9 @@ class ASoulCharacter : public ACharacter
 	float BaseLookUpRate;
 
 protected:
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = Components)
+	USkeletalMeshComponent* WeaponMesh;
+	
 	/** True : 이동가능, False : 이동 불가능 */
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = Status)
 	bool bMoveable;
@@ -100,13 +106,60 @@ public:
 	ASoulCharacter();
 
 	UTargetComponent* TargetComponent;
-	UStatComponent* StatComponent;
 	UInteractComponent* InteractComponent;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components)
+	UStatComponent* StatComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = ActorComponent)
 	UInventoryComponent* InventoryComponent;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	TSubclassOf<UDamageType> DamageType;
+
+	////////////////////////////////////////////////////////////////////////////
+	//// 인터페이스
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+    UInventoryComponent* GetInventoryComponent();
+	virtual UInventoryComponent* GetInventoryComponent_Implementation() override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+    UStatComponent* GetStatComponent();
+	virtual UStatComponent* GetStatComponent_Implementation() override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	int32 GetSoulsCount();
+	virtual int32 GetSoulsCount_Implementation() override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+    void UseItem(int32 SlotIndex);
+	virtual void UseItem_Implementation(int32 SlotIndex) override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	void UnEquipItem(int32 EQuipIndex);
+	virtual void  UnEquipItem_Implementation(int32 EquipIndex) override;
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	void SwapItem(int32 FromIndex, int32 ToIndex);
+	virtual void SwapItem_Implementation(int32 FromIndex, int32 ToIndex) override;
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	void MoveItem(int32 FromIndex, int32 ToIndex);
+	virtual void MoveItem_Implementation(int32 FromIndex, int32 ToIndex) override;
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	void RemoveItemAt(int32 SlotIndex, int32 Count);
+	virtual void RemoveItemAt_Implementation(int32 SlotIndex, int32 Count) override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+    void LockItemAt(int32 SlotIndex);
+	virtual void LockItemAt_Implementation(int32 SlotIndex) override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+    void SetQuickItemAt(int32 SlotIndex);
+	virtual void SetQuickItemAt_Implementation(int32 SlotIndex) override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+    void SortItem();
+	virtual void SortItem_Implementation() override;
 
 protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -139,8 +192,9 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void StartDead();
 
-	void UsePotion();
+	void UseQuickPotion();
 	void ShowInventory();
+	void ShowEquipment();
 	
 	void MoveForward(float Value);
 	void MoveRight(float Value);
@@ -327,6 +381,8 @@ public:
 	FORCEINLINE FEquipInfo GetEquipInfo() const { return EquipInfo; }
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const {return WeaponMesh;}
+	// FORCEINLINE USkeletalMeshComponent* GetShieldMesh() const {return ShieldMesh;}
 	
 	// 세터
 	FORCEINLINE void SetMoveable(const bool bMove) { bMoveable = bMove; }

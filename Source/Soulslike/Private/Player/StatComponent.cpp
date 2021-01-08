@@ -18,6 +18,8 @@
 // Sets default values for this component's properties
 UStatComponent::UStatComponent()
 {
+	PrimaryComponentTick.bCanEverTick = false;
+
 	RecoveryRate = 1.5f;
 	DrainRate = -3.2f;
 
