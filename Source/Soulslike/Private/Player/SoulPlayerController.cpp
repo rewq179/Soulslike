@@ -12,6 +12,51 @@ ASoulPlayerController::ASoulPlayerController()
 }
 
 ////////////////////////////////////////////////////////////////////////////
+//// 인터페이스
+
+void ASoulPlayerController::ShowEquipmentWidget_Implementation()
+{
+	OnShowShowMenuHUD(false);
+	bPlayerHUDActive=true;
+	
+	ClientShowEquipment();
+}
+
+void ASoulPlayerController::ShowInventoryWidget_Implementation()
+{
+	OnShowShowMenuHUD(false);
+	bPlayerHUDActive=true;
+	
+	ClientShowInventory();
+}
+
+void ASoulPlayerController::ShowStatusWidget_Implementation()
+{
+	OnShowShowMenuHUD(false);
+	bPlayerHUDActive=true;
+	
+	ClientShowStatus();
+}
+
+void ASoulPlayerController::ShowOptionWidget_Implementation()
+{
+	OnShowShowMenuHUD(false);\
+	bPlayerHUDActive=true;
+	
+	ClientShowOption();
+}
+
+////////////////////////////////////////////////////////////////////////////
+////
+
+void ASoulPlayerController::ClientTurnOffHUD_Implementation()
+{
+	bPlayerHUDActive=false;
+	
+	OnTurnOffHUD();
+}
+
+////////////////////////////////////////////////////////////////////////////
 //// 루팅
 
 void ASoulPlayerController::ClientShowPickUpName_Implementation(const FText& PickUpName)
@@ -71,13 +116,24 @@ void ASoulPlayerController::ClientUpdateInteractMessage_Implementation(const FTe
 }
 
 ////////////////////////////////////////////////////////////////////////////
+//// 메뉴
+
+void ASoulPlayerController::ClientShowMenuHUD_Implementation()
+{
+	if(!bPlayerHUDActive)
+	{
+		bMenuActive = !bMenuActive;
+
+		OnShowShowMenuHUD(bMenuActive);
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////
 //// 인벤토리
 
 void ASoulPlayerController::ClientShowInventory_Implementation()
 {
-	bInventoryActive = !bInventoryActive;
-	
-	OnShowInventory(bInventoryActive);
+	OnShowInventory(true);
 }
 
 void ASoulPlayerController::ClientUpdateInventory_Implementation()
@@ -100,9 +156,7 @@ void ASoulPlayerController::ClientClearQuickSlot_Implementation(int32 QuickIndex
 
 void ASoulPlayerController::ClientShowEquipment_Implementation()
 {
-	bEquipmentActive = !bEquipmentActive;
-
-	OnShowEquipment(bEquipmentActive);
+	OnShowEquipment(true);
 }
 
 void ASoulPlayerController::ClientUpdateEquipmentSlot_Implementation(int32 QuickIndex, UTexture2D* Icon)
@@ -113,6 +167,22 @@ void ASoulPlayerController::ClientUpdateEquipmentSlot_Implementation(int32 Quick
 void ASoulPlayerController::ClientClearEquipmentSlot_Implementation(int32 EquipIndex)
 {
 	OnClearEquipmentSlot(EquipIndex);
+}
+
+////////////////////////////////////////////////////////////////////////////
+//// 스테이터스
+
+void ASoulPlayerController::ClientShowStatus_Implementation()
+{
+	OnShowStatus(true);	
+}
+
+////////////////////////////////////////////////////////////////////////////
+//// 옵션
+
+void ASoulPlayerController::ClientShowOption_Implementation()
+{
+	OnShowOption(true);
 }
 
 ////////////////////////////////////////////////////////////////////////////

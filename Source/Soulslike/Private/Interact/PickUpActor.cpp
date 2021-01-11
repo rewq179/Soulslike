@@ -6,7 +6,6 @@
 #include "Components/StaticMeshComponent.h"
 
 #include "Player/SoulCharacter.h"
-#include "Player/InteractComponent.h"
 #include "UObject/ConstructorHelpers.h"
 
 APickUpActor::APickUpActor()
@@ -60,8 +59,8 @@ FText APickUpActor::GetInteractMessage()
 	TArray<FStringFormatArg> args;
 	args.Add(FStringFormatArg(ItemTable.Name.ToString()));
 
-	FString string = FString::Format(TEXT("[F] Interact : {0}"), args);
-	return FText::FromString(string);
+	const FString Message = FString::Format(TEXT("[F] Interact : {0}"), args);
+	return FText::FromString(Message);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -74,7 +73,7 @@ void APickUpActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 		auto Player = Cast<ASoulCharacter>(OtherActor);
 		if (Player)
 		{
-			Player->InteractComponent->SetPickUpActor(this);
+			Player->SetPickUpActor(this);
 		}
 	}
 }
@@ -86,7 +85,7 @@ void APickUpActor::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor
 		auto Player = Cast<ASoulCharacter>(OtherActor);
 		if (Player)
 		{
-			Player->InteractComponent->SetPickUpActor(nullptr);
+			Player->SetPickUpActor(nullptr);
 		}
 	}
 }

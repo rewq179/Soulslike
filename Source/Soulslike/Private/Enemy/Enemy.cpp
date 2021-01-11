@@ -22,6 +22,7 @@
 #include "TimerManager.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimSequenceBase.h"
+#include "Engine/SkeletalMeshSocket.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Engine/World.h"
@@ -89,10 +90,8 @@ void AEnemy::BeginPlay()
 
 	SetMovementState(EMovementState::State_Walk);
 
-	//WidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 100.0f));
-	//WidgetComponent->SetVisibility(false);
 	WeaponMesh->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Weapon_R_Socket");
-
+	
 	LightCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnOverlapBegin);
 
 	if (GetLocalRole() == ROLE_Authority)

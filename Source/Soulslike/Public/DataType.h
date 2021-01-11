@@ -73,8 +73,10 @@ enum class EItemType : uint8
 {
 	Item_Sword UMETA(DisplayName = "Sword"),
 	Item_Shield UMETA(DisplayName = "Sword"),
-	Item_Chest UMETA(DisplayName = "Chest"),
 	Item_Helmet UMETA(DisplayName = "Helmet"),
+	Item_Chest UMETA(DisplayName = "Chest"),
+	Item_Gloves UMETA(DisplayName = "Gloves"),
+	Item_Boots UMETA(DisplayName = "Boots"),
 	Item_HpPotion UMETA(DisplayName = "HpPotion"),
 	Item_MpPotion UMETA(DisplayName = "MpPotion"),
 	Item_StaminaPotion UMETA(DisplayName = "StaminaPotion")
@@ -131,7 +133,10 @@ struct SOULSLIKE_API FItemTable : public FTableRowBase
 	float HeavyDamage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	float Armor;
+	float MeleeArmor;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float MagicArmor;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	UTexture2D* Icon;
@@ -172,24 +177,66 @@ USTRUCT(BlueprintType)
 struct SOULSLIKE_API FPlayerStat
 {
 	GENERATED_USTRUCT_BODY()
-		
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	float CurHp;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	/** 플레이어의 레벨 : 능력치를 찍을 수 있음 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	int32 Level = 1;
+
+	/** 체력에 대한 수치 : Hp 양과 Hp 회복 속도, 최대 무게, 쇼크 및 출혈 저장 ↑ */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	int32 Constitution = 5;
+
+	/** 정신에 대한 수치 : 마법 방어력, Mp의 양과 회복 속도, 정신 공격(침묵, 수면, 공포)에 대한 저항 ↑ */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	int32 Mentality = 5;
+	
+	/** 머리 회전과 응용력에 대한 수치 : 크리티컬 확률 및 데미지, 시전 속도, 디버프 저항(스텟에 대한) ↑ */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	int32 Witness = 5;
+	
+	/** 힘에 대한 수치 : 일반 공격과 스킬 데미지 ↑ */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	int32 Strength = 5;
+	
+	/** 민첩에 대한 수치 : 이동 속도, 회피, 크리티컬 확률, 이동속도 ↑ */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	int32 Dexterity = 5;
+	
+	/** 지식에 대한 수치 : 마법의 데미지, 마법의 크리티컬 데미지와 확률 ↑ */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	int32 Intelligence = 5;
+	
+	/** 행운에 수치 : 아이템 드랍 ↑ */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	int32 Luck = 1;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	float CurHp;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
 	float MaxHp;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	float CurMp;
+	
+	/**  */	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	float MaxMp;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
 	float CurStamina;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	
+	/**  */	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
 	float MaxStamina;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	float MeleeArmor = 0;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	float MagicArmor = 0;
+	
+	/**  */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	float Armor;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	int32 SoulsCount;
+	int32 SoulsCount = 0;
 };
 
 ////////////////////////////////////////////////////////////////////////////
@@ -211,6 +258,18 @@ enum class EEnemyAttack : uint8
 	Enemy_ChargeAttack UMETA(DisplayName = "Charge Attack"),
 	Enemy_RangeAttack UMETA(DisplayName = "Range Attack"),
 	Enemy_None UMETA(DisplayName = "None")
+};
+
+////////////////////////////////////////////////////////////////////////////
+//// 위젯
+
+UENUM(BlueprintType)
+enum class EPlayerHUD : uint8
+{
+	Player_Inventory UMETA(DisplayName = "Inventory"),
+	Player_Equipment UMETA(DisplayName = "Equipment"),
+	Player_Status UMETA(DisplayName = "Status"),
+	Player_Option UMETA(DisplayName = "Option")
 };
 
 ////////////////////////////////////////////////////////////////////////////

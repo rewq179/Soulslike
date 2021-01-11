@@ -2,10 +2,12 @@
 
 #include "Player/SoulCharacter.h"
 #include "Player/SoulPlayerController.h"
-#include "Player/TargetComponent.h"
-#include "Player/StatComponent.h"
-#include "Player/InteractComponent.h"
-#include "Player/InventoryComponent.h"
+
+#include "Player/ActorComponent/TargetComponent.h"
+#include "Player/ActorComponent/StatComponent.h"
+#include "Player/ActorComponent/InteractComponent.h"
+#include "Player/ActorComponent/InventoryComponent.h"
+
 #include "System/SoulFunctionLibrary.h"
 
 #include "Enemy/Enemy.h"
@@ -34,19 +36,11 @@ ASoulCharacter::ASoulCharacter()
 	// Capusle :: 카메라 Ignore
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
-	// 무기 Mesh 설정
-	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
-	WeaponMesh->SetupAttachment(GetMesh());
-	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	
 	// 각종 Value 설정
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
 
 	MoveSpeed = 500.f;
-	SprintSpeed = 800.f;
-	bSprinting = false;
 
 	LightAttackRadius = 150.f;
 	HeavyAttackRadius = 200.f;
@@ -78,16 +72,27 @@ ASoulCharacter::ASoulCharacter()
 	StatComponent = CreateDefaultSubobject<UStatComponent>("StatComponent");
 	InteractComponent = CreateDefaultSubobject<UInteractComponent>("InteractComponent");
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
-
+	
 	Tags.Add(FName("Player"));
 }
 
 ////////////////////////////////////////////////////////////////////////////
 //// 인터페이스
 
-UInventoryComponent* ASoulCharacter::GetInventoryComponent_Implementation()
+void ASoulCharacter::SetInteractDoor_Implementation(AInteractDoor* Door)
 {
-	return InventoryComponent;
+	if(InteractComponent)
+	{
+		InteractComponent->SetInteractDoor(Door);
+	}
+}
+
+void ASoulCharacter::SetPickUpActor_Implementation(APickUpActor* Actor)
+{
+	if(InteractComponent)
+	{
+		InteractComponent->SetPickUpActor(Actor);
+    }
 }
 
 UStatComponent* ASoulCharacter::GetStatComponent_Implementation()
@@ -104,6 +109,12 @@ int32 ASoulCharacter::GetSoulsCount_Implementation()
 
 	return -1;
 }
+
+UInventoryComponent* ASoulCharacter::GetInventoryComponent_Implementation()
+{
+	return InventoryComponent;
+}
+
 
 void ASoulCharacter::UseItem_Implementation(int32 SlotIndex)
 {
@@ -176,18 +187,23 @@ void ASoulCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 {
 	check(PlayerInputComponent);
 
-	PlayerInputComponent->BindAction<FMouseClickDelegate>("LeftClick", IE_Pressed, this, &ASoulCharacter::StartAttack, EPlayerAttack::Player_LightAttack);
-	PlayerInputComponent->BindAction<FMouseClickDelegate>("RightClick", IE_Pressed, this, &ASoulCharacter::StartAttack, EPlayerAttack::Player_HeavyAttack);
-	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ASoulCharacter::StartSprint);
-	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ASoulCharacter::EndSprint);
-	PlayerInputComponent->BindAction("Roll", IE_Released, this, &ASoulCharacter::StartRoll);
-	PlayerInputComponent->BindAction("Interact", IE_Released, this, &ASoulCharacter::ServerInteractActor);
+	// 공격 및 방어
+	PlayerInputComponent->BindAction<FMouseClickDelegate>("LightAttack", IE_Pressed, this, &ASoulCharacter::StartAttack, EPlayerAttack::Player_LightAttack);
+	PlayerInputComponent->BindAction<FMouseClickDelegate>("HeavyAttack", IE_Pressed, this, &ASoulCharacter::StartAttack, EPlayerAttack::Player_HeavyAttack);
 	PlayerInputComponent->BindAction("Block", IE_Pressed, this, &ASoulCharacter::StartBlock);
 	PlayerInputComponent->BindAction("Block", IE_Released, this, &ASoulCharacter::EndBlock);
+
+	// 이동
+	PlayerInputComponent->BindAction("Roll", IE_Released, this, &ASoulCharacter::StartRoll);
+
+	// 기타
+	PlayerInputComponent->BindAction("Interact", IE_Released, this, &ASoulCharacter::ServerInteractActor);
 	PlayerInputComponent->BindAction("Target", IE_Pressed, this, &ASoulCharacter::StartTarget);
 	PlayerInputComponent->BindAction("Potion", IE_Pressed, this, &ASoulCharacter::UseQuickPotion);
-	PlayerInputComponent->BindAction("Inventory", IE_Pressed, this, &ASoulCharacter::ShowInventory);
-	PlayerInputComponent->BindAction("Equipment", IE_Pressed, this, &ASoulCharacter::ShowEquipment);
+
+	// HUD네
+	PlayerInputComponent->BindAction("Menu", IE_Pressed, this, &ASoulCharacter::ShowMenuHUD);
+	PlayerInputComponent->BindAction("TurnOff", IE_Pressed, this, &ASoulCharacter::TurnOffHUD);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &ASoulCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ASoulCharacter::MoveRight);
@@ -203,9 +219,6 @@ void ASoulCharacter::PossessedBy(AController* NewController)
 	{
 		SoulPC = InSoulPC;
 		bMoveable = true;
-
-		WeaponMesh->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Weapon_R_Socket");
-		WeaponMesh->SetVisibility(false);
 
 		if (TargetComponent)
 		{
@@ -299,78 +312,6 @@ void ASoulCharacter::AddControllerPitchInput(float Val)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// 달리기
-
-void ASoulCharacter::StartSprint()
-{
-	if (bMoveable && !bPlayingScene && GetCharacterMovement()->Velocity.Size() != 0) 
-	{
-		Sprint(true);
-	}
-}
-
-void ASoulCharacter::EndSprint()
-{
-	Sprint(false);
-}
-
-void ASoulCharacter::Sprint(bool bSprint)
-{
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		StatComponent->PlayStaminaTimer(bSprint);
-
-		SetSprinting(bSprint);
-		SetMaxWalkSpeed(bSprint);
-
-		return;
-	}
-
-	else
-	{
-		ServerSprint(bSprint);
-		SetMaxWalkSpeed(bSprint);
-
-		return;
-	}
-}
-
-void ASoulCharacter::SetSprinting(bool bSprint)
-{
-	bSprinting = bSprint;
-
-	OnRep_Sprinting();
-}
-
-bool ASoulCharacter::ServerSprint_Validate(bool bSprint)
-{
-	return true;
-}
-
-void ASoulCharacter::ServerSprint_Implementation(bool bSprint)
-{
-	Sprint(bSprint);
-}
-
-void ASoulCharacter::OnRep_Sprinting()
-{
-	OnUpdateSprinting();
-}
-
-void ASoulCharacter::SetMaxWalkSpeed(bool bSprint) const
-{
-	if (bSprint)
-	{
-		GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
-	}
-
-	else
-	{
-		GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
-	}
-}
-
-////////////////////////////////////////////////////////////////////////////
 //// 구르기
 
 void ASoulCharacter::StartRoll()
@@ -433,11 +374,6 @@ void  ASoulCharacter::StartAttack(EPlayerAttack Attack)
 {
 	if (bMoveable && !bPlayingScene)
 	{
-		if(bSprinting)
-		{
-			Sprint(false);
-		}
-		
 		ServerAttack(Attack);
 	}
 }
@@ -782,19 +718,19 @@ void ASoulCharacter::UseQuickPotion()
 	}
 }
 
-void ASoulCharacter::ShowInventory() 
+void ASoulCharacter::ShowMenuHUD()
 {
-	if (InventoryComponent && InventoryComponent->OwnerController)
+	if(InventoryComponent)
 	{
-		InventoryComponent->OwnerController->ClientShowInventory();
+		InventoryComponent->OwnerController->ClientShowMenuHUD();
 	}
 }
 
-void ASoulCharacter::ShowEquipment() 
+void ASoulCharacter::TurnOffHUD()
 {
-	if (InventoryComponent && InventoryComponent->OwnerController)
+	if(InventoryComponent)
 	{
-		InventoryComponent->OwnerController->ClientShowEquipment();
+		InventoryComponent->OwnerController->ClientTurnOffHUD();
 	}
 }
 
@@ -861,15 +797,12 @@ void ASoulCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
-	DOREPLIFETIME(ASoulCharacter, WeaponMesh);
 	DOREPLIFETIME(ASoulCharacter, bDead);
 	DOREPLIFETIME(ASoulCharacter, bRolling);
 	DOREPLIFETIME(ASoulCharacter, bMoveable);
 	DOREPLIFETIME(ASoulCharacter, bBlocking);
 	DOREPLIFETIME(ASoulCharacter, bAttacking);
-	DOREPLIFETIME(ASoulCharacter, bSprinting);
 	DOREPLIFETIME(ASoulCharacter, bPlayingScene);
 	DOREPLIFETIME(ASoulCharacter, bLockCamera);
-	DOREPLIFETIME(ASoulCharacter, EquipInfo);
 	DOREPLIFETIME(ASoulCharacter, Target);
 }

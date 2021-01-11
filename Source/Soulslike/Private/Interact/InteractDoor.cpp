@@ -3,7 +3,6 @@
 
 #include "Interact/InteractDoor.h"
 #include "Player/SoulCharacter.h"
-#include "Player/InteractComponent.h"
 
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -129,7 +128,7 @@ void AInteractDoor::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 	{
 		if (auto const Player = Cast<ASoulCharacter>(OtherActor))
 		{
-			Player->InteractComponent->SetInteractDoor(this);
+			Player->SetInteractDoor(this);
 		}
 	}
 }
@@ -140,7 +139,7 @@ void AInteractDoor::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActo
 	{
 		if (auto const Player = Cast<ASoulCharacter>(OtherActor))
 		{
-			Player->InteractComponent->SetInteractDoor(nullptr);
+			Player->SetInteractDoor(nullptr);
 		}
 	}
 }

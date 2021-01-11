@@ -5,9 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "DataType.h"
-#include "Player/PlayerComponentInterface.h"
-#include "StatComponent.h"
-
+#include "Player/ActorComponent/ActorComponentInterface.h"
 
 #include "SoulCharacter.generated.h"
 
@@ -16,6 +14,7 @@ class UTargetComponent;
 class UStatComponent;
 class UInteractComponent;
 class UInventoryComponent;
+
 class AWeapon;
 class AEnemy;
 class UCameraComponent;
@@ -24,7 +23,7 @@ class USpringArmComponent;
 class UAnimMontage;
 
 UCLASS(config = Game)
-class ASoulCharacter : public ACharacter, public IPlayerComponentInterface
+class ASoulCharacter : public ACharacter, public IActorComponentInterface
 {
 	GENERATED_BODY()
 	
@@ -83,9 +82,6 @@ class ASoulCharacter : public ACharacter, public IPlayerComponentInterface
 	float BaseLookUpRate;
 
 protected:
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = Components)
-	USkeletalMeshComponent* WeaponMesh;
-	
 	/** True : 이동가능, False : 이동 불가능 */
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = Status)
 	bool bMoveable;
@@ -98,17 +94,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Status)
 	float MoveSpeed;
 
-	/** 플레이어의 달리기 속도 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Status)
-	float SprintSpeed;
-
 public:
 	ASoulCharacter();
 
 	UTargetComponent* TargetComponent;
 	UInteractComponent* InteractComponent;
 	UStatComponent* StatComponent;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = ActorComponent)
+	// UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = ActorComponent)
 	UInventoryComponent* InventoryComponent;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
@@ -118,23 +110,35 @@ public:
 	//// 인터페이스
 	
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
-    UInventoryComponent* GetInventoryComponent();
-	virtual UInventoryComponent* GetInventoryComponent_Implementation() override;
+	void SetInteractDoor(AInteractDoor* Door);
+	virtual void SetInteractDoor_Implementation(AInteractDoor* Door) override;
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+    void SetPickUpActor(APickUpActor* Actor);
+    virtual void SetPickUpActor_Implementation(APickUpActor* Actor) override;
+	
+	// 스텟 컴포넌트
 
+	// 인벤토리 컴포넌트
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
     UStatComponent* GetStatComponent();
 	virtual UStatComponent* GetStatComponent_Implementation() override;
-
+	
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
 	int32 GetSoulsCount();
 	virtual int32 GetSoulsCount_Implementation() override;
 
+	// 인벤토리 컴포넌트
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+    UInventoryComponent* GetInventoryComponent();
+	virtual UInventoryComponent* GetInventoryComponent_Implementation() override;
+	
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
     void UseItem(int32 SlotIndex);
 	virtual void UseItem_Implementation(int32 SlotIndex) override;
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
-	void UnEquipItem(int32 EQuipIndex);
+	void UnEquipItem(int32 EquipIndex);
 	virtual void  UnEquipItem_Implementation(int32 EquipIndex) override;
 	
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
@@ -166,10 +170,6 @@ protected:
 
 	virtual void PossessedBy(AController* NewController) override;
 
-	/** Left Shift 입력 */
-	void StartSprint();
-	void EndSprint();
-
 	/** Space Bar 입력 */
 	void StartRoll();
 	UFUNCTION(BlueprintCallable)
@@ -193,38 +193,14 @@ protected:
 	void StartDead();
 
 	void UseQuickPotion();
-	void ShowInventory();
-	void ShowEquipment();
+	void ShowMenuHUD();
+	void TurnOffHUD();
 	
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 	virtual void AddControllerYawInput(float Val) override;
 	virtual void AddControllerPitchInput(float Val) override;
 
-protected:
-	////////////////////////////////////////////////////////////////////////////
-	//// 스프린트
-	
-	/** True : 전력질주(이동속도 800), False : 일반(이동속도 500) */
-	UPROPERTY(ReplicatedUsing = OnRep_Sprinting, VisibleAnywhere, BlueprintReadOnly, Category = Status)
-	bool bSprinting;
-
-	UFUNCTION()
-	void OnRep_Sprinting();
-
-	UFUNCTION(BlueprintImplementableEvent, Category = Status)
-	void OnUpdateSprinting();
-
-public:
-	void Sprint(bool bSprint);
-	void SetSprinting(bool bSprint);
-	
-	UFUNCTION(Server, Reliable, WithValidation)
-    void ServerSprint(bool bSprint);
-		
-	void SetMaxWalkSpeed(bool bSprint) const;
-
-protected:
 	////////////////////////////////////////////////////////////////////////////
 	//// 구르기
 	
@@ -289,9 +265,6 @@ public:
 	void ServerInteractActor();
 
 protected:
-	UPROPERTY(Replicated)
-	FEquipInfo EquipInfo;
-
 	////////////////////////////////////////////////////////////////////////////
 	//// 사망
 	
@@ -377,12 +350,8 @@ public:
 	// 게터
 	FORCEINLINE bool IsDead() const { return bDead; }
 	FORCEINLINE bool IsRoll() const { return bRolling; }
-	FORCEINLINE bool IsSprinting() const { return bSprinting; }
-	FORCEINLINE FEquipInfo GetEquipInfo() const { return EquipInfo; }
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
-	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const {return WeaponMesh;}
-	// FORCEINLINE USkeletalMeshComponent* GetShieldMesh() const {return ShieldMesh;}
 	
 	// 세터
 	FORCEINLINE void SetMoveable(const bool bMove) { bMoveable = bMove; }

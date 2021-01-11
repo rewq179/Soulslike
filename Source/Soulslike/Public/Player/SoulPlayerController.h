@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Player/ControllerInterface.h"
 #include "SoulPlayerController.generated.h"
 
 /**
@@ -11,20 +12,48 @@
  */
 
 UCLASS()
-class SOULSLIKE_API ASoulPlayerController : public APlayerController
+class SOULSLIKE_API ASoulPlayerController : public APlayerController, public IControllerInterface
 {
 	GENERATED_BODY()
 	
 public:
 	ASoulPlayerController();
 
-	/** True : 인벤토리 HUD On, False : Off */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory)
-	bool bInventoryActive;
+	////////////////////////////////////////////////////////////////////////////
+	//// 인터페이스
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	void ShowEquipmentWidget();
+	virtual void ShowEquipmentWidget_Implementation() override;
 
-	/** True : 장비 HUD On, False : Off */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Equipment)
-	bool bEquipmentActive;
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+    void ShowInventoryWidget();
+	virtual void ShowInventoryWidget_Implementation() override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+    void ShowStatusWidget();
+	virtual void ShowStatusWidget_Implementation() override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+    void ShowOptionWidget();
+	virtual void ShowOptionWidget_Implementation() override;
+
+	////////////////////////////////////////////////////////////////////////////
+	//// 
+	
+	/** True : 메뉴 HUD On, False : Off */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = HUD)
+	bool bMenuActive;
+
+	/** True : 플레이어 HUD On, False : Off */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = HUD)
+	bool bPlayerHUDActive;
+	
+	UFUNCTION(Client, Reliable)
+    void ClientTurnOffHUD();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = Interact)
+    void OnTurnOffHUD();
 	
 	////////////////////////////////////////////////////////////////////////////
 	//// 루팅
@@ -99,7 +128,16 @@ public:
 	void OnUpdateInteractMessage(const FText& Name, const FVector& ActorLocation);
 
 	////////////////////////////////////////////////////////////////////////////
-             	//// 인벤토리
+	//// 메뉴
+
+	UFUNCTION(Client, Reliable)
+    void ClientShowMenuHUD();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = Menu)
+    void OnShowShowMenuHUD(bool bActive);
+	
+	////////////////////////////////////////////////////////////////////////////
+    //// 인벤토리
 	
 	UFUNCTION(Client, Reliable)
 	void ClientShowInventory();
@@ -145,6 +183,28 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = Equipment)
     void OnClearEquipmentSlot(int32 EquipIndex);
+
+	////////////////////////////////////////////////////////////////////////////
+	//// 스테이터스
+
+	UFUNCTION(Client, Reliable)
+	void ClientShowStatus();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = Status)
+    void OnShowStatus(bool bActive);
+	
+	///////////////////////////////////////////////////////////////////////////////
+	//// 옵션
+
+	UFUNCTION(Client, Reliable)
+    void ClientShowOption();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = Option)
+    void OnShowOption(bool bActive);
+
+	
+	///////////////////////////////////////////////////////////////////////////////
+	//// 기타
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
