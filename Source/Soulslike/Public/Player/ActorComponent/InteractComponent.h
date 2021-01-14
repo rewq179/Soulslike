@@ -45,6 +45,8 @@ public:
 
 	void HandlePickUp();
 
+	void EquipWeapon(AActor* Item);
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Status)
 	AInteractActor* CurActor;

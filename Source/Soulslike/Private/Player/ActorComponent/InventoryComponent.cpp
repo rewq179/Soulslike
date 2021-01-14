@@ -9,7 +9,6 @@
 #include "Engine/World.h"
 
 #include "Net/UnrealNetwork.h"
-#include "Player/Weapon.h"
 
 // Sets default values for this component's properties
 UInventoryComponent::UInventoryComponent()
@@ -20,7 +19,7 @@ UInventoryComponent::UInventoryComponent()
 	FreeWeight = MaxWeight;
 	MaxSlot = 71;
 	FreeSlot = MaxSlot;
-	
+
 	SetIsReplicatedByDefault(true);
 }
 
@@ -37,72 +36,28 @@ void UInventoryComponent::Initialize()
 		{
 			OwnerController = Controller;
 		}
-
-		CurrentWeapon = (GetWorld()->SpawnActor<AWeapon>(WeaponClass));
-		if(CurrentWeapon)
-		{
-			CurrentWeapon->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Weapon_R_Socket");
-		}
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////
-//// RepNotify
-
-void UInventoryComponent::OnRep_RefreshSlot()
+void UInventoryComponent::OnRep_RefreshInventory()
 {
 	if(OwnerController)
 	{
 		OwnerController->ClientUpdateInventory();
 
-		if (bRefreshSlot)
+		if (bRefreshInventory)
 		{
-			bRefreshSlot = false;
+			bRefreshInventory = false;
 		}
 	}
 }
 
-void UInventoryComponent::SetRefreshSlot(bool bRefresh)
+void UInventoryComponent::SetRefreshInventory(bool bRefresh)
 {
-	bRefreshSlot = bRefresh;
+	bRefreshInventory = bRefresh;
 
-	OnRep_RefreshSlot();
+	OnRep_RefreshInventory();
 }
-
-void UInventoryComponent::OnRep_Weapon()
-{
-
-}
-
-void UInventoryComponent::SetCurrentWeapon(bool bEquip)
-{
-	if(bEquip)
-	{
-		CurrentWeapon->SetHidden(false);
-	}
-
-	else
-	{
-		CurrentWeapon->SetHidden(true);
-	}
-	
-	
-	OnRep_Weapon();	
-}
-
-
-// void UPInventoryComponent::OnRep_Shield()
-// {
-// 	// OwnerCharacter->GetShieldMesh()->SetVisibility(bShieldEquiped);
-// }
-//
-// void UInventoryComponent::SetCurrentShield(bool bEquip)
-// {
-// 	bShieldEquiped = bEquip;
-// 	
-// 	OnRep_Shield();
-// }
-
 
 ////////////////////////////////////////////////////////////////////////////
 ////
@@ -113,45 +68,13 @@ void UInventoryComponent::UseItem(int32 SlotIndex)
 	{
 		if (UseInventoryItem(SlotIndex))
 		{
-			SetRefreshSlot(true);
+			SetRefreshInventory(true);
 		}
 	}
     
 	else
 	{
 		ServerUseItem(SlotIndex);
-	}
-}
-
-void UInventoryComponent::UseQuickItem(int32 QuickIndex)
-{
-	if (GetOwnerRole() == ROLE_Authority)
-	{
-		if(UseQuickInventoryItem(QuickIndex))
-		{
-			SetRefreshSlot(true);
-		}
-	}
-
-	else
-	{
-		ServerUseQuickItem(QuickIndex);
-	}
-}
-
-void UInventoryComponent::UnEquipItem(int32 EquipIndex)
-{
-	if (GetOwnerRole() == ROLE_Authority)
-	{
-		if(UnEquipEquipmentItem(EquipIndex))
-		{
-			SetRefreshSlot(true);
-		}
-	}
-
-	else
-	{
-		ServerUnEquipItem(EquipIndex);
 	}
 }
 
@@ -163,7 +86,7 @@ void UInventoryComponent::AddItem(FItemTable Item)
 		{
 			if (AddInventoryItem(Item))
 			{
-				SetRefreshSlot(true);
+				SetRefreshInventory(true);
 			}
 		}
 	}
@@ -178,7 +101,10 @@ void UInventoryComponent::AddItemAt(FItemTable Item, int32 SlotIndex)
 {
 	if(GetOwnerRole() == ROLE_Authority)
 	{
-		AddInventoryItemAt(Item, SlotIndex);
+		if(AddInventoryItemAt(Item, SlotIndex))
+		{
+			SetRefreshInventory(true);
+		}
 	}
 
 	else
@@ -199,18 +125,19 @@ void UInventoryComponent::RemoveItem(FItemTable Item)
 				{
 					if(--Count > 0)
 					{
-						SetRefreshSlot(true);
+						SetRefreshInventory(true);
 					}
 
 					return;
 				}
 			}
 			
-			SetRefreshSlot(true);
+			SetRefreshInventory(true);
+			
 			return;
 		}
 
-		SetRefreshSlot(true);
+		SetRefreshInventory(true);
 	}
 
 	else
@@ -223,9 +150,9 @@ void UInventoryComponent::RemoveItemAt(int32 SlotIndex, int32 Count)
 {
 	if(GetOwnerRole() == ROLE_Authority)
 	{
-		if(Count > 0)
+		if(Count > 0 && RemoveInventoryItemAt(SlotIndex, Count))
 		{
-			RemoveInventoryItemAt(SlotIndex, Count);
+			SetRefreshInventory(true);
 		}
 	}
 
@@ -241,7 +168,7 @@ void UInventoryComponent::SwapItem(int32 FromIndex, int32 ToIndex)
 	{
 		Inventory.Swap(FromIndex,ToIndex);
 
-		SetRefreshSlot(true);
+		SetRefreshInventory(true);
 	}
 
 	else
@@ -256,7 +183,7 @@ void UInventoryComponent::MoveItem(int32 FromIndex, int32 ToIndex)
 	{
 		if(MoveInventoryItem(FromIndex, ToIndex))
 		{
-			SetRefreshSlot(true);
+			SetRefreshInventory(true);
 		}
 	}
 
@@ -279,18 +206,6 @@ void UInventoryComponent::LockItemAt(int32 SlotIndex)
 	}
 }
 
-void UInventoryComponent::SetQuickItemAt(int32 SlotIndex)
-{
-	if(GetOwnerRole() == ROLE_Authority)
-	{
-		SetQuickInventoryItemAt(SlotIndex);
-	}
-
-	else
-	{
-		ServerSetQuickItemAt(SlotIndex);
-	}
-}
 
 void UInventoryComponent::SortItem()
 {
@@ -298,7 +213,7 @@ void UInventoryComponent::SortItem()
 	{
 		if(SortInventoryItem())
 		{
-			SetRefreshSlot(true);
+			SetRefreshInventory(true);
 		}
 	}
 
@@ -339,46 +254,11 @@ void UInventoryComponent::ServerUseItem_Implementation(int32 SlotIndex)
 	MulticastRefreshClients(this);
 }
 
-bool UInventoryComponent::ServerUseItem_Validate(int32 SlotIndex)
-{
-	return true;
-}
-
-
-void UInventoryComponent::ServerUseQuickItem_Implementation(int32 QuickIndex)
-{
-	UseQuickItem(QuickIndex);
-	
-	MulticastRefreshClients(this);
-}
-
-bool UInventoryComponent::ServerUseQuickItem_Validate(int32 QuickIndex)
-{
-	return true;
-}
-
-void UInventoryComponent::ServerUnEquipItem_Implementation(int32 EquipIndex)
-{
-	UnEquipItem(EquipIndex);
-
-	MulticastRefreshClients(this);
-}
-
-bool UInventoryComponent::ServerUnEquipItem_Validate(int32 EquipIndex)
-{
-	return true;
-}
-
-
 void UInventoryComponent::ServerAddItem_Implementation(FItemTable Item)
 {
 	AddItem(Item);
 
 	MulticastRefreshClients(this);
-}
-bool UInventoryComponent::ServerAddItem_Validate(FItemTable Item)
-{
-	return true;
 }
 
 void UInventoryComponent::ServerAddItemAt_Implementation(FItemTable Item, int32 SlotIndex)
@@ -388,21 +268,11 @@ void UInventoryComponent::ServerAddItemAt_Implementation(FItemTable Item, int32 
 	MulticastRefreshClients(this);
 }
 
-bool UInventoryComponent::ServerAddItemAt_Validate(FItemTable Item, int32 SlotIndex)
-{
-	return true;
-}
-
 void UInventoryComponent::ServerRemoveItem_Implementation(FItemTable Item)
 {
 	RemoveItem(Item);
 
 	MulticastRefreshClients(this);
-}
-
-bool UInventoryComponent::ServerRemoveItem_Validate(FItemTable Item)
-{
-	return true;
 }
 
 void UInventoryComponent::ServerRemoveItemAt_Implementation(int32 SlotIndex, int32 Count)
@@ -412,23 +282,12 @@ void UInventoryComponent::ServerRemoveItemAt_Implementation(int32 SlotIndex, int
 	MulticastRefreshClients(this);
 }
 
-bool UInventoryComponent::ServerRemoveItemAt_Validate(int32 SlotIndex, int32 Count)
-{
-	return true;
-}
-
 void UInventoryComponent::ServerSwapItem_Implementation(int32 FromIndex, int32 ToIndex)
 {
 	SwapItem(FromIndex, ToIndex);
 
 	MulticastRefreshClients(this);
 }
-
-bool UInventoryComponent::ServerSwapItem_Validate(int32 FromIndex, int32 ToIndex)
-{
-	return true;
-}
-
 
 void UInventoryComponent::ServerMoveItem_Implementation(int32 FromIndex, int32 ToIndex)
 {
@@ -437,29 +296,9 @@ void UInventoryComponent::ServerMoveItem_Implementation(int32 FromIndex, int32 T
 	MulticastRefreshClients(this);
 }
 
-bool UInventoryComponent::ServerMoveItem_Validate(int32 FromIndex, int32 ToIndex)
-{
-	return  true;
-}
-
 void UInventoryComponent::ServerLockItemAt_Implementation(int32 SlotIndex)
 {
 	LockInventoryItemAt(SlotIndex);
-}
-
-bool UInventoryComponent::ServerLockItemAt_Validate(int32 SlotIndex)
-{
-	return true;
-}
-
-void UInventoryComponent::ServerSetQuickItemAt_Implementation(int32 SlotIndex)
-{
-	SetQuickItemAt(SlotIndex);
-}
-
-bool UInventoryComponent::ServerSetQuickItemAt_Validate(int32 SlotIndex)
-{
-	return true;
 }
 
 void UInventoryComponent::ServerSortItem_Implementation()
@@ -469,24 +308,14 @@ void UInventoryComponent::ServerSortItem_Implementation()
 	MulticastRefreshClients(this);
 }
 
-bool UInventoryComponent::ServerSortItem_Validate()
-{
-	return true;
-}
-
 ////////////////////////////////////////////////////////////////////////////
 ////  멀티캐스트 :: 인벤토리 새로고침
 
 void UInventoryComponent::MulticastRefreshClients_Implementation(UInventoryComponent* InvComponent)
 {
-	InvComponent->SetRefreshSlot(true);
+	InvComponent->SetRefreshInventory(true);
 
-	SetRefreshSlot(true);
-}
-
-bool UInventoryComponent::MulticastRefreshClients_Validate(UInventoryComponent* InvComponent)
-{
-	return true;
+	SetRefreshInventory(true);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -496,9 +325,11 @@ bool UInventoryComponent::UseInventoryItem(int32 SlotIndex)
 {
 	if(SlotIndex < Inventory.Num() && Inventory[SlotIndex].Count > 0)
 	{
-		if(Inventory[SlotIndex].ItemFilter < EItemFilter::Filter_Potion)
+		if(Inventory[SlotIndex].ItemFilter< EItemFilter::Filter_Potion)
 		{
-			EquipInventoryItem(SlotIndex);
+			OwnerCharacter->AddQuickItemAt(Inventory[SlotIndex], 0);
+
+			RemoveItemAt(SlotIndex, 1);
 		}
 		
 		else
@@ -512,106 +343,9 @@ bool UInventoryComponent::UseInventoryItem(int32 SlotIndex)
 	return false;
 }
 
-bool UInventoryComponent::EquipInventoryItem(int32 SlotIndex)
-{
-	if(SlotIndex < Inventory.Num() && Inventory[SlotIndex].ItemFilter < EItemFilter::Filter_Potion)
-	{
-		int32 EquipIndex = 0;
-		int32 FilterIndex = static_cast<int32>(Inventory[SlotIndex].ItemFilter);
-
-		if(Inventory[SlotIndex].ItemFilter == EItemFilter::Filter_Armor)
-		{
-			EquipIndex = static_cast<int32>(Inventory[SlotIndex].ItemType) - 2; // 0:무기, 1: 방패, 2:투구, 3:갑옷이라 -2
-		}
-
-		if(EquipmentMap.Contains(EquipIndex)) // 기존에 있으면 해제하고 인벤토리로
-		{
-			UnEquipEquipmentItem(EquipIndex);	
-		}
-
-		switch (Inventory[SlotIndex].ItemFilter) // 무기는 WeaponMap, 방패는 ShieldMap, 방어구는 EquipmentMap으로
-		{
-		case EItemFilter::Filter_Weapon:
-			WeaponMap.Emplace(0, Inventory[SlotIndex]);
-			SetCurrentWeapon(true);
-			break;
-
-		case EItemFilter::Filter_Shield:
-			ShieldMap.Emplace(0, Inventory[SlotIndex]);
-			// SetCurrentShield(true);
-			break;
-
-		case EItemFilter::Filter_Armor:
-			EquipmentMap.Emplace(EquipIndex, Inventory[SlotIndex]);
-			break;
-		}
-		
-		RemoveItemAt(SlotIndex, 1);
-		
-		if(OwnerController)  //
-		{
-			// 무기와 방어구만 QuickBar에 등록할 것
-			if(FilterIndex == 0)
-			{
-				OwnerController->ClientUpdateEquipmentSlot(0, WeaponMap[EquipIndex].Icon);
-				OwnerController->ClientUpdateQuickSlot(FilterIndex, WeaponMap[0].Icon, WeaponMap[0].Name);
-			}
-
-			else if(FilterIndex == 1) 
-			{
-				// OwnerController->ClientUpdateEquipmentSlot(0, ShieldMap[EquipIndex].Icon);
-				// OwnerController->ClientUpdateQuickSlot(FilterIndex, ShieldMap[0].Icon, ShieldMap[0].Name);
-			}
-
-			else
-			{
-				OwnerController->ClientUpdateEquipmentSlot(EquipIndex, EquipmentMap[EquipIndex].Icon);
-			}
-		}
-
-		return true;
-	}
-
-	return false;
-}
-
-bool UInventoryComponent::UnEquipEquipmentItem(int32 EquipIndex)
-{
-	if(EquipmentMap.Contains(EquipIndex))
-	{
-		AddItem(EquipmentMap[EquipIndex]);
-		EquipmentMap.Remove(EquipIndex);
-	
-		if(OwnerController)
-		{
-			OwnerController->ClientClearEquipmentSlot(EquipIndex);
-		
-			if(EquipIndex <= 1) // 0:무기, 1:방패만 QuickBar에 등록할 것
-			{
-				OwnerController->ClientClearQuickSlot(EquipIndex+1);
-			}
-		}
-
-		if(EquipIndex == 0)
-		{
-			SetCurrentWeapon(false);
-		}
-
-		else if (EquipIndex == 1)
-		{
-			// SetCurrentShield(false);
-		}
-
-		return true;
-	}
-	
-	return false;
-}
-
-
 void UInventoryComponent::UsePotion(int32 SlotIndex)
 {
-	bool bQuickEmpty = false;;
+	bool bQuickEmpty = false;
 	if(Inventory[SlotIndex].bQuicked && Inventory[SlotIndex].Count == 1 && Inventory[SlotIndex].ItemFilter == EItemFilter::Filter_Potion)
 	{
 		bQuickEmpty = true;
@@ -621,41 +355,8 @@ void UInventoryComponent::UsePotion(int32 SlotIndex)
 
 	if(OwnerController && bQuickEmpty)
 	{
-		OwnerController->ClientClearQuickSlot(3);
+		OwnerController->ClientClearQuickBar(3);
 	}
-}
-
-bool UInventoryComponent::UseQuickInventoryItem(int32 QuickIndex)
-{
-	if(QuickSlotMap.Contains(QuickIndex) && QuickSlotMap[QuickIndex] < Inventory.Num())
-	{
-		const int32 SlotIndex = QuickSlotMap[QuickIndex];
-		const int32 Count = Inventory[SlotIndex].Count;
-		
-		if(SlotIndex < Inventory.Num() && Inventory[SlotIndex].Count > 0)
-		{
-			// 효과 적용
-			
-			RemoveItemAt(SlotIndex, 1);
-			
-			if(OwnerController)
-			{
-				if(Count == 1)
-				{
-					OwnerController->ClientClearQuickSlot(QuickIndex);
-				}
-
-				else
-				{
-					OwnerController->ClientUpdateQuickSlot(QuickIndex, Inventory[SlotIndex].Icon, Inventory[SlotIndex].Name);
-				}
-			}
-		
-			return true;
-		}
-	}
-
-	return false;
 }
 
 bool UInventoryComponent::AddInventoryItem(FItemTable Item)
@@ -699,7 +400,7 @@ bool UInventoryComponent::AddInventoryItemAt(FItemTable Item, int32 SlotIndex)
 	{
 		Inventory.Insert(Item, SlotIndex);
 
-		SetRefreshSlot(true);
+		return true;
 	}
 
 	return false;
@@ -725,18 +426,23 @@ bool UInventoryComponent::RemoveInventoryItem(FItemTable Item)
 
 bool UInventoryComponent::RemoveInventoryItemAt(int32 SlotIndex, int32 Count)
 {
-	if(Inventory[SlotIndex].Count > Count)
+	if(SlotIndex < Inventory.Num())
 	{
-		Inventory[SlotIndex].Count -= Count;
+		if(Inventory[SlotIndex].Count > Count)
+		{
+			Inventory[SlotIndex].Count -= Count;
+		}
+
+		else // 1=1, 65=65 일 경우
+			{
+			FreeWeight += Inventory[SlotIndex].Weight;
+			Inventory.RemoveAt(SlotIndex);
+			}
+	
+		return true;
 	}
 
-	else // 1=1, 65=65 일 경우
-	{
-		Inventory.RemoveAt(SlotIndex);
-	}
-	
-	SetRefreshSlot(true);
-	return true;
+	return false;
 }
 
 bool UInventoryComponent::MoveInventoryItem(int32 FromIndex, int32 ToIndex)
@@ -752,6 +458,7 @@ bool UInventoryComponent::MoveInventoryItem(int32 FromIndex, int32 ToIndex)
 	return false;
 }
 
+
 bool UInventoryComponent::LockInventoryItemAt(int32 SlotIndex)
 {
 	if(Inventory.IsValidIndex(SlotIndex))
@@ -761,46 +468,6 @@ bool UInventoryComponent::LockInventoryItemAt(int32 SlotIndex)
 		return true;
 	}
 
-	return false;
-}
-
-bool UInventoryComponent::SetQuickInventoryItemAt(int32 SlotIndex)
-{
-	if(SlotIndex < Inventory.Num())
-	{
-		int32 Key = -1;
-
-		switch (Inventory[SlotIndex].ItemFilter)
-		{
-			case EItemFilter::Filter_Weapon:
-				Key=1;
-				break;
-
-			case EItemFilter::Filter_Shield:
-				Key=2;
-				break;
-			
-			case EItemFilter::Filter_Potion:
-				Key=3;
-				break;
-
-			default: ;
-		}
-
-		if(Key != -1)
-		{
-			Inventory[SlotIndex].bQuicked=true;
-			QuickSlotMap.Add(Key, SlotIndex);
-
-			if(OwnerController)
-			{
-				OwnerController->ClientUpdateQuickSlot(Key, Inventory[SlotIndex].Icon, Inventory[SlotIndex].Name);
-			}
-		}
-	
-		return true;
-	}
-	
 	return false;
 }
 
@@ -829,21 +496,15 @@ int32 UInventoryComponent::GetInventoryIndex(int32 Id, int32 StartIndex)
 	return -1;
 }
 
-void UInventoryComponent::GetInventoryItemsByFilter(TArray<FItemTable>& TempInventory, TArray<int32>& TempInvIndex, EItemFilter Filter)
+FText UInventoryComponent::GetWeightText()
 {
-	int32 InvIndex=0;
-	TempInventory.Empty();
+	TArray<FStringFormatArg> args;
+	args.Add(FStringFormatArg((GetCurWeight())));
+	args.Add(FStringFormatArg((GetMaxWeight())));
 
-	for(auto& Item : Inventory)
-	{
-		if(Filter == Item.ItemFilter)
-		{
-			TempInventory.Add(Item);
-
-			TempInvIndex.Add(InvIndex++);
-		}
-	}
+	return FText::FromString(FString::Format(TEXT("{{0}/{1}}"), args));
 }
+
 
 ////////////////////////////////////////////////////////////////////////////
 ////  기타
@@ -855,13 +516,10 @@ void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME(UInventoryComponent, OwnerCharacter);
 	DOREPLIFETIME(UInventoryComponent, OwnerController);
 	DOREPLIFETIME(UInventoryComponent, Inventory);
-	DOREPLIFETIME(UInventoryComponent, WeaponMap);
-	DOREPLIFETIME(UInventoryComponent, ShieldMap);
-	DOREPLIFETIME(UInventoryComponent, EquipmentMap);
-	DOREPLIFETIME(UInventoryComponent, QuickSlotMap);
 	DOREPLIFETIME(UInventoryComponent, FreeWeight);
 	DOREPLIFETIME(UInventoryComponent, MaxSlot);
 	DOREPLIFETIME(UInventoryComponent, FreeSlot);
 	DOREPLIFETIME(UInventoryComponent, MaxWeight);
-	DOREPLIFETIME(UInventoryComponent, bRefreshSlot);
+	DOREPLIFETIME(UInventoryComponent, bRefreshInventory);
 }
+

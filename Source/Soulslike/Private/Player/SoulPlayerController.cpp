@@ -141,16 +141,6 @@ void ASoulPlayerController::ClientUpdateInventory_Implementation()
 	OnUpdateInventory();	
 }
 
-void ASoulPlayerController::ClientUpdateQuickSlot_Implementation(int32 QuickIndex, UTexture2D* Icon, const FText& Name)
-{
-	OnUpdateQuickSlot(QuickIndex, Icon, Name);
-}
-
-void ASoulPlayerController::ClientClearQuickSlot_Implementation(int32 QuickIndex)
-{
-	OnClearQuickSlot(QuickIndex);	
-}
-
 ////////////////////////////////////////////////////////////////////////////
 //// 장비
 
@@ -159,15 +149,21 @@ void ASoulPlayerController::ClientShowEquipment_Implementation()
 	OnShowEquipment(true);
 }
 
-void ASoulPlayerController::ClientUpdateEquipmentSlot_Implementation(int32 QuickIndex, UTexture2D* Icon)
+void ASoulPlayerController::ClientUpdateEquipmentSlot_Implementation()
 {
-	OnUpdateEquipmentSlot(QuickIndex, Icon);
+	OnUpdateEquipmentSlot();
 }
 
-void ASoulPlayerController::ClientClearEquipmentSlot_Implementation(int32 EquipIndex)
+void ASoulPlayerController::ClientUpdateQuickBar_Implementation(int32 QuickIndex, UTexture2D* Icon, const FText& Name)
 {
-	OnClearEquipmentSlot(EquipIndex);
+	OnUpdateQuickBar(QuickIndex, Icon, Name);
 }
+
+void ASoulPlayerController::ClientClearQuickBar_Implementation(int32 QuickIndex)
+{
+	OnClearQuickBar(QuickIndex);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////
 //// 스테이터스

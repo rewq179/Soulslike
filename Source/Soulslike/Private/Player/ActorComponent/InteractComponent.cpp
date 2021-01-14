@@ -3,6 +3,7 @@
 
 #include "Player/ActorComponent/InteractComponent.h"
 #include "Player/ActorComponent/InventoryComponent.h"
+
 #include "Player/SoulCharacter.h"
 #include "Player/SoulPlayerController.h"
 
@@ -23,6 +24,7 @@ UInteractComponent::UInteractComponent()
 	SetIsReplicatedByDefault(true);
 }
 
+// Called every frame
 void UInteractComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);

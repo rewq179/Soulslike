@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "Player/ControllerInterface.h"
+
+
 #include "SoulPlayerController.generated.h"
 
 /**
@@ -19,11 +21,12 @@ class SOULSLIKE_API ASoulPlayerController : public APlayerController, public ICo
 public:
 	ASoulPlayerController();
 
+	
 	////////////////////////////////////////////////////////////////////////////
 	//// 인터페이스
 	
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
-	void ShowEquipmentWidget();
+    void ShowEquipmentWidget();
 	virtual void ShowEquipmentWidget_Implementation() override;
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
@@ -37,7 +40,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
     void ShowOptionWidget();
 	virtual void ShowOptionWidget_Implementation() override;
-
+	
 	////////////////////////////////////////////////////////////////////////////
 	//// 
 	
@@ -151,18 +154,6 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = Inventory)
     void OnUpdateInventory();
 
-	UFUNCTION(Client, Reliable)
-    void ClientUpdateQuickSlot(int32 QuickIndex, UTexture2D* Icon, const FText& Name);
-
-	UFUNCTION(BlueprintImplementableEvent, Category = Inventory)
-    void OnUpdateQuickSlot(int32 QuickIndex, UTexture2D* Icon, const FText& Name);
-
-	UFUNCTION(Client, Reliable)
-    void ClientClearQuickSlot(int32 QuickIndex);
-
-	UFUNCTION(BlueprintImplementableEvent, Category = Inventory)
-    void OnClearQuickSlot(int32 QuickIndex);
-
 	////////////////////////////////////////////////////////////////////////////
 	//// 장비
 	
@@ -173,17 +164,23 @@ public:
     void OnShowEquipment(bool bActive);
 
 	UFUNCTION(Client, Reliable)
-    void ClientUpdateEquipmentSlot(int32 EquipIndex, UTexture2D* Icon);
-
+    void ClientUpdateEquipmentSlot();
+ 
 	UFUNCTION(BlueprintImplementableEvent, Category = Equipment)
-    void OnUpdateEquipmentSlot(int32 EquipIndex, UTexture2D* Icon);
+    void OnUpdateEquipmentSlot();
+
+    UFUNCTION(Client, Reliable)
+    void ClientUpdateQuickBar(int32 QuickIndex, UTexture2D* Icon, const FText& Name);
+ 
+	UFUNCTION(BlueprintImplementableEvent, Category = Equipment)
+    void OnUpdateQuickBar(int32 QuickIndex, UTexture2D* Icon, const FText& Name);
 
 	UFUNCTION(Client, Reliable)
-    void ClientClearEquipmentSlot(int32 EquipIndex);
-
+    void ClientClearQuickBar(int32 QuickIndex);
+ 
 	UFUNCTION(BlueprintImplementableEvent, Category = Equipment)
-    void OnClearEquipmentSlot(int32 EquipIndex);
-
+    void OnClearQuickBar(int32 QuickIndex);
+	
 	////////////////////////////////////////////////////////////////////////////
 	//// 스테이터스
 

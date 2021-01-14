@@ -162,5 +162,4 @@ void UStatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(UStatComponent, OwnerCharacter);
 	DOREPLIFETIME(UStatComponent, OwnerController);
 	DOREPLIFETIME(UStatComponent, PlayerStat);
-
 }

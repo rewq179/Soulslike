@@ -16,11 +16,11 @@ class SOULSLIKE_API UComboComponent : public UActorComponent
 	
 	FTimerHandle ComboTimer;
 	
-public:	
+	public:	
 	// Sets default values for this component's properties
 	UComboComponent();
 
-    UPROPERTY(Replicated, BlueprintReadOnly, Category = Components)
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = Components)
 	ASoulCharacter* OwnerCharacter;
 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = Components)
@@ -28,7 +28,7 @@ public:
 
 	void Initialize();
 
-protected:
+	protected:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Combo")
 	bool bComboAttackable;
 	
@@ -44,7 +44,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combo")
 	float ComboTime;
 
-public:
+	public:
 	void SetComboCount(bool bCombo);
 	FORCEINLINE int32 GetComboCount() const {return ComboCount;}
 	

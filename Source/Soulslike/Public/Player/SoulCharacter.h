@@ -14,6 +14,7 @@ class UTargetComponent;
 class UStatComponent;
 class UInteractComponent;
 class UInventoryComponent;
+class UEquipmentComponent;
 
 class AWeapon;
 class AEnemy;
@@ -100,9 +101,10 @@ public:
 	UTargetComponent* TargetComponent;
 	UInteractComponent* InteractComponent;
 	UStatComponent* StatComponent;
-	// UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = ActorComponent)
 	UInventoryComponent* InventoryComponent;
-
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = ActorComponent)
+	UEquipmentComponent* EquipmentComponent;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	TSubclassOf<UDamageType> DamageType;
 
@@ -118,29 +120,35 @@ public:
     virtual void SetPickUpActor_Implementation(APickUpActor* Actor) override;
 	
 	// 스텟 컴포넌트
-
-	// 인벤토리 컴포넌트
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
-    UStatComponent* GetStatComponent();
+	UStatComponent* GetStatComponent();
 	virtual UStatComponent* GetStatComponent_Implementation() override;
 	
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
 	int32 GetSoulsCount();
 	virtual int32 GetSoulsCount_Implementation() override;
-
-	// 인벤토리 컴포넌트
+	
+	// // 인벤토리 컴포넌트
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
     UInventoryComponent* GetInventoryComponent();
 	virtual UInventoryComponent* GetInventoryComponent_Implementation() override;
+ 
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+    TArray<FItemTable> GetInventory();
+	virtual TArray<FItemTable> GetInventory_Implementation() override;
+ 
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	FItemTable GetInventoryItemAt(int32 SlotIndex);
+	virtual FItemTable GetInventoryItemAt_Implementation(int32 SlotIndex) override;
+ 
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	void AddItem(FItemTable Item);
+	virtual void AddItem_Implementation(FItemTable Item) override;
 	
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
     void UseItem(int32 SlotIndex);
 	virtual void UseItem_Implementation(int32 SlotIndex) override;
-
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
-	void UnEquipItem(int32 EquipIndex);
-	virtual void  UnEquipItem_Implementation(int32 EquipIndex) override;
-	
+ 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
 	void SwapItem(int32 FromIndex, int32 ToIndex);
 	virtual void SwapItem_Implementation(int32 FromIndex, int32 ToIndex) override;
@@ -152,19 +160,36 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
 	void RemoveItemAt(int32 SlotIndex, int32 Count);
 	virtual void RemoveItemAt_Implementation(int32 SlotIndex, int32 Count) override;
-
+ 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
     void LockItemAt(int32 SlotIndex);
 	virtual void LockItemAt_Implementation(int32 SlotIndex) override;
-
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
-    void SetQuickItemAt(int32 SlotIndex);
-	virtual void SetQuickItemAt_Implementation(int32 SlotIndex) override;
-
+ 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
     void SortItem();
 	virtual void SortItem_Implementation() override;
 
+	// 장비 컴포넌트
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UEquipmentComponent* GetEquipmentComponent();
+	virtual UEquipmentComponent* GetEquipmentComponent_Implementation() override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	void UnEquipItem(EItemFilter ItemFilter, int32 EquipIndex);
+	virtual void UnEquipItem_Implementation(EItemFilter ItemFilter, int32 EquipIndex) override;
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	void AddQuickItem(FItemTable Item);
+	virtual void AddQuickItem_Implementation(FItemTable Item) override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+    void AddQuickItemAt(FItemTable Item, int32 EquipIndex);
+	virtual void AddQuickItemAt_Implementation(FItemTable Item, int32 EquipIndex) override;
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	void RemoveQuickItemAt(EItemFilter ItemFilter, int32 EquipIndex);
+	virtual void RemoveQuickItemAt_Implementation(EItemFilter ItemFilter, int32 EquipIndex) override;
+	
 protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -195,6 +220,8 @@ protected:
 	void UseQuickPotion();
 	void ShowMenuHUD();
 	void TurnOffHUD();
+	
+	void ShiftLeftEquipments(EMouseWheel MouseWheel);
 	
 	void MoveForward(float Value);
 	void MoveRight(float Value);

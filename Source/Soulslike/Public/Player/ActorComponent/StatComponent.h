@@ -59,13 +59,15 @@ public:
 
 	void AddStaminaValue(float Value);
 	void AddSoulsValue(float Value);
-
+	
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE FPlayerStat GetPlayerStat() const {return PlayerStat;}
 
 	FORCEINLINE float GetCurHp() const { return PlayerStat.CurHp; }
 	FORCEINLINE float GetMaxHp() const { return PlayerStat.MaxHp; }
 	FORCEINLINE float GetCurStamina() const { return PlayerStat.CurStamina; }
 	FORCEINLINE float GetMaxStamina() const { return PlayerStat.MaxStamina; }
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE int32 GetSoulsCount() const { return PlayerStat.SoulsCount; }
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

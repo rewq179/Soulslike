@@ -80,8 +80,7 @@ FText AInteractDoor::GetInteractMessage()
 	TArray<FStringFormatArg> args;
 	args.Add(FStringFormatArg(Name));
 
-	FString string = FString::Format(TEXT("[F] Interact : {0}"), args);
-	return FText::FromString(string);
+	return FText::FromString(FString::Format(TEXT("[F] Interact : {0}"), args));
 }
 
 ////////////////////////////////////////////////////////////////////////////

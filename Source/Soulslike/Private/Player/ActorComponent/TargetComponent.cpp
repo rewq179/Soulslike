@@ -12,6 +12,7 @@
 
 #include "Net/UnrealNetwork.h"
 
+
 UTargetComponent::UTargetComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;

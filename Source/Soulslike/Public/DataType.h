@@ -146,6 +146,16 @@ struct SOULSLIKE_API FItemTable : public FTableRowBase
 //// 플레이어
 
 UENUM(BlueprintType)
+enum class EMouseWheel: uint8
+{
+	Wheel_Magic  UMETA(DisplayName = "Magic"), 
+	Wheel_Weapon  UMETA(DisplayName = "Weapon"), 
+	Wheel_Shield  UMETA(DisplayName = "Shield"), 
+	Wheel_Potion  UMETA(DisplayName = "Potion") 
+};
+
+
+UENUM(BlueprintType)
 enum class EPlayerAttack : uint8
 {
 	Player_LightAttack UMETA(DisplayName = "LightAttack"),
@@ -282,5 +292,6 @@ DECLARE_MULTICAST_DELEGATE(FOnRangeAttackEndDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnChargeAttackEndDelegate);
 
 DECLARE_DELEGATE_OneParam(FMouseClickDelegate, EPlayerAttack);
+DECLARE_DELEGATE_OneParam(FMouseWheelDelegate, EMouseWheel);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnHpChangedDelegate, float, Hp, const class UDamageType*, DamageType, class AController*, InstigatedBy, AActor*, DamageCauser);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnemyHpChangedDelegate, float, CurHp, float, MaxHp);

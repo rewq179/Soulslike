@@ -59,8 +59,8 @@ FText APickUpActor::GetInteractMessage()
 	TArray<FStringFormatArg> args;
 	args.Add(FStringFormatArg(ItemTable.Name.ToString()));
 
-	const FString Message = FString::Format(TEXT("[F] Interact : {0}"), args);
-	return FText::FromString(Message);
+	FString string = FString::Format(TEXT("[F] Interact : {0}"), args);
+	return FText::FromString(string);
 }
 
 ////////////////////////////////////////////////////////////////////////////

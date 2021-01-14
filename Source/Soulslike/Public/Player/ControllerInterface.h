@@ -6,6 +6,7 @@
 #include "UObject/Interface.h"
 #include "ControllerInterface.generated.h"
 
+
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
 class UControllerInterface : public UInterface

@@ -7,6 +7,7 @@
 #include "Player/ActorComponent/StatComponent.h"
 #include "Player/ActorComponent/InteractComponent.h"
 #include "Player/ActorComponent/InventoryComponent.h"
+#include "Player/ActorComponent/EquipmentComponent.h"
 
 #include "System/SoulFunctionLibrary.h"
 
@@ -72,6 +73,7 @@ ASoulCharacter::ASoulCharacter()
 	StatComponent = CreateDefaultSubobject<UStatComponent>("StatComponent");
 	InteractComponent = CreateDefaultSubobject<UInteractComponent>("InteractComponent");
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
+	EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
 	
 	Tags.Add(FName("Player"));
 }
@@ -95,6 +97,7 @@ void ASoulCharacter::SetPickUpActor_Implementation(APickUpActor* Actor)
     }
 }
 
+// 스텟
 UStatComponent* ASoulCharacter::GetStatComponent_Implementation()
 {
 	return StatComponent;
@@ -102,33 +105,38 @@ UStatComponent* ASoulCharacter::GetStatComponent_Implementation()
 
 int32 ASoulCharacter::GetSoulsCount_Implementation()
 {
-	if(StatComponent)
-	{
-		return StatComponent->GetSoulsCount();
-	}
-
-	return -1;
+	return StatComponent->GetSoulsCount();
 }
 
+// 인벤토리
 UInventoryComponent* ASoulCharacter::GetInventoryComponent_Implementation()
 {
 	return InventoryComponent;
 }
 
+TArray<FItemTable> ASoulCharacter::GetInventory_Implementation()
+{
+	return InventoryComponent->GetInventory();
+}
+
+FItemTable ASoulCharacter::GetInventoryItemAt_Implementation(int32 SlotIndex)
+{
+	return InventoryComponent->GetInventoryItem(SlotIndex);
+}
+
+void ASoulCharacter::AddItem_Implementation(FItemTable Item)
+{
+	if(InventoryComponent)
+	{
+		InventoryComponent->AddItem(Item);
+	}
+}
 
 void ASoulCharacter::UseItem_Implementation(int32 SlotIndex)
 {
 	if(InventoryComponent)
 	{
 		InventoryComponent->UseItem(SlotIndex);
-	}
-}
-
-void ASoulCharacter::UnEquipItem_Implementation(int32 EquipIndex)
-{
-	if(InventoryComponent)
-	{
-		InventoryComponent->UnEquipEquipmentItem(EquipIndex);
 	}
 }
 
@@ -161,15 +169,7 @@ void ASoulCharacter::LockItemAt_Implementation(int32 SlotIndex)
 	if(InventoryComponent)
 	{
 		InventoryComponent->LockItemAt(SlotIndex);
-	}	
-}
-
-void ASoulCharacter::SetQuickItemAt_Implementation(int32 SlotIndex)
-{
-	if(InventoryComponent)
-	{
-		InventoryComponent->SetQuickItemAt(SlotIndex);
-	}	
+	}
 }
 
 void ASoulCharacter::SortItem_Implementation()
@@ -177,6 +177,44 @@ void ASoulCharacter::SortItem_Implementation()
 	if(InventoryComponent)
 	{
 		InventoryComponent->SortItem();
+	}
+}
+
+// 장비
+UEquipmentComponent* ASoulCharacter::GetEquipmentComponent_Implementation()
+{
+	return EquipmentComponent;
+}
+
+void ASoulCharacter::UnEquipItem_Implementation(EItemFilter ItemFilter, int32 EquipIndex)
+{
+	if(EquipmentComponent)
+	{
+		EquipmentComponent->UnEquipItem(ItemFilter, EquipIndex);
+	}
+}
+
+void ASoulCharacter::AddQuickItem_Implementation(FItemTable Item)
+{
+	if(EquipmentComponent)
+	{
+		EquipmentComponent->AddQuickItem(Item, false);
+	}	
+}
+
+void ASoulCharacter::AddQuickItemAt_Implementation(FItemTable Item, int32 EquipIndex)
+{
+	if(EquipmentComponent)
+	{
+		EquipmentComponent->AddQuickItemAt(Item, EquipIndex);
+	}	
+}
+
+void ASoulCharacter::RemoveQuickItemAt_Implementation(EItemFilter ItemFilter, int32 EquipIndex)
+{
+	if(EquipmentComponent)
+	{
+		EquipmentComponent->RemoveQuickItemAt(ItemFilter, EquipIndex, false);
 	}
 }
 
@@ -201,9 +239,15 @@ void ASoulCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAction("Target", IE_Pressed, this, &ASoulCharacter::StartTarget);
 	PlayerInputComponent->BindAction("Potion", IE_Pressed, this, &ASoulCharacter::UseQuickPotion);
 
-	// HUD네
+	// HUD
 	PlayerInputComponent->BindAction("Menu", IE_Pressed, this, &ASoulCharacter::ShowMenuHUD);
 	PlayerInputComponent->BindAction("TurnOff", IE_Pressed, this, &ASoulCharacter::TurnOffHUD);
+
+	// Quick 아이템 변경
+	PlayerInputComponent->BindAction<FMouseWheelDelegate>("ChangeMagic", IE_Pressed, this, &ASoulCharacter::ShiftLeftEquipments, EMouseWheel::Wheel_Magic);
+	PlayerInputComponent->BindAction<FMouseWheelDelegate>("ChangeWeapon", IE_Pressed, this, &ASoulCharacter::ShiftLeftEquipments, EMouseWheel::Wheel_Weapon);
+	PlayerInputComponent->BindAction<FMouseWheelDelegate>("ChangeShield", IE_Pressed, this, &ASoulCharacter::ShiftLeftEquipments, EMouseWheel::Wheel_Shield);
+	PlayerInputComponent->BindAction<FMouseWheelDelegate>("ChangePotion", IE_Pressed, this, &ASoulCharacter::ShiftLeftEquipments, EMouseWheel::Wheel_Potion);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &ASoulCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ASoulCharacter::MoveRight);
@@ -239,6 +283,11 @@ void ASoulCharacter::PossessedBy(AController* NewController)
 		if (InventoryComponent)
 		{
 			InventoryComponent->Initialize();
+		}
+
+		if(EquipmentComponent)
+		{
+			EquipmentComponent->Initialize();
 		}
 	}
 }
@@ -712,9 +761,9 @@ void ASoulCharacter::SetLockCamera(AActor* InTarget, bool bLock)
 
 void ASoulCharacter::UseQuickPotion() 
 {
-	if (InventoryComponent)
+	if (EquipmentComponent)
 	{
-		InventoryComponent->UseQuickItem(3);
+		EquipmentComponent->UseQuickItem();
 	}
 }
 
@@ -733,6 +782,15 @@ void ASoulCharacter::TurnOffHUD()
 		InventoryComponent->OwnerController->ClientTurnOffHUD();
 	}
 }
+
+void ASoulCharacter::ShiftLeftEquipments(EMouseWheel MouseWheel)
+{
+	if(EquipmentComponent)
+	{
+		EquipmentComponent->ShiftLeftEquipments(MouseWheel);
+	}
+}
+
 
 ////////////////////////////////////////////////////////////////////////////
 //// 소울
