@@ -8,7 +8,6 @@
  * 용도 : 조종되고 있는 Pawn의 LightAtatck 애니메이션을 재생/데미지 적용/상태이상 적용을 통합적으로 처리하기 위함
  */
 
-
 UCLASS()
 class SOULSLIKE_API UBTTask_LightAttack : public UBTTaskNode
 {

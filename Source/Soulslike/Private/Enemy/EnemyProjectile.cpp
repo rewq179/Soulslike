@@ -12,18 +12,20 @@
 #include "Kismet/KismetMathLibrary.h"
 
 #include "Net/UnrealNetwork.h"
+#include "System/SoulFunctionLibrary.h"
 
 // Sets default values
 AEnemyProjectile::AEnemyProjectile()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	
 	bReplicates = true;
-	//bReplicateMovement = true;
+	// bReplicateMovement = true;
 
+	// 발사체의 생존 시간
 	InitialLifeSpan = 3.f;
-	
+
+	// DefaultSceneRoot :: 루트
 	DefaultSceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("DeafultSceneRoot"));;
 	RootComponent = DefaultSceneRoot;
 
@@ -48,7 +50,6 @@ AEnemyProjectile::AEnemyProjectile()
 	ProjectileMovement->InitialSpeed = 3500.f;
 }
 
-// Called when the game starts or when spawned
 void AEnemyProjectile::BeginPlay()
 {
 	Super::BeginPlay();
@@ -57,6 +58,10 @@ void AEnemyProjectile::BeginPlay()
 	OnDestroyed.AddDynamic(this, &AEnemyProjectile::OnActorDestroyed);
 }
 
+void AEnemyProjectile::MulticastPlayParticle_Implementation()
+{
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorLocation());
+}
 
 void AEnemyProjectile::OnActorDestroyed(AActor * DestroyedActor)
 {
@@ -64,11 +69,6 @@ void AEnemyProjectile::OnActorDestroyed(AActor * DestroyedActor)
 	{
 		MulticastPlayParticle();
 	}
-}
-
-void AEnemyProjectile::MulticastPlayParticle_Implementation()
-{
-	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorLocation());
 }
 
 void AEnemyProjectile::OnOverlapBegin(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
@@ -79,15 +79,7 @@ void AEnemyProjectile::OnOverlapBegin(UPrimitiveComponent * OverlappedComponent,
 		{
 			bHit = true;
 
-			UGameplayStatics::ApplyDamage(OtherActor, Damage, nullptr, GetOwner(), DamageType);
-		
-			if (auto const Player = Cast<ASoulCharacter>(OtherActor))
-			{
-				FVector UnitVector = UKismetMathLibrary::GetDirectionUnitVector(GetActorLocation(), OtherActor->GetActorLocation());
-				UnitVector.Z += 1;
-
-				Player->HitReaction(1.f, UnitVector, false);
-			}
+			USoulFunctionLibrary::ApplyDamageToPlayer(OtherActor, Damage, nullptr, GetOwner(), DamageType, 0.f, false);
 
 			Destroy();
 		}

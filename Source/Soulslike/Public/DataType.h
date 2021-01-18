@@ -9,7 +9,6 @@
 class UTexture2D;
 class ASoulCharacter;
 class AWeapon;
-class UTexture2D;
 
 UENUM(BlueprintType)
 enum class EApplyStat : uint8
@@ -100,6 +99,9 @@ struct SOULSLIKE_API FItemTable : public FTableRowBase
 	FText Name;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FText Description;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	int32 Count;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
@@ -154,12 +156,20 @@ enum class EMouseWheel: uint8
 	Wheel_Potion  UMETA(DisplayName = "Potion") 
 };
 
-
 UENUM(BlueprintType)
 enum class EPlayerAttack : uint8
 {
 	Player_LightAttack UMETA(DisplayName = "LightAttack"),
 	Player_HeavyAttack UMETA(DisplayName = "HeavyAttack")
+};
+
+
+UENUM(BlueprintType)
+enum class EHealthType : uint8
+{
+	Health_Hp UMETA(DisplayName = "Hp"),
+	Health_Mp UMETA(DisplayName = "Mp"),
+	Health_Stamina UMETA(DisplayName = "Stamina")
 };
 
 USTRUCT(BlueprintType)
@@ -285,13 +295,15 @@ enum class EPlayerHUD : uint8
 ////////////////////////////////////////////////////////////////////////////
 //// 델리게이트
 
+// 몬스터
 DECLARE_MULTICAST_DELEGATE(FOnAggroMoitionEndDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnLightAttackEndDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnHeavyAttackEndDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnRangeAttackEndDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnChargeAttackEndDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnemyHpChangedDelegate, float, CurHp, float, MaxHp);
 
+// 플레이어
 DECLARE_DELEGATE_OneParam(FMouseClickDelegate, EPlayerAttack);
 DECLARE_DELEGATE_OneParam(FMouseWheelDelegate, EMouseWheel);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnHpChangedDelegate, float, Hp, const class UDamageType*, DamageType, class AController*, InstigatedBy, AActor*, DamageCauser);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnemyHpChangedDelegate, float, CurHp, float, MaxHp);

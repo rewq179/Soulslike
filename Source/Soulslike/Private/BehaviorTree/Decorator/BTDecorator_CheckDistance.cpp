@@ -25,29 +25,22 @@ bool UBTDecorator_CheckDistance::CalculateRawConditionValue(UBehaviorTreeCompone
 		return false;
 	}
 
-	float Range = 0.f;
-	switch (EnemyAttack)
+	float Distance; // Melee, Range, None 총 3가지 거리 구분을 한다.
+	if(EnemyAttack < EEnemyAttack::Enemy_RangeAttack)
 	{
-	case EEnemyAttack::Enemy_LightAttack:
-		Range = Enemy->GetMeleeDistance();
-		break;
-
-	case EEnemyAttack::Enemy_HeavyAttack:
-		Range = Enemy->GetMeleeDistance();
-		break;
-
-	case EEnemyAttack::Enemy_ChargeAttack:
-		Range = Enemy->GetMeleeDistance();
-		break;
-
-	case EEnemyAttack::Enemy_RangeAttack:
-		Range = Enemy->GetRangeDistance();
-		break;
-
-	case EEnemyAttack::Enemy_None:
-		Range = Enemy->GetDetectDistance();
+		Distance = Enemy->GetMeleeDistance();
 	}
 
-	bResult = (Target->GetDistanceTo(Enemy) < Range);
+	else if(EnemyAttack == EEnemyAttack::Enemy_RangeAttack)
+	{
+		Distance = Enemy->GetRangeDistance();
+	}
+
+	else
+	{
+		Distance = Enemy->GetDetectDistance();
+	}
+	
+	bResult = (Target->GetDistanceTo(Enemy) < Distance);
 	return bResult;
 }

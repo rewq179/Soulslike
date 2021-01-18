@@ -155,6 +155,50 @@ void UStatComponent::AddSoulsValue(float Value)
 }
 
 
+TArray<FText> UStatComponent::GetStatText()
+{
+	TArray<FText> Texts;
+
+	Texts.Add(FText::FromString(FString::FromInt(PlayerStat.Constitution)));
+	Texts.Add(FText::FromString(FString::FromInt(PlayerStat.Mentality)));
+	Texts.Add(FText::FromString(FString::FromInt(PlayerStat.Witness)));
+	Texts.Add(FText::FromString(FString::FromInt(PlayerStat.Strength)));
+	Texts.Add(FText::FromString(FString::FromInt(PlayerStat.Dexterity)));
+	Texts.Add(FText::FromString(FString::FromInt(PlayerStat.Intelligence)));
+	Texts.Add(FText::FromString(FString::FromInt(PlayerStat.Luck)));
+
+	return Texts;
+	
+}
+
+FText UStatComponent::GetHealthText(EHealthType HealthType)
+{
+	TArray<FStringFormatArg> args;
+
+	switch (HealthType)
+	{
+	case EHealthType::Health_Hp:
+		args.Add(FStringFormatArg(static_cast<int32>(GetCurHp())));
+		args.Add(FStringFormatArg(static_cast<int32>(GetMaxHp())));
+		break;
+
+	case EHealthType::Health_Mp:
+		// args.Add(FStringFormatArg(static_cast<int32>(GetCurMp())));
+		// args.Add(FStringFormatArg(static_cast<int32>(GetMaxMp())));
+		break;
+
+	case EHealthType::Health_Stamina:
+		args.Add(FStringFormatArg(static_cast<int32>(GetCurStamina())));
+		args.Add(FStringFormatArg(static_cast<int32>(GetMaxStamina())));
+		break;
+		
+	default:
+		;
+	}
+
+	return FText::FromString(FString::Format(TEXT("{0}/{1}"), args));
+}
+
 void UStatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

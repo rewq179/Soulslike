@@ -75,6 +75,9 @@ public:
 	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Equipment")
 	class UEquipmentComponent* GetEquipmentComponent();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Equipment")
+	float GetEquipWeight();
 	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Equipment")
 	void UnEquipItem(EItemFilter ItemFilter, int32 EquipIndex);

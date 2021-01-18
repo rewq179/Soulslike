@@ -39,6 +39,5 @@ public:
 	virtual void OnPossess(APawn* InPawn) override; 
 
 	void StartBehaviorTree() const;
-
 	void StopBehaviorTree() const;
 };

@@ -6,15 +6,18 @@
 #include "GameFramework/Character.h"
 #include "DataType.h"
 #include "Player/ActorComponent/ActorComponentInterface.h"
+#include "Player/PlayerAnimInterface.h"
 
 #include "SoulCharacter.generated.h"
 
 class ASoulPlayerController;
+class UPlayerAnimInstance;
 class UTargetComponent;
 class UStatComponent;
 class UInteractComponent;
 class UInventoryComponent;
 class UEquipmentComponent;
+class UComboComponent;
 
 class AWeapon;
 class AEnemy;
@@ -24,7 +27,7 @@ class USpringArmComponent;
 class UAnimMontage;
 
 UCLASS(config = Game)
-class ASoulCharacter : public ACharacter, public IActorComponentInterface
+class ASoulCharacter : public ACharacter, public IActorComponentInterface, public IPlayerAnimInterface
 {
 	GENERATED_BODY()
 	
@@ -39,6 +42,9 @@ class ASoulCharacter : public ACharacter, public IActorComponentInterface
 
 	////////////////////////////////////////////////////////////////////////////
 	//// 몽타주
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animtaion, meta = (AllowPrivateAccess = "true"))
+	UPlayerAnimInstance* PlayerAnimInstance;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Montage, meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* RollMontage;
@@ -102,15 +108,22 @@ public:
 	UInteractComponent* InteractComponent;
 	UStatComponent* StatComponent;
 	UInventoryComponent* InventoryComponent;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = ActorComponent)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ActorComponnt")
 	UEquipmentComponent* EquipmentComponent;
+	UComboComponent* ComboComponent;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	TSubclassOf<UDamageType> DamageType;
 
 	////////////////////////////////////////////////////////////////////////////
 	//// 인터페이스
+
+	// 애님 인스턴스
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+    void SetEquip(bool bEquip);
+	virtual void SetEquip_Implementation(bool bEquip) override;
 	
+	// 상호작용
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
 	void SetInteractDoor(AInteractDoor* Door);
 	virtual void SetInteractDoor_Implementation(AInteractDoor* Door) override;
@@ -173,7 +186,11 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
 	UEquipmentComponent* GetEquipmentComponent();
 	virtual UEquipmentComponent* GetEquipmentComponent_Implementation() override;
-
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	float GetEquipWeight();
+	virtual float GetEquipWeight_Implementation() override;
+	
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
 	void UnEquipItem(EItemFilter ItemFilter, int32 EquipIndex);
 	virtual void UnEquipItem_Implementation(EItemFilter ItemFilter, int32 EquipIndex) override;
@@ -219,6 +236,7 @@ protected:
 
 	void UseQuickPotion();
 	void ShowMenuHUD();
+	void BackMenuHUD();
 	void TurnOffHUD();
 	
 	void ShiftLeftEquipments(EMouseWheel MouseWheel);
@@ -240,9 +258,6 @@ protected:
 
 	UFUNCTION()
 	void OnRep_Rolling();
-
-	UFUNCTION(BlueprintImplementableEvent, Category = Status)
-	void OnUpdateRolling(bool bRoll);
 
 public:
 	void SetRolling(bool bRoll);
@@ -283,7 +298,7 @@ public:
 	UFUNCTION(BlueprintCallable)
     void HeavyAttack();
 	
-	void ApplyDamageToActorInOverlapSphere(TArray<AActor*>& OverlappedActors);
+	void ApplyDamageToActorInOverlapSphere(TArray<AActor*>& OverlappedActors, EPlayerAttack PlayerAttack);
 	
 	////////////////////////////////////////////////////////////////////////////
 	//// 상호 작용
@@ -328,9 +343,6 @@ protected:
 
 	UFUNCTION()
 	void OnRep_Blocking();
-
-	UFUNCTION(BlueprintImplementableEvent, Category = Stat)
-    void OnUpdateBlock();
 
 public:
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -379,8 +391,10 @@ public:
 	FORCEINLINE bool IsRoll() const { return bRolling; }
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	FORCEINLINE int32 GetLightAttackLength() const { return LightAttackMontages.Num(); }
 	
 	// 세터
+	FORCEINLINE void SetPlayerAnimInstance(UPlayerAnimInstance* AnimInstance) {PlayerAnimInstance = AnimInstance;}
 	FORCEINLINE void SetMoveable(const bool bMove) { bMoveable = bMove; }
 	FORCEINLINE void SetPlayingScene(const bool bScene) { bPlayingScene = bScene; }
 

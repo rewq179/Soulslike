@@ -3,7 +3,6 @@
 
 #include "BehaviorTree/Service/BTService_GetDistance.h"
 
-#include "Enemy/Enemy.h"
 #include "Enemy/EnemyAIController.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
@@ -21,7 +20,7 @@ void UBTService_GetDistance::TickNode(UBehaviorTreeComponent& OwnerComp, uint8 *
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
 	APawn* ControllingPawn = OwnerComp.GetAIOwner()->GetPawn();
-	auto Target = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AEnemyAIController::Target));
+	auto const Target = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AEnemyAIController::Target));
 
 	if (ControllingPawn == nullptr || Target == nullptr)
 	{

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "Player/ControllerInterface.h"
+#include "DataType.h"
 
 
 #include "SoulPlayerController.generated.h"
@@ -40,6 +41,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
     void ShowOptionWidget();
 	virtual void ShowOptionWidget_Implementation() override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	void ClearItemDescription();
+	virtual void ClearItemDescription_Implementation() override;
 	
 	////////////////////////////////////////////////////////////////////////////
 	//// 
@@ -57,15 +62,6 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = Interact)
     void OnTurnOffHUD();
-	
-	////////////////////////////////////////////////////////////////////////////
-	//// 루팅
-	
-	UFUNCTION(Client, Reliable)
-	void ClientShowPickUpName(const FText& PickUpName);
-
-	UFUNCTION(BlueprintImplementableEvent, Category = Interact)
-	void OnShowPickUpName(const FText& PickUpName);
 
 	////////////////////////////////////////////////////////////////////////////
 	//// 플레이어 체력바
@@ -138,6 +134,9 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = Menu)
     void OnShowShowMenuHUD(bool bActive);
+
+	UFUNCTION(Client, Reliable)
+    void ClientBackMenuHUD();
 	
 	////////////////////////////////////////////////////////////////////////////
     //// 인벤토리
@@ -180,7 +179,22 @@ public:
  
 	UFUNCTION(BlueprintImplementableEvent, Category = Equipment)
     void OnClearQuickBar(int32 QuickIndex);
+
+	///////////////////////////////////////////////////////////////////////////////
+	//// 장비 설명 HUD
+
+	UFUNCTION(Client, Reliable)
+    void ClientUpdateItemDescription(FItemTable ItemTable);
+ 
+	UFUNCTION(BlueprintImplementableEvent, Category = Equipment)
+    void OnUpdateItemDescription(FItemTable ItemTable);
 	
+	UFUNCTION(Client, Reliable)
+	void ClientClearItemDescription();
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = Equipment)
+	void OnClearItemDescription();
+
 	////////////////////////////////////////////////////////////////////////////
 	//// 스테이터스
 
@@ -199,6 +213,8 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = Option)
     void OnShowOption(bool bActive);
 
+
+	
 	
 	///////////////////////////////////////////////////////////////////////////////
 	//// 기타

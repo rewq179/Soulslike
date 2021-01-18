@@ -7,8 +7,9 @@
 #include "BTTask_PlayAggroMoition.generated.h"
 
 /**
- * 
+ * 용도 : 조종되고 있는 Pawn이 타겟을 조우하면 AggroMontage를 재생시켜준다.
  */
+
 UCLASS()
 class SOULSLIKE_API UBTTask_PlayAggroMoition : public UBTTaskNode
 {

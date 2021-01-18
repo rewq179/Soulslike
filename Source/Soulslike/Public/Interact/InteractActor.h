@@ -12,6 +12,10 @@ class USphereComponent;
 class UBoxComponent;
 class ASoulCharacter;
 
+/**
+ * 용도 : 상호 작용이 가능한 Actor의 기본 클래스 (루팅, 문 등등...)
+ */
+
 UCLASS()
 class SOULSLIKE_API AInteractActor : public AActor
 {
@@ -40,7 +44,7 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	virtual void Interact();
+	virtual void Interact(ASoulCharacter* SoulCharacter);
 	virtual void SetRenderCustomDepth(ASoulCharacter* InPlayer, bool bTrue);
 	virtual FText GetInteractMessage();
 

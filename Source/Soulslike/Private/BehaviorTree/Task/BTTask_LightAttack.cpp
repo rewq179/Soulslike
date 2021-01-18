@@ -20,9 +20,8 @@ EBTNodeResult::Type UBTTask_LightAttack::ExecuteTask(UBehaviorTreeComponent& Own
 {
 	EBTNodeResult::Type Result = Super::ExecuteTask(OwnerComp, NodeMemory);
 
-	auto Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
-	auto Target = Cast<ASoulCharacter>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AEnemyAIController::Target));
-	if (Enemy == nullptr || Target == nullptr)
+	auto const Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
+	if (Enemy == nullptr)
 	{
 		return EBTNodeResult::Failed;
 	}
@@ -38,7 +37,7 @@ void UBTTask_LightAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 {
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 
-	if (!bAttacking) // ������ ����Ǹ� ���� BT�� �����ų �� �ִ�.
+	if (!bAttacking) // delegate로 애니메이션 종료시 값이 false된다.
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}

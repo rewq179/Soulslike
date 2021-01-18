@@ -22,7 +22,7 @@ EBTNodeResult::Type UBTTask_TurnToTarget::ExecuteTask(UBehaviorTreeComponent & O
 		return EBTNodeResult::Failed;
 	}
 
-	auto Target = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AEnemyAIController::Target));
+	auto const Target = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AEnemyAIController::Target));
 	if (Target == nullptr)
 	{
 		return EBTNodeResult::Failed;
@@ -30,7 +30,8 @@ EBTNodeResult::Type UBTTask_TurnToTarget::ExecuteTask(UBehaviorTreeComponent & O
 
 	FVector LookVector = Target->GetActorLocation() - Enemy->GetActorLocation();
 	LookVector.Z = 0.0f;
-	FRotator TargetRot = FRotationMatrix::MakeFromX(LookVector).Rotator();
+	
+	const FRotator TargetRot = FRotationMatrix::MakeFromX(LookVector).Rotator();
 	Enemy->SetActorRotation(FMath::RInterpTo(Enemy->GetActorRotation(), TargetRot, GetWorld()->GetDeltaSeconds(), 2.0f));
 
 	return EBTNodeResult::Succeeded;

@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTService.h"
+#include "Enemy/Enemy.h"
+
 #include "BTService_DetectTarget.generated.h"
 
 /**
@@ -18,4 +20,6 @@ public:
 
 protected:
 	virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
+
+	void ClearBlackBoard(UBehaviorTreeComponent& OwnerComp);
 };

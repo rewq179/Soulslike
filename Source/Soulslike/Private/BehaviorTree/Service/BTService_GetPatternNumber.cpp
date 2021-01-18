@@ -35,23 +35,21 @@ void UBTService_GetPatternNumber::OnBecomeRelevant(UBehaviorTreeComponent& Owner
 
 bool UBTService_GetPatternNumber::GetRandNumber(int32& Result) const
 {
-	int Rand = FMath::RandRange(0, 99);
+	const int Rand = FMath::RandRange(0, 99);
 
 	int High = 0;
-	int Low = 0;
 
-	for (int Index = 0; Index < Percents.Num(); Index++) // 20 30 50
+	// 계산 방식 : 20, 30, 50 일때 Num < 20, Num< 50, Num< 100 이런식으로 Index(패턴 번호)를 리턴함.
+	for (int Index = 0; Index < Percents.Num(); ++Index) 
 	{
 		High += Percents[Index];
 
-		if (Low <= Rand && Rand <= High)
+		if (Rand < High)
 		{
 			Result = Index;
 
 			return true;
 		}
-
-		Low += Percents[Index];
 	}
 
 	return false;

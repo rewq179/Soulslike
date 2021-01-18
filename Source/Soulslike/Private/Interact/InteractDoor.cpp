@@ -57,9 +57,9 @@ void AInteractDoor::BeginPlay()
 }
 
 
-void AInteractDoor::Interact()
+void AInteractDoor::Interact(ASoulCharacter* SoulCharacter)
 {
-	if (!bOpened && !bInteracted)
+	if (!bOpened && !bInteracted && SoulCharacter)
 	{
 		InteractDoor(true);
 
@@ -104,11 +104,6 @@ void AInteractDoor::InteractDoor(bool bOpen)
 
 ////////////////////////////////////////////////////////////////////////////
 //// 문의 회전 이동
-
-bool AInteractDoor::MulticastDoorMoveTo_Validate(UStaticMeshComponent* Door, FVector Location, FRotator Rotator)
-{
-	return true;
-}
 
 void AInteractDoor::MulticastDoorMoveTo_Implementation(UStaticMeshComponent* Door, FVector Location, FRotator Rotator)
 {

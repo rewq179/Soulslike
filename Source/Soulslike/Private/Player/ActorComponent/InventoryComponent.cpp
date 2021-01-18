@@ -367,20 +367,22 @@ bool UInventoryComponent::AddInventoryItem(FItemTable Item)
 		{
 			const int32 SlotIndex = GetInventoryIndex(Item.ID, Index);
 
-			if (SlotIndex != -1) // 아이템을 찾았다면?
+			if (SlotIndex != -1 && Inventory[SlotIndex].Count < Inventory[SlotIndex].MaxCount) // 아이템이 있고, MaxCount를 넘지 않으면?
 			{
-				if(Inventory[SlotIndex].Count < Inventory[SlotIndex].MaxCount) // MaxCount를 넘지 않았으면?
+				if(Item.Weight <= GetFreeWeight()) // 무게가 적당하면?
 				{
 					Inventory[SlotIndex].Count += 1;
 					FreeWeight -= Item.Weight;
 
 					return true;
 				}
+
+				return false;
 			}
 		}
 	}
 	
-	if(Item.Weight <= FreeWeight && FreeSlot >0)
+	if(Item.Weight <= GetFreeWeight()  && FreeSlot >0)
 	{
 		Item.Count = 1;
 		Inventory.Add(Item);
@@ -396,7 +398,7 @@ bool UInventoryComponent::AddInventoryItem(FItemTable Item)
 
 bool UInventoryComponent::AddInventoryItemAt(FItemTable Item, int32 SlotIndex)
 {
-	if(FreeSlot > 0 && Item.Weight <= FreeWeight)
+	if(FreeSlot > 0 && Item.Weight <= GetFreeWeight())
 	{
 		Inventory.Insert(Item, SlotIndex);
 
@@ -434,10 +436,10 @@ bool UInventoryComponent::RemoveInventoryItemAt(int32 SlotIndex, int32 Count)
 		}
 
 		else // 1=1, 65=65 일 경우
-			{
+		{
 			FreeWeight += Inventory[SlotIndex].Weight;
 			Inventory.RemoveAt(SlotIndex);
-			}
+		}
 	
 		return true;
 	}
@@ -496,15 +498,42 @@ int32 UInventoryComponent::GetInventoryIndex(int32 Id, int32 StartIndex)
 	return -1;
 }
 
+float UInventoryComponent::GetFreeWeight() const
+{
+	if(OwnerCharacter)
+	{
+		return FreeWeight - OwnerCharacter->GetEquipWeight();
+	}
+	
+	return -1.f;
+}
+
+float UInventoryComponent::GetCurWeight() const
+{
+	if(OwnerCharacter)
+	{
+		return MaxWeight - FreeWeight + OwnerCharacter->GetEquipWeight();
+    }
+
+	return -1.f;
+}
+
 FText UInventoryComponent::GetWeightText()
 {
 	TArray<FStringFormatArg> args;
-	args.Add(FStringFormatArg((GetCurWeight())));
-	args.Add(FStringFormatArg((GetMaxWeight())));
+	args.Add(FStringFormatArg(static_cast<int32>(GetCurWeight())));
+	args.Add(FStringFormatArg(static_cast<int32>(GetMaxWeight())));
 
-	return FText::FromString(FString::Format(TEXT("{{0}/{1}}"), args));
+	return FText::FromString(FString::Format(TEXT("Weight : {0}/{1}"), args));
 }
 
+void UInventoryComponent::HoverInventorySlot(int32 SlotIndex)
+{
+	if(SlotIndex < Inventory.Num() && OwnerController)
+	{
+		OwnerController->ClientUpdateItemDescription(Inventory[SlotIndex]);
+	}
+}
 
 ////////////////////////////////////////////////////////////////////////////
 ////  기타

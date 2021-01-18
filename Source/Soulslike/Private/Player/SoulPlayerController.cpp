@@ -17,7 +17,8 @@ ASoulPlayerController::ASoulPlayerController()
 void ASoulPlayerController::ShowEquipmentWidget_Implementation()
 {
 	OnShowShowMenuHUD(false);
-	bPlayerHUDActive=true;
+
+	bPlayerHUDActive = true;
 	
 	ClientShowEquipment();
 }
@@ -25,7 +26,8 @@ void ASoulPlayerController::ShowEquipmentWidget_Implementation()
 void ASoulPlayerController::ShowInventoryWidget_Implementation()
 {
 	OnShowShowMenuHUD(false);
-	bPlayerHUDActive=true;
+
+	bPlayerHUDActive = true;
 	
 	ClientShowInventory();
 }
@@ -33,17 +35,24 @@ void ASoulPlayerController::ShowInventoryWidget_Implementation()
 void ASoulPlayerController::ShowStatusWidget_Implementation()
 {
 	OnShowShowMenuHUD(false);
-	bPlayerHUDActive=true;
+
+	bPlayerHUDActive = true;
 	
 	ClientShowStatus();
 }
 
 void ASoulPlayerController::ShowOptionWidget_Implementation()
 {
-	OnShowShowMenuHUD(false);\
-	bPlayerHUDActive=true;
+	OnShowShowMenuHUD(false);
+
+	bPlayerHUDActive = true;
 	
 	ClientShowOption();
+}
+
+void ASoulPlayerController::ClearItemDescription_Implementation()
+{
+	ClientClearItemDescription();
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -51,17 +60,9 @@ void ASoulPlayerController::ShowOptionWidget_Implementation()
 
 void ASoulPlayerController::ClientTurnOffHUD_Implementation()
 {
-	bPlayerHUDActive=false;
+	bPlayerHUDActive = false;
 	
 	OnTurnOffHUD();
-}
-
-////////////////////////////////////////////////////////////////////////////
-//// 루팅
-
-void ASoulPlayerController::ClientShowPickUpName_Implementation(const FText& PickUpName)
-{
-	OnShowPickUpName(PickUpName);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -120,13 +121,21 @@ void ASoulPlayerController::ClientUpdateInteractMessage_Implementation(const FTe
 
 void ASoulPlayerController::ClientShowMenuHUD_Implementation()
 {
-	if(!bPlayerHUDActive)
-	{
-		bMenuActive = !bMenuActive;
+	OnShowShowMenuHUD(true);
+}
 
-		OnShowShowMenuHUD(bMenuActive);
+void ASoulPlayerController::ClientBackMenuHUD_Implementation()
+{
+	if(bPlayerHUDActive)
+	{
+		OnTurnOffHUD();
+
+		bPlayerHUDActive = false;
+
+		OnShowShowMenuHUD(true);
 	}
 }
+
 
 ////////////////////////////////////////////////////////////////////////////
 //// 인벤토리
@@ -164,6 +173,18 @@ void ASoulPlayerController::ClientClearQuickBar_Implementation(int32 QuickIndex)
 	OnClearQuickBar(QuickIndex);
 }
 
+////////////////////////////////////////////////////////////////////////////
+//// 아이템 설명 HUD
+
+void ASoulPlayerController::ClientUpdateItemDescription_Implementation(FItemTable ItemTable)
+{
+	OnUpdateItemDescription(ItemTable);
+}
+
+void ASoulPlayerController::ClientClearItemDescription_Implementation()
+{
+	OnClearItemDescription();
+}
 
 ////////////////////////////////////////////////////////////////////////////
 //// 스테이터스

@@ -43,8 +43,6 @@ public:
 	void SetPickUpActor(APickUpActor* PickUpActor);
 	void SetInteractDoor(AInteractDoor* DoorActor);
 
-	void HandlePickUp();
-
 	void EquipWeapon(AActor* Item);
 
 protected:

@@ -23,8 +23,7 @@ EBTNodeResult::Type UBTTask_PlayAggroMoition::ExecuteTask(UBehaviorTreeComponent
 	EBTNodeResult::Type Result = Super::ExecuteTask(OwnerComp, NodeMemory);
 
 	auto Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
-	auto Target = Cast<ASoulCharacter>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AEnemyAIController::Target));
-	if (Enemy == nullptr || Target == nullptr)
+	if (Enemy == nullptr)
 	{
 		return EBTNodeResult::Failed;
 	}
@@ -40,7 +39,7 @@ void UBTTask_PlayAggroMoition::TickTask(UBehaviorTreeComponent& OwnerComp, uint8
 {
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 
-	if (!bPlaying) // ÁøÇàÀÌ Á¾·áµÇ¸é ´ÙÀ½ BT¸¦ ½ÇÇà½ÃÅ³ ¼ö ÀÖ´Ù.
+	if (!bPlaying) // ì§„í–‰ì´ ì¢…ë£Œë˜ë©´ ë‹¤ìŒ BTë¥¼ ì‹¤í–‰ì‹œí‚¬ ìˆ˜ ìžˆë‹¤.
 	{
 		OwnerComp.GetBlackboardComponent()->SetValueAsBool(AEnemyAIController::Aggro, true);
 		

@@ -14,6 +14,18 @@ UComboComponent::UComboComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
+	ComboTime = 0.5f;
+
+	ComboDamages.Add(1.f);
+	ComboDamages.Add(1.15f);
+	ComboDamages.Add(1.22f);
+	ComboDamages.Add(1.45f);
+
+	ComboCosts.Add(1.f);
+	ComboCosts.Add(1.1f);
+	ComboCosts.Add(1.2f);
+	ComboCosts.Add(1.4f);
+	
 	SetIsReplicatedByDefault(true);
 }
 
@@ -22,7 +34,8 @@ void UComboComponent::Initialize()
 	if (auto const Character = Cast<ASoulCharacter>(GetOwner()))
 	{
 		OwnerCharacter = Character;
-
+		ComboMaxCount = OwnerCharacter->GetLightAttackLength();
+		
 		if (auto const Controller = Cast<ASoulPlayerController>(OwnerCharacter->GetController()))
 		{
 			OwnerController = Controller;
@@ -31,25 +44,45 @@ void UComboComponent::Initialize()
 }
 
 
-void UComboComponent::SetComboCount(bool bCombo)
+void UComboComponent::AddComboCount(bool bReset)
 {
-	bComboAttackable = bCombo;
-	OwnerCharacter->GetWorldTimerManager().ClearTimer(ComboTimer);
-	
-	if(bCombo)
-	{
-		ComboCount++;
-
-		OwnerCharacter->GetWorld()->GetTimerManager().SetTimer(ComboTimer, FTimerDelegate::CreateLambda([&]()
-        {
-            SetComboCount(false);
-        }), 0.5f, false);
-	}
-	
-	else
+	if(bReset)
 	{
 		ComboCount = 0;
+
+		GetWorld()->GetTimerManager().ClearTimer(ComboTimer);
 	}
+
+	else
+	{
+		ComboCount++;
+	}
+}
+
+void UComboComponent::StartComboTimer()
+{
+	GetWorld()->GetTimerManager().SetTimer(ComboTimer, FTimerDelegate::CreateLambda([&]()
+    {
+		AddComboCount(true);
+		
+    }), ComboTime, false);
+}
+
+void UComboComponent::ClearComboTimer()
+{
+	AddComboCount(false);
+	
+	GetWorld()->GetTimerManager().ClearTimer(ComboTimer);
+}
+
+int32 UComboComponent::GetComboCount()
+{
+	if(ComboCount >= ComboMaxCount)
+	{
+		AddComboCount(true);
+	}
+
+	return ComboCount;
 }
 
 void UComboComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

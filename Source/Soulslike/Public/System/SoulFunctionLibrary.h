@@ -6,17 +6,25 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "SoulFunctionLibrary.generated.h"
 
+class UDamageType;
+class AController;
+
 /**
- * 
+ * 용도 : 클래스에서 공통으로 사용되는 함수들을 모아놓음
  */
+
 UCLASS()
 class SOULSLIKE_API USoulFunctionLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 	
 public:
+	// OverlapSphere를 생성한다. Enemy와 SoulCharacter에서 사용된다.
 	static void CreateOverlapSphere(UWorld* World, FVector SphereLocation, float Radius, UClass* ClassFilter, AActor* IgnoreActor, TArray<AActor*>& OverlapActors);
 
+	// OverlapSphere를 생성시 형태를 그려준다.
 	static void DrawDLine(UWorld* World, FVector Start, FVector End);
-
+	
+	// 몬스터가 플레이어에게 데미지를 준다. Enemy와 EnemyProjectile 클래스에서 사용된다.
+	static void ApplyDamageToPlayer(AActor* InPlayer, float Damage, AController* Controller, AActor* DamageCauser, TSubclassOf<UDamageType> DamageType, float Height, bool bKnockDown);
 };

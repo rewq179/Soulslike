@@ -29,7 +29,7 @@ AInteractActor::AInteractActor()
 	SphereComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	SphereComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
-
+	// 태그 설정
 	Tags.Add(FName("Interact"));
 }
 
@@ -44,7 +44,7 @@ void AInteractActor::BeginPlay()
 ////////////////////////////////////////////////////////////////////////////
 //// 상속
 
-void AInteractActor::Interact()
+void AInteractActor::Interact(ASoulCharacter* SoulCharacter)
 {
 
 }

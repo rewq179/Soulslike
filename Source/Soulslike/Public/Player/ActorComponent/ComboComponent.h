@@ -28,25 +28,35 @@ class SOULSLIKE_API UComboComponent : public UActorComponent
 
 	void Initialize();
 
-	protected:
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Combo")
-	bool bComboAttackable;
+protected:
+	/** 콤보의 최대치 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
+	int32 ComboMaxCount;
 	
 	/** 0~5까지로 콤보에 따른 가중치를 부여한다. */
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Combo")
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
 	int32 ComboCount;
 
 	/** 최종 데미지 = 데미지 * ComboDamages(콤보 가중치) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combo")
 	TArray<float> ComboDamages;
 
+	/** 최종 데미지 = 데미지 * ComboDamages(콤보 가중치) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combo")
+	TArray<float> ComboCosts;
+
 	/** 콤보 공격이 가능한 시간 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combo")
 	float ComboTime;
 
-	public:
-	void SetComboCount(bool bCombo);
-	FORCEINLINE int32 GetComboCount() const {return ComboCount;}
+public:
+	void AddComboCount(bool bReset);
+	void StartComboTimer();
+	void ClearComboTimer();
+	
+	int32 GetComboCount();
+	FORCEINLINE float GetComboDamage() {return ComboDamages[ComboCount];}
+	FORCEINLINE float GetComboCost() {return ComboCosts[ComboCount];}
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

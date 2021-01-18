@@ -21,18 +21,18 @@ void UBTService_DetectTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8 
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
-	APawn* ControllingPawn = OwnerComp.GetAIOwner()->GetPawn();
-	UWorld* World = ControllingPawn->GetWorld();
-	AEnemy* Enemy = Cast<AEnemy>(ControllingPawn);
-	if (ControllingPawn == nullptr || World == nullptr || Enemy == nullptr)
+	// 조종되고 있는 폰, 세계, 
+	AEnemy* Enemy = Cast<AEnemy>( OwnerComp.GetAIOwner()->GetPawn());
+	UWorld* World = Enemy->GetWorld();
+	if (Enemy == nullptr || World == nullptr )
 	{
 		return;
 	}
 
-	FVector Center = ControllingPawn->GetActorLocation();
+	const FVector Center = Enemy->GetActorLocation();
 
 	TArray<FOverlapResult> OverlapResults;
-	FCollisionQueryParams CollisionQueryParam(NAME_None, false, ControllingPawn);
+	FCollisionQueryParams CollisionQueryParam(NAME_None, false, Enemy);
 	bool bResult = World->OverlapMultiByChannel(
 		OverlapResults,
 		Center,
@@ -42,42 +42,43 @@ void UBTService_DetectTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8 
 		CollisionQueryParam
 	);
 
-	if (bResult)
+	if (bResult) // Overlap이 있으면?
 	{
 		for (auto OverlapResult : OverlapResults)
 		{
-			if (OverlapResult.GetActor()->ActorHasTag("Player"))
+			auto const Player = Cast<ASoulCharacter>(OverlapResult.GetActor());
+			if (OverlapResult.GetActor()->ActorHasTag("Player") && Player) // 태그가 Player이며 Player로 캐스팅이 된다면?
 			{
-				if (auto const Player = Cast<ASoulCharacter>(OverlapResult.GetActor()))
+				if (Player->IsDead()) // 사망 : 블랙보드 및 타겟 초기화
 				{
-					if (Player->IsDead())
-					{
-						OwnerComp.GetBlackboardComponent()->SetValueAsObject(AEnemyAIController::Target, nullptr);
-						OwnerComp.GetBlackboardComponent()->SetValueAsBool(AEnemyAIController::Aggro, false);
-						OwnerComp.GetBlackboardComponent()->SetValueAsBool(AEnemyAIController::FirstAttack, false);
+					ClearBlackBoard(OwnerComp);
 
-						Enemy->ClearTarget();
-					}
+					Enemy->ClearTarget();
+				}
 
-					else
-					{
-						OwnerComp.GetBlackboardComponent()->SetValueAsObject(AEnemyAIController::Target, Player);
+				else // 생존 : 블랙보드 및 타겟 설정
+ 				{
+					OwnerComp.GetBlackboardComponent()->SetValueAsObject(AEnemyAIController::Target, Player);
 						
-						Enemy->SetTarget(Player);
+					Enemy->SetTarget(Player);
 
-						return;
-					}
+					return;
 				}
 			}
 		}
 	}
 
-	else
+	else // Overlap이 없음
 	{
-		OwnerComp.GetBlackboardComponent()->SetValueAsObject(AEnemyAIController::Target, nullptr);
-		OwnerComp.GetBlackboardComponent()->SetValueAsBool(AEnemyAIController::Aggro, false);
-		OwnerComp.GetBlackboardComponent()->SetValueAsBool(AEnemyAIController::FirstAttack, false);
+		ClearBlackBoard(OwnerComp);
 
 		Enemy->ClearTarget();
 	}
+}
+
+void UBTService_DetectTarget::ClearBlackBoard(UBehaviorTreeComponent& OwnerComp)
+{
+	OwnerComp.GetBlackboardComponent()->SetValueAsObject(AEnemyAIController::Target, nullptr);
+	OwnerComp.GetBlackboardComponent()->SetValueAsBool(AEnemyAIController::Aggro, false);
+	OwnerComp.GetBlackboardComponent()->SetValueAsBool(AEnemyAIController::FirstAttack, false);
 }

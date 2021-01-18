@@ -117,25 +117,23 @@ void UTargetComponent::ServerSetLock_Implementation(bool bLock)
 		return;
 	}
 
+	auto const Enemy = Cast<AEnemy>(Target);
+	if(Enemy == nullptr)
+	{
+		return;
+	}
+	
 	if (!bLock)
 	{
-		if (auto const Enemy = Cast<AEnemy>(Target))
-		{
-			Enemy->ToggleTargetWidget(OwnerCharacter, true);
-		}
+		Enemy->ShowTargetWidget(OwnerCharacter, true);
 
 		Target = nullptr;
 	}
 
 	OwnerCharacter->SetLockCamera(Target, bLock);
 
-	if (auto const Enemy = Cast<AEnemy>(Target))
-	{
-		Enemy->ToggleTargetWidget(OwnerCharacter, false);
-	}
-
+	Enemy->ShowTargetWidget(OwnerCharacter, false);
 	bTargeting = bLock;
-
 }
 
 void UTargetComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

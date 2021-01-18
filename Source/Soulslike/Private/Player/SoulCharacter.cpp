@@ -2,12 +2,14 @@
 
 #include "Player/SoulCharacter.h"
 #include "Player/SoulPlayerController.h"
+#include "Player/PlayerAnimInstance.h"
 
 #include "Player/ActorComponent/TargetComponent.h"
 #include "Player/ActorComponent/StatComponent.h"
 #include "Player/ActorComponent/InteractComponent.h"
 #include "Player/ActorComponent/InventoryComponent.h"
 #include "Player/ActorComponent/EquipmentComponent.h"
+#include "Player/ActorComponent/ComboComponent.h"
 
 #include "System/SoulFunctionLibrary.h"
 
@@ -74,12 +76,21 @@ ASoulCharacter::ASoulCharacter()
 	InteractComponent = CreateDefaultSubobject<UInteractComponent>("InteractComponent");
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
 	EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
+	ComboComponent = CreateDefaultSubobject<UComboComponent>("ComboComponent");
 	
 	Tags.Add(FName("Player"));
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// 인터페이스
+//// 인터페이스 :: 애님 인스턴스, 액터 컴포넌트
+
+void ASoulCharacter::SetEquip_Implementation(bool bEquip)
+{
+	if(PlayerAnimInstance)
+	{
+		PlayerAnimInstance->SetEquip(bEquip);
+	}
+}
 
 void ASoulCharacter::SetInteractDoor_Implementation(AInteractDoor* Door)
 {
@@ -186,6 +197,11 @@ UEquipmentComponent* ASoulCharacter::GetEquipmentComponent_Implementation()
 	return EquipmentComponent;
 }
 
+float ASoulCharacter::GetEquipWeight_Implementation()
+{
+	return EquipmentComponent->GetEquipWeight();
+}
+
 void ASoulCharacter::UnEquipItem_Implementation(EItemFilter ItemFilter, int32 EquipIndex)
 {
 	if(EquipmentComponent)
@@ -242,6 +258,7 @@ void ASoulCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	// HUD
 	PlayerInputComponent->BindAction("Menu", IE_Pressed, this, &ASoulCharacter::ShowMenuHUD);
 	PlayerInputComponent->BindAction("TurnOff", IE_Pressed, this, &ASoulCharacter::TurnOffHUD);
+	PlayerInputComponent->BindAction("Back", IE_Pressed, this, &ASoulCharacter::BackMenuHUD);
 
 	// Quick 아이템 변경
 	PlayerInputComponent->BindAction<FMouseWheelDelegate>("ChangeMagic", IE_Pressed, this, &ASoulCharacter::ShiftLeftEquipments, EMouseWheel::Wheel_Magic);
@@ -288,6 +305,11 @@ void ASoulCharacter::PossessedBy(AController* NewController)
 		if(EquipmentComponent)
 		{
 			EquipmentComponent->Initialize();
+		}
+
+		if(ComboComponent)
+		{
+			ComboComponent->Initialize();
 		}
 	}
 }
@@ -394,7 +416,10 @@ bool ASoulCharacter::ServerRoll_Validate()
 
 void ASoulCharacter::OnRep_Rolling()
 {
-	OnUpdateRolling(bRolling);
+	if(PlayerAnimInstance)
+	{
+		PlayerAnimInstance->SetRoll(bRolling);
+	}
 }
 
 void ASoulCharacter::ServerRoll_Implementation()
@@ -421,7 +446,7 @@ void ASoulCharacter::MulticastRoll_Implementation()
 
 void  ASoulCharacter::StartAttack(EPlayerAttack Attack)
 {
-	if (bMoveable && !bPlayingScene)
+	if (bMoveable && !bPlayingScene && EquipmentComponent && EquipmentComponent->IsWeaponEquip())
 	{
 		ServerAttack(Attack);
 	}
@@ -434,7 +459,7 @@ bool ASoulCharacter::ServerAttack_Validate(EPlayerAttack Attack)
 
 void ASoulCharacter::ServerAttack_Implementation(EPlayerAttack Attack)
 {
-	if (bAttacking || bRolling || bDead || bBlocking)
+	if (bAttacking || bRolling || bDead || bBlocking || StatComponent == nullptr)
 	{
 		return;
 	}
@@ -442,11 +467,15 @@ void ASoulCharacter::ServerAttack_Implementation(EPlayerAttack Attack)
 	switch (Attack)
 	{
 	case EPlayerAttack::Player_LightAttack:
-		if (StatComponent->GetCurStamina() < LightAttackCost)
+		if (StatComponent->GetCurStamina() < LightAttackCost || ComboComponent == nullptr)
+		{
 			return;
+		}
 		
-		StatComponent->AddStaminaValue(-LightAttackCost);
-		MulticastPlayMontage(LightAttackMontages[0], 1.f);
+		MulticastPlayMontage(LightAttackMontages[ComboComponent->GetComboCount()], 1.f);
+		StatComponent->AddStaminaValue(-LightAttackCost * ComboComponent->GetComboCost());
+		ComboComponent->ClearComboTimer();
+
 		break;
 
 	case EPlayerAttack::Player_HeavyAttack:
@@ -471,7 +500,15 @@ void ASoulCharacter::EndAttack()
 	bAttacking = false;
 	bMoveable = true;
 
-	StatComponent->PlayStaminaTimer(false);
+	if(ComboComponent)
+	{
+		ComboComponent->StartComboTimer();
+	}
+
+	if(StatComponent)
+	{
+		StatComponent->PlayStaminaTimer(false);
+	}
 }
 
 
@@ -485,7 +522,7 @@ void ASoulCharacter::LightAttack()
 
 		USoulFunctionLibrary::CreateOverlapSphere(GetWorld(), SphereLocation, LightAttackRadius, AEnemy::StaticClass(), GetOwner(), OverlappedActors);
 
-		ApplyDamageToActorInOverlapSphere(OverlappedActors);
+		ApplyDamageToActorInOverlapSphere(OverlappedActors, EPlayerAttack::Player_LightAttack);
 	}
 }
 
@@ -499,22 +536,22 @@ void ASoulCharacter::HeavyAttack()
 
 		USoulFunctionLibrary::CreateOverlapSphere(GetWorld(), SphereLocation, HeavyAttackRadius, AEnemy::StaticClass(), GetOwner(), OverlappedActors);
 
-		ApplyDamageToActorInOverlapSphere(OverlappedActors);
+		ApplyDamageToActorInOverlapSphere(OverlappedActors, EPlayerAttack::Player_HeavyAttack);
 	}
 }
 
-void ASoulCharacter::ApplyDamageToActorInOverlapSphere(TArray<AActor*>& OverlappedActors)
+void ASoulCharacter::ApplyDamageToActorInOverlapSphere(TArray<AActor*>& OverlappedActors, EPlayerAttack PlayerAttack)
 {
-	for (auto& Actor : OverlappedActors)
+	if (OverlappedActors.Num() > 0 && ComboComponent && EquipmentComponent)
 	{
-		if (Actor->ActorHasTag("Enemy"))
+		for (auto& Actor : OverlappedActors)
 		{
-			UGameplayStatics::ApplyDamage(Actor, 30.f, GetController(), this, DamageType);
+			if (Actor->ActorHasTag("Enemy"))
+			{
+				UGameplayStatics::ApplyDamage(Actor, EquipmentComponent->GetWeaponDamage(PlayerAttack), GetController(), this, DamageType);
+			}
 		}
-	}
 
-	if (OverlappedActors.Num() > 0)
-	{
 		MulticastPlaySound(HitSound);
 	}
 }
@@ -643,7 +680,10 @@ void ASoulCharacter::ServerBlock_Implementation(bool bBlock)
 
 void ASoulCharacter::OnRep_Blocking()
 {
-	OnUpdateBlock();
+	if(PlayerAnimInstance)
+	{
+		PlayerAnimInstance->SetBlock(bBlocking);
+	}
 }
 
 bool ASoulCharacter::IsBlocked(AActor* Enemy) const
@@ -773,6 +813,15 @@ void ASoulCharacter::ShowMenuHUD()
 	{
 		InventoryComponent->OwnerController->ClientShowMenuHUD();
 	}
+}
+
+void ASoulCharacter::BackMenuHUD()
+{
+	if(InventoryComponent)
+	{
+		InventoryComponent->OwnerController->ClientBackMenuHUD();
+	}
+	
 }
 
 void ASoulCharacter::TurnOffHUD()

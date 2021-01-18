@@ -17,6 +17,12 @@
 #include "Chaos/AABB.h"
 #include "Chaos/AABB.h"
 #include "Chaos/AABB.h"
+#include "Chaos/AABB.h"
+#include "Chaos/AABB.h"
+#include "Chaos/AABB.h"
+#include "Chaos/AABB.h"
+#include "Chaos/AABB.h"
+#include "Chaos/AABB.h"
 
 
 #include "EquipmentComponent.generated.h"
@@ -47,17 +53,21 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")
 	TSubclassOf<AWeapon> WeaponClass;
 
-	/** 0:무기, 1: 방패, 2:헬멧, 3:갑옷, 4:장갑, 5:신발 */
+	/** 0:헬멧, 1:갑옷, 2:장갑, 3:신발 */
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
 	TMap<int32, FItemTable> ArmorMap;
 	
-	/** 대기중인 무기의 SlotIndex가 저장 */
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
 	TArray<FItemTable> QuickWeapons;
 
-	/**대기중인 포션의 SlotIndex가 저장 */
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
+	TArray<FItemTable> QuickShields;
+
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
 	TArray<FItemTable> QuickPotions;
+
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
+	float EquipWeight;
 
 protected:
 	/** True : 장비 퀵슬롯 새로고침 */
@@ -138,8 +148,22 @@ protected:
 	void ShiftLeft(TArray<FItemTable>& QuickEquipments, EItemFilter ItemFilter);
 	
 public:
+	FORCEINLINE bool IsWeaponEquip() const {return QuickWeapons.Num()>0;}
+	FORCEINLINE float GetEquipWeight() const {return EquipWeight;}
+	
+	float GetWeaponDamage(EPlayerAttack PlayerAttack);
+	
 	UFUNCTION(BlueprintCallable)
     FORCEINLINE TArray<FItemTable> GetQuickWeapons() const {return QuickWeapons ;}
+
+	UFUNCTION(BlueprintCallable)
+    FORCEINLINE TArray<FItemTable> GetQuickShields() const {return QuickShields ;}
+
+	UFUNCTION(BlueprintCallable)
+    TArray<FText> GetDamageText (EItemFilter ItemFilter);
+	
+	UFUNCTION(BlueprintCallable)
+	FText GetArmorText(bool bMeleeArmor);
 
 	UFUNCTION(BlueprintCallable)
     FORCEINLINE TArray<FItemTable> GetQuickPotions() const {return QuickPotions;}
@@ -150,6 +174,11 @@ public:
 	UFUNCTION(BlueprintCallable)
     TArray<UTexture2D*> GetItemIconsByQuickIndex(EItemFilter ItemFilter) const ;
 
+	UFUNCTION(BlueprintCallable)
+	void HoverEquipmentSlot(EItemFilter ItemFilter, int32 EquipIndex);
+
+	void UpdateItemDescription(TArray<FItemTable>& QuickEquipments, int32 EquipIndex);
+	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 		
 };

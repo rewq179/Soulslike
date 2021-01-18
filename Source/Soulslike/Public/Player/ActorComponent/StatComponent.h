@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "DataType.h"
+#include "Chaos/AABB.h"
+#include "Chaos/AABB.h"
+
 #include "StatComponent.generated.h"
 
 class ASoulCharacter;
@@ -69,6 +72,14 @@ public:
 	FORCEINLINE float GetMaxStamina() const { return PlayerStat.MaxStamina; }
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE int32 GetSoulsCount() const { return PlayerStat.SoulsCount; }
+
+	/** Con, Men, Wit, Str, Dex, Int, Luck을 Text로 출력해줌 */
+	UFUNCTION(BlueprintCallable)
+	TArray<FText> GetStatText();
+
+	/** Hp, Mp, Stamina를 Text로 출력해줌 */
+	UFUNCTION(BlueprintCallable)
+	FText GetHealthText(EHealthType HealthType);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

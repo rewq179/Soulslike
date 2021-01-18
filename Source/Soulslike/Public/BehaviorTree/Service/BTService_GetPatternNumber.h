@@ -17,7 +17,7 @@ class SOULSLIKE_API UBTService_GetPatternNumber : public UBTService
 public:
 	UBTService_GetPatternNumber();
 
-	/** ���� BT�� �߻�Ȯ���� �ǹ��ϸ�, ������ 100�̿����Ѵ�. */
+	/** 패턴을 Percent 값에 따라 랜덤으로 구한다. */
 	UPROPERTY(EditAnywhere, Category = "Value")
 	TArray<int32> Percents;
 

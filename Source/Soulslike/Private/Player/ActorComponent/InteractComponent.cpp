@@ -56,14 +56,14 @@ void UInteractComponent::InteractActor()
 {
 	if (CurrentDoor)
 	{
-		CurrentDoor->Interact();
+		CurrentDoor->Interact(OwnerCharacter);
 
 		return;
 	}
 
 	if (CurrentPickUpActor)
 	{
-		HandlePickUp();
+		CurrentPickUpActor->Interact(OwnerCharacter);
 	}
 }
 
@@ -89,15 +89,6 @@ void UInteractComponent::SetInteractDoor(AInteractDoor* DoorActor)
 	}
 
 	CurrentDoor = DoorActor;
-}
-
-void UInteractComponent::HandlePickUp()
-{
-	if(OwnerCharacter && OwnerCharacter->InventoryComponent)
-	{
-		OwnerCharacter->InventoryComponent->AddItem(CurrentPickUpActor->GetItemTable());
-	}
-	
 }
 
 ////////////////////////////////////////////////////////////////////////////

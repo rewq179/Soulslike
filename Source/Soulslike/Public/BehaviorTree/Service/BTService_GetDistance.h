@@ -5,7 +5,7 @@
 #include "BTService_GetDistance.generated.h"
 
 /**
- * 용도 : 조종되고 있는 Pawn과 타겟의 거리차이를 구하기 위함.
+ * 용도 : 조종되고 있는 Pawn과 타겟의 거리차이를 지속적으로 구한다.
  */
 
 UCLASS()

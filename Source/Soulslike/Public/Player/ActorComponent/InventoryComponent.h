@@ -139,9 +139,11 @@ public:
     FORCEINLINE TArray<FItemTable> GetInventory() const {return Inventory;}
 
     FORCEINLINE FItemTable GetInventoryItem(int32 SlotIndex) const {return Inventory[SlotIndex];}
-    
+
+	float GetFreeWeight() const;
+	
 	UFUNCTION(BlueprintCallable)
-	FORCEINLINE float GetCurWeight() const {return MaxWeight - FreeWeight;}
+	float GetCurWeight() const;
 	UFUNCTION(BlueprintCallable)
     FORCEINLINE float GetMaxWeight() const {return MaxWeight;}
     
@@ -151,6 +153,9 @@ public:
     FORCEINLINE int32 GetMaxSlot() const {return MaxSlot;}
     UFUNCTION(BlueprintCallable)
 	FText GetWeightText();
+
+	UFUNCTION(BlueprintCallable)
+	void HoverInventorySlot(int32 SlotIndex);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

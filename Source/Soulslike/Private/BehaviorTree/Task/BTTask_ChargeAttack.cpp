@@ -3,14 +3,12 @@
 
 #include "BehaviorTree/Task/BTTask_ChargeAttack.h"
 
-
 #include "Enemy/Enemy.h"
 #include "Enemy/EnemyAIController.h"
 
 #include "Player/SoulCharacter.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
 
 UBTTask_ChargeAttack::UBTTask_ChargeAttack()
 {
@@ -24,18 +22,14 @@ EBTNodeResult::Type UBTTask_ChargeAttack::ExecuteTask(UBehaviorTreeComponent& Ow
 	EBTNodeResult::Type Result = Super::ExecuteTask(OwnerComp, NodeMemory);
 
 	auto Enemy = Cast<AEnemy>(OwnerComp.GetAIOwner()->GetPawn());
-	auto Target = Cast<ASoulCharacter>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(AEnemyAIController::Target));
-	if (Enemy == nullptr || Target == nullptr)
+	if (Enemy == nullptr)
 	{
 		return EBTNodeResult::Failed;
 	}
 
-
 	Enemy->StartAttack(EEnemyAttack::Enemy_ChargeAttack);
 	bCharging = true;
 	Enemy->OnChargeAttackEnd.AddLambda([this]() -> void { bCharging = false; });
-
-	// ��¡�� �ӵ� ���� ���� : Enemy->GetCharacterMovement()->MaxWalkSpeed = Enemy->Status.FollowSpeed * 1.5f;
 
 	return EBTNodeResult::InProgress;
 }
@@ -44,10 +38,8 @@ void UBTTask_ChargeAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 {
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 
-	if (!bCharging) // ������ ����Ǹ� ���� BT�� �����ų �� �ִ�.
+	if (!bCharging) // delegate로 애니메이션 종료시 값이 false된다.
 	{
-		// ��¡�� �ӵ� ������ ���� �ӵ��� �������.
-
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}
 }

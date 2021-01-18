@@ -27,16 +27,14 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 
 		if (!RunBehaviorTree(BTAsset))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("OnPossess : EnemyAI couln't Run!"));
+			UE_LOG(LogTemp, Warning, TEXT("OnPossess : EnemyAI Couln't Run!"));
 		}
 	}
 }
 
 void AEnemyAIController::StartBehaviorTree() const
 {
-	auto BehaviorTreeComponent = Cast<UBehaviorTreeComponent>(BrainComponent);
-
-	if (BehaviorTreeComponent != nullptr)
+	if (const auto BehaviorTreeComponent = Cast<UBehaviorTreeComponent>(BrainComponent))
 	{
 		BehaviorTreeComponent->StartTree(*BTAsset, EBTExecutionMode::Looped);
 	}
@@ -44,9 +42,7 @@ void AEnemyAIController::StartBehaviorTree() const
 
 void AEnemyAIController::StopBehaviorTree() const
 {
-	auto BehaviorTreeComponent = Cast<UBehaviorTreeComponent>(BrainComponent);
-
-	if (BehaviorTreeComponent != nullptr)
+	if (const auto BehaviorTreeComponent = Cast<UBehaviorTreeComponent>(BrainComponent))
 	{
 		BehaviorTreeComponent->StopTree(EBTStopMode::Safe);
 	}

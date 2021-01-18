@@ -22,15 +22,18 @@ class SOULSLIKE_API IControllerInterface
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Controller")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Equipment")
 	void ShowEquipmentWidget();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Controller")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Inventory")
 	void ShowInventoryWidget();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Controller")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Status")
 	void ShowStatusWidget();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Controller")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Option")
 	void ShowOptionWidget();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ItemDescription")
+	void ClearItemDescription();
 };

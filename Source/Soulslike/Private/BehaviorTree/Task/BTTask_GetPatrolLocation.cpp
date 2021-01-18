@@ -17,35 +17,27 @@ UBTTask_GetPatrolLocation::UBTTask_GetPatrolLocation()
 EBTNodeResult::Type UBTTask_GetPatrolLocation::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	EBTNodeResult::Type Result = Super::ExecuteTask(OwnerComp, NodeMemory);
-	auto ControllingPawn = OwnerComp.GetAIOwner()->GetPawn();
-
+	
+	auto const ControllingPawn = OwnerComp.GetAIOwner()->GetPawn();
 	if (ControllingPawn == nullptr)
 	{
 		return EBTNodeResult::Failed;
 	}
 
-	UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetNavigationSystem(ControllingPawn->GetWorld()); // 4.20ºÎÅÍ´Â ~~~V1À¸·Î ¹Ù²ñ
+	UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetNavigationSystem(ControllingPawn->GetWorld()); // 4.20ë¶€í„°ëŠ” ~~~V1ìœ¼ë¡œ ë°”ë€œ
 	if (NavSystem == nullptr)
 	{
 		return EBTNodeResult::Failed;
 	}
 
-	FVector Origin = OwnerComp.GetBlackboardComponent()->GetValueAsVector(AEnemyAIController::HomeLocation);
-	//FNavLocation NextPatrol;
-
-	FVector NextLocation = NavSystem->GetRandomReachablePointInRadius(GetWorld(), Origin, 2000.f);
+	const FVector Origin = OwnerComp.GetBlackboardComponent()->GetValueAsVector(AEnemyAIController::HomeLocation);
+	FVector PatrolLocation;
+	if(NavSystem->K2_GetRandomReachablePointInRadius(GetWorld(), Origin, PatrolLocation,2000.f)) // ê¸°ì¡´ GetRandomì€ ì´ì œ êµ¬ë™ì•ˆë¨.
 	{
-		OwnerComp.GetBlackboardComponent()->SetValueAsVector(AEnemyAIController::PatrolLocation, NextLocation);
+		OwnerComp.GetBlackboardComponent()->SetValueAsVector(AEnemyAIController::PatrolLocation, PatrolLocation);
 
 		return EBTNodeResult::Succeeded;
 	}
-
-	//if (NavSystem->GetRandomPointInNavigableRadius(Origin, MaxRange, NextPatrol)) // originÀ§Ä¡¿¡¼­ ¡¾MaxRangeÀÎ ÁöÁ¡Áß ·£´ý Æ÷ÀÎÆ®¸¦ Ã£°Ú´Ù.
-	//{
-	//	OwnerComp.GetBlackboardComponent()->SetValueAsVector(AEnemyAIController::PatrolLocation, NextPatrol.Location);
-
-	//	return EBTNodeResult::Succeeded;
-	//}
 
 	return EBTNodeResult::Failed;
 }

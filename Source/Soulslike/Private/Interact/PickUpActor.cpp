@@ -36,11 +36,13 @@ void APickUpActor::BeginPlay()
 ////////////////////////////////////////////////////////////////////////////
 //// 오버라이드
 
-void APickUpActor::Interact()
+void APickUpActor::Interact(ASoulCharacter* SoulCharacter)
 {
-	if (!!bInteracted)
+	if (!bInteracted && SoulCharacter)
 	{
-		// 아이템 주기
+		bInteracted= true;
+		SoulCharacter->AddItem(ItemTable);
+
 
 		Mesh->SetRenderCustomDepth(false);
 	}
@@ -59,8 +61,7 @@ FText APickUpActor::GetInteractMessage()
 	TArray<FStringFormatArg> args;
 	args.Add(FStringFormatArg(ItemTable.Name.ToString()));
 
-	FString string = FString::Format(TEXT("[F] Interact : {0}"), args);
-	return FText::FromString(string);
+	return FText::FromString(FString::Format(TEXT("[F] Interact : {0}"), args));
 }
 
 ////////////////////////////////////////////////////////////////////////////
