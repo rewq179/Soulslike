@@ -45,39 +45,45 @@ ASoulCharacter::ASoulCharacter()
 
 	MoveSpeed = 500.f;
 
-	LightAttackRadius = 150.f;
-	HeavyAttackRadius = 200.f;
+	RollCost = 15.f;
+	BlockCost = 9.f;
+	LightAttackCost = 8.f;
+	LightAttackRadius = 170.f;
+	HeavyAttackCost = 13.f;
+	HeavyAttackRadius = 240.f;
 
-	// Don't rotate when the controller rotates. Let that just affect the camera.
+	// 카메라 붐 설정
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoom->SetupAttachment(RootComponent);
+	CameraBoom->TargetArmLength = 300.0f;
+	CameraBoom->bUsePawnControlRotation = true; 
+
+	// 팔로우 카메라 설정
+	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
+	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); 
+	FollowCamera->bUsePawnControlRotation = false; 
+
+	// 카메라 설정
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
-	// Configure character movement
+	// 캐릭터 무브먼트 설정
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...   
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f); // ...at this rotation rate
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
 	GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
 
-	// Create a camera boom (pulls in towards the player if there is a collision)
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character   
-	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
-
-	// Create a follow camera
-	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
-	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
-
+	// 액터 컴포넌트 설정
 	TargetComponent = CreateDefaultSubobject<UTargetComponent>("TargetComponent");
 	StatComponent = CreateDefaultSubobject<UStatComponent>("StatComponent");
 	InteractComponent = CreateDefaultSubobject<UInteractComponent>("InteractComponent");
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
 	EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
 	ComboComponent = CreateDefaultSubobject<UComboComponent>("ComboComponent");
-	
+
+	// 태그 설정
 	Tags.Add(FName("Player"));
 }
 
@@ -86,10 +92,37 @@ ASoulCharacter::ASoulCharacter()
 
 void ASoulCharacter::SetEquip_Implementation(bool bEquip)
 {
-	if(PlayerAnimInstance)
-	{
-		PlayerAnimInstance->SetEquip(bEquip);
-	}
+	ServerEquip(bEquip);
+}
+
+void ASoulCharacter::EndDeadAnim_Implementation()
+{
+	EndDead();
+}
+
+void ASoulCharacter::StartLightAttackAnim_Implementation()
+{
+	LightAttack();
+}
+
+void ASoulCharacter::StartHeavyAttackAnim_Implementation()
+{
+	HeavyAttack();
+}
+
+void ASoulCharacter::EndAttackAnim_Implementation()
+{
+	EndAttack();
+}
+
+void ASoulCharacter::EndBlockAnim_Implementation()
+{
+	EndBlock();
+}
+
+void ASoulCharacter::EndRollAnim_Implementation()
+{
+	EndRoll();
 }
 
 void ASoulCharacter::SetInteractDoor_Implementation(AInteractDoor* Door)
@@ -235,7 +268,7 @@ void ASoulCharacter::RemoveQuickItemAt_Implementation(EItemFilter ItemFilter, in
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// 입력
+//// 입력 및 시작 설정
 
 void ASoulCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
@@ -289,7 +322,7 @@ void ASoulCharacter::PossessedBy(AController* NewController)
 		if (StatComponent)
 		{
 			StatComponent->Initialize();
-			StatComponent->OnHpChanged.AddDynamic(this, &ASoulCharacter::OnHpChanged);
+			StatComponent->OnHpChanged.AddDynamic(this, &ASoulCharacter::OnPlayerStatHpChanged);
 		}
 
 		if (InteractComponent)
@@ -315,7 +348,7 @@ void ASoulCharacter::PossessedBy(AController* NewController)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// BindAxis
+//// BindAxis 함수들
 
 void ASoulCharacter::MoveForward(float Value)
 {
@@ -383,13 +416,13 @@ void ASoulCharacter::AddControllerPitchInput(float Val)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// 구르기
+//// 구르기 관련 함수
 
 void ASoulCharacter::StartRoll()
 {
 	if (bMoveable && !bPlayingScene && !bRolling && StatComponent->GetCurStamina() >= RollCost) 
 	{
-		StatComponent->ClearStaminaTimers();
+		StatComponent->ClearStaminaTimer();
 
 		ServerRoll();
 	}
@@ -399,27 +432,7 @@ void ASoulCharacter::EndRoll()
 {
 	SetRolling(false);
 
-	StatComponent->PlayStaminaTimer(false);
-}
-
-void ASoulCharacter::SetRolling(bool bRoll)
-{
-	bRolling = bRoll;
-
-	OnRep_Rolling();
-}
-
-bool ASoulCharacter::ServerRoll_Validate()
-{
-	return true;
-}
-
-void ASoulCharacter::OnRep_Rolling()
-{
-	if(PlayerAnimInstance)
-	{
-		PlayerAnimInstance->SetRoll(bRolling);
-	}
+	StatComponent->PlayStaminaTimer();
 }
 
 void ASoulCharacter::ServerRoll_Implementation()
@@ -430,19 +443,29 @@ void ASoulCharacter::ServerRoll_Implementation()
 	MulticastRoll();
 }
 
-bool ASoulCharacter::MulticastRoll_Validate()
-{
-	return true;
-}
-
 void ASoulCharacter::MulticastRoll_Implementation()
 {
 	MulticastPlayMontage(RollMontage, 0.8f);
 }
 
 
+void ASoulCharacter::SetRolling(bool bRoll)
+{
+	bRolling = bRoll;
+
+	OnRep_Rolling();
+}
+
+void ASoulCharacter::OnRep_Rolling()
+{
+	if(PlayerAnimInstance)
+	{
+		PlayerAnimInstance->SetRoll(bRolling);
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////
-//// 공격
+//// 공격 관련 함수들
 
 void  ASoulCharacter::StartAttack(EPlayerAttack Attack)
 {
@@ -452,11 +475,6 @@ void  ASoulCharacter::StartAttack(EPlayerAttack Attack)
 	}
 }
 
-bool ASoulCharacter::ServerAttack_Validate(EPlayerAttack Attack)
-{
-	return true;
-}
-
 void ASoulCharacter::ServerAttack_Implementation(EPlayerAttack Attack)
 {
 	if (bAttacking || bRolling || bDead || bBlocking || StatComponent == nullptr)
@@ -464,6 +482,7 @@ void ASoulCharacter::ServerAttack_Implementation(EPlayerAttack Attack)
 		return;
 	}
 
+	
 	switch (Attack)
 	{
 	case EPlayerAttack::Player_LightAttack:
@@ -482,23 +501,21 @@ void ASoulCharacter::ServerAttack_Implementation(EPlayerAttack Attack)
 		if (StatComponent->GetCurStamina() < HeavyAttackCost)
 			return;
 
-		StatComponent->AddStaminaValue(-HeavyAttackCost);
 		MulticastPlayMontage(HeavyAttackMontage, 1.f);
+		StatComponent->AddStaminaValue(-HeavyAttackCost);
 		break;
 
 	default:
 		break;
 	}
 
-	StatComponent->ClearStaminaTimers();
-	bAttacking = true;
-	bMoveable = false;
+	StatComponent->ClearStaminaTimer();
+	SetAttacking(true);
 }
 
 void ASoulCharacter::EndAttack()
 {
-	bAttacking = false;
-	bMoveable = true;
+	SetAttacking(false);
 
 	if(ComboComponent)
 	{
@@ -507,22 +524,22 @@ void ASoulCharacter::EndAttack()
 
 	if(StatComponent)
 	{
-		StatComponent->PlayStaminaTimer(false);
+		StatComponent->PlayStaminaTimer();
 	}
 }
 
+
+void ASoulCharacter::SetAttacking(bool bAttack)
+{
+	bAttacking = bAttack;
+	bMoveable = !bAttack;
+}
 
 void ASoulCharacter::LightAttack()
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		TArray<AActor*> OverlappedActors;
-
-		const FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * LightAttackRadius;
-
-		USoulFunctionLibrary::CreateOverlapSphere(GetWorld(), SphereLocation, LightAttackRadius, AEnemy::StaticClass(), GetOwner(), OverlappedActors);
-
-		ApplyDamageToActorInOverlapSphere(OverlappedActors, EPlayerAttack::Player_LightAttack);
+		CreateOverlapSphere(LightAttackRadius);
 	}
 }
 
@@ -530,19 +547,23 @@ void ASoulCharacter::HeavyAttack()
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		TArray<AActor*> OverlappedActors;
-
-		const FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * HeavyAttackRadius;
-
-		USoulFunctionLibrary::CreateOverlapSphere(GetWorld(), SphereLocation, HeavyAttackRadius, AEnemy::StaticClass(), GetOwner(), OverlappedActors);
-
-		ApplyDamageToActorInOverlapSphere(OverlappedActors, EPlayerAttack::Player_HeavyAttack);
+		CreateOverlapSphere(HeavyAttackRadius);
 	}
+}
+
+void ASoulCharacter::CreateOverlapSphere(float AttackRadius)
+{
+	TArray<AActor*> OverlappedActors;
+
+	const FVector SphereLocation = GetActorLocation() + GetActorForwardVector() * AttackRadius;
+	USoulFunctionLibrary::CreateOverlapSphere(GetWorld(), SphereLocation, AttackRadius, AEnemy::StaticClass(), GetOwner(), OverlappedActors);
+
+	ApplyDamageToActorInOverlapSphere(OverlappedActors, EPlayerAttack::Player_HeavyAttack);
 }
 
 void ASoulCharacter::ApplyDamageToActorInOverlapSphere(TArray<AActor*>& OverlappedActors, EPlayerAttack PlayerAttack)
 {
-	if (OverlappedActors.Num() > 0 && ComboComponent && EquipmentComponent)
+	if (OverlappedActors.Num() > 0 && EquipmentComponent)
 	{
 		for (auto& Actor : OverlappedActors)
 		{
@@ -557,37 +578,19 @@ void ASoulCharacter::ApplyDamageToActorInOverlapSphere(TArray<AActor*>& Overlapp
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// 상호 작용
-
-bool ASoulCharacter::ServerInteractActor_Validate()
-{
-	return true;
-}
-
-void ASoulCharacter::ServerInteractActor_Implementation()
-{
-	InteractComponent->InteractActor();
-}
-
-////////////////////////////////////////////////////////////////////////////
 //// 사망
 
-void ASoulCharacter::StartDead()
+void ASoulCharacter::EndDead() const
 {
 	GetMesh()->bPauseAnims = true;
 }
 
-void ASoulCharacter::OnHpChanged(float Damage, const UDamageType * Type, AController * InstigatedBy, AActor * DamageCauser)
+void ASoulCharacter::OnPlayerStatHpChanged(float Damage, const UDamageType * Type, AController * InstigatedBy, AActor * DamageCauser)
 {
 	if (StatComponent->GetCurHp() <= 0.f)
 	{
 		ServerDeath();
 	}
-}
-
-bool ASoulCharacter::ServerDeath_Validate()
-{
-	return true;
 }
 
 void ASoulCharacter::ServerDeath_Implementation()
@@ -632,11 +635,10 @@ void ASoulCharacter::HitReaction(float StunTime, FVector KnockBack, bool bKnockD
 	}
 
 	FTimerHandle WaitHandle;
-	float WaitTime = 2.f;
 	GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
 	{
 		bMoveable = true;
-	}), WaitTime, false);
+	}), StunTime, false);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -658,20 +660,18 @@ void ASoulCharacter::EndBlock()
 	bMoveable = true;
 	ServerBlock(false);
 
-	StatComponent->PlayStaminaTimer(false);
-}
-
-bool ASoulCharacter::ServerBlock_Validate(bool bBlock)
-{
-	return true;
+	if(StatComponent)
+	{
+		StatComponent->PlayStaminaTimer();
+	}
 }
 
 void ASoulCharacter::ServerBlock_Implementation(bool bBlock)
 {
-	if (bBlock)
+	if (bBlock && StatComponent)
 	{
 		StatComponent->AddStaminaValue(-BlockCost);
-		StatComponent->ClearStaminaTimers();
+		StatComponent->ClearStaminaTimer();
 	}
 
 	bBlocking = bBlock;
@@ -717,47 +717,41 @@ void ASoulCharacter::PlayBlockEffect()
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// 보스 몬스터
+//// 액터 컴포넌트
 
-void ASoulCharacter::SetBossEnemy(AEnemy* InEnemy)
+void ASoulCharacter::ServerEquip_Implementation(bool bEquip)
 {
-	if (InEnemy == nullptr)
+	MulticastEquip(bEquip);
+}
+
+void ASoulCharacter::MulticastEquip_Implementation(bool bEquip)
+{
+	if(PlayerAnimInstance)
 	{
-		BossEnemy->OnEnemyHpChanged.RemoveDynamic(this, &ASoulCharacter::OnEnemyHpChanged);
-		BossEnemy = nullptr;
-
-		if (SoulPC)
-		{
-			SoulPC->ClientShowEnemyHpBar(false);
-		}
-	}
-
-	else
-	{
-		BossEnemy = InEnemy;
-		bPlayingScene = true;
-
-		BossEnemy->OnEnemyHpChanged.AddDynamic(this, &ASoulCharacter::OnEnemyHpChanged);
-
-		if (SoulPC)
-		{
-			SoulPC->ClientShowEnemyHpBar(true);
-			SoulPC->ClientUpdateBossName(BossEnemy->GetEnemyName());
-			SoulPC->ClientUpdateBossHp(BossEnemy->GetCurHp(), BossEnemy->GetMaxHp());
-		}
+		PlayerAnimInstance->SetEquip(bEquip);
 	}
 }
 
-void ASoulCharacter::OnEnemyHpChanged(float CurHp, float MaxHp)
+void ASoulCharacter::ServerInteractActor_Implementation()
 {
-	if (SoulPC)
+	if(InteractComponent)
 	{
-		SoulPC->ClientUpdateBossHp(CurHp, MaxHp);
+		InteractComponent->InteractActor();
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////
-//// 타겟팅
+void ASoulCharacter::AddSoulsValue(int32 Value)
+{
+	if(StatComponent == nullptr || InventoryComponent == nullptr)
+	{
+		return;
+	}
+	
+	StatComponent->AddSoulsValue(Value);
+	InventoryComponent->OwnerController->OnUpdateInventory();
+	
+	MulticastPlayParticle(SoulParticle);
+}
 
 void ASoulCharacter::StartTarget()
 {
@@ -793,6 +787,44 @@ void ASoulCharacter::SetLockCamera(AActor* InTarget, bool bLock)
 		Target = nullptr;
 
 		bLockCamera = false;
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////
+//// 보스 몬스터
+
+void ASoulCharacter::SetBossEnemy(AEnemy* InEnemy)
+{
+	if(SoulPC == nullptr)
+	{
+		return;
+	}
+	
+	if (InEnemy == nullptr)
+	{
+		BossEnemy->OnEnemyHpChanged.RemoveDynamic(this, &ASoulCharacter::OnEnemyHpChanged);
+		BossEnemy = nullptr;
+
+		SoulPC->ClientShowEnemyHpBar(false);
+	}
+
+	else
+	{
+		bPlayingScene = true;
+		BossEnemy = InEnemy;
+		BossEnemy->OnEnemyHpChanged.AddDynamic(this, &ASoulCharacter::OnEnemyHpChanged);
+
+		SoulPC->ClientShowEnemyHpBar(true);
+		SoulPC->ClientUpdateBossName(BossEnemy->GetEnemyName());
+		SoulPC->ClientUpdateBossHp(BossEnemy->GetCurHp(), BossEnemy->GetMaxHp());
+	}
+}
+
+void ASoulCharacter::OnEnemyHpChanged(float CurHp, float MaxHp)
+{
+	if (SoulPC)
+	{
+		SoulPC->ClientUpdateBossHp(CurHp, MaxHp);
 	}
 }
 
@@ -840,31 +872,10 @@ void ASoulCharacter::ShiftLeftEquipments(EMouseWheel MouseWheel)
 	}
 }
 
-
-////////////////////////////////////////////////////////////////////////////
-//// 소울
-
-void ASoulCharacter::AddSoulsValue(int32 Value)
-{
-	StatComponent->AddSoulsValue(Value);
-
-	if (InventoryComponent && InventoryComponent->OwnerController)
-	{
-		InventoryComponent->OwnerController->OnUpdateInventory();
-	}
-	
-	MulticastPlayParticle(SoulParticle);
-}
-
 ////////////////////////////////////////////////////////////////////////////
 //// 멀티캐스트 :: 공용
 
-bool ASoulCharacter::MulticastPlayMontage_Validate(UAnimMontage * AnimMontage, float PlayRate, FName AnimName)
-{
-	return true;
-}
-
-void ASoulCharacter::MulticastPlayMontage_Implementation(UAnimMontage * AnimMontage, float PlayRate, FName AnimName)
+void ASoulCharacter::MulticastPlayMontage_Implementation(UAnimMontage* AnimMontage, float PlayRate, FName AnimName)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -874,22 +885,12 @@ void ASoulCharacter::MulticastPlayMontage_Implementation(UAnimMontage * AnimMont
 	}
 }
 
-bool ASoulCharacter::MulticastPlaySound_Validate(USoundBase* Sound)
-{
-	return true;
-}
-
 void ASoulCharacter::MulticastPlaySound_Implementation(USoundBase* Sound)
 {
 	if (Sound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), Sound, GetActorLocation(), 1.f);
 	}
-}
-
-bool ASoulCharacter::MulticastPlayParticle_Validate(UParticleSystem* Particle)
-{
-	return true;
 }
 
 void ASoulCharacter::MulticastPlayParticle_Implementation(UParticleSystem* Particle)

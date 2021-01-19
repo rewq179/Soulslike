@@ -6,7 +6,7 @@
 #include "GameFramework/Character.h"
 #include "DataType.h"
 #include "Player/ActorComponent/ActorComponentInterface.h"
-#include "Player/PlayerAnimInterface.h"
+#include "Player/PlayerAnimNotifyInterface.h"
 
 #include "SoulCharacter.generated.h"
 
@@ -27,7 +27,7 @@ class USpringArmComponent;
 class UAnimMontage;
 
 UCLASS(config = Game)
-class ASoulCharacter : public ACharacter, public IActorComponentInterface, public IPlayerAnimInterface
+class ASoulCharacter : public ACharacter, public IActorComponentInterface, public IPlayerAnimNotifyInterface
 {
 	GENERATED_BODY()
 	
@@ -77,7 +77,7 @@ class ASoulCharacter : public ACharacter, public IActorComponentInterface, publi
 	UParticleSystem* SoulParticle;
 
 	////////////////////////////////////////////////////////////////////////////
-	//// 파티클
+	//// 사운드
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Sound, meta = (AllowPrivateAccess = "true"))
 	USoundBase* HitSound;
@@ -87,6 +87,7 @@ class ASoulCharacter : public ACharacter, public IActorComponentInterface, publi
 
 	float BaseTurnRate;
 	float BaseLookUpRate;
+	float MoveSpeed;
 
 protected:
 	/** True : 이동가능, False : 이동 불가능 */
@@ -97,21 +98,16 @@ protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = Status)
 	bool bPlayingScene;
 
-	/** 플레이어의 이동속도 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Status)
-	float MoveSpeed;
-
-public:
-	ASoulCharacter();
-
 	UTargetComponent* TargetComponent;
 	UInteractComponent* InteractComponent;
 	UStatComponent* StatComponent;
 	UInventoryComponent* InventoryComponent;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ActorComponnt")
 	UEquipmentComponent* EquipmentComponent;
 	UComboComponent* ComboComponent;
-	
+
+public:
+	ASoulCharacter();
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	TSubclassOf<UDamageType> DamageType;
 
@@ -119,128 +115,123 @@ public:
 	//// 인터페이스
 
 	// 애님 인스턴스
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
     void SetEquip(bool bEquip);
 	virtual void SetEquip_Implementation(bool bEquip) override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
+    void StartLightAttackAnim();
+    virtual void StartLightAttackAnim_Implementation() override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
+    void StartHeavyAttackAnim();
+    virtual void StartHeavyAttackAnim_Implementation() override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
+    void EndAttackAnim();
+    virtual void EndAttackAnim_Implementation() override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
+    void EndBlockAnim();
+    virtual void EndBlockAnim_Implementation() override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
+    void EndDeadAnim();
+	virtual void EndDeadAnim_Implementation() override;
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
+	void EndRollAnim();
+	virtual void EndRollAnim_Implementation() override;
 	
 	// 상호작용
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interact Interface")
 	void SetInteractDoor(AInteractDoor* Door);
 	virtual void SetInteractDoor_Implementation(AInteractDoor* Door) override;
 	
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interact Interface")
     void SetPickUpActor(APickUpActor* Actor);
     virtual void SetPickUpActor_Implementation(APickUpActor* Actor) override;
 	
 	// 스텟 컴포넌트
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Stat Interface")
 	UStatComponent* GetStatComponent();
 	virtual UStatComponent* GetStatComponent_Implementation() override;
 	
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Stat Interface")
 	int32 GetSoulsCount();
 	virtual int32 GetSoulsCount_Implementation() override;
 	
-	// // 인벤토리 컴포넌트
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	// 인벤토리 컴포넌트
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Inventory Interface")
     UInventoryComponent* GetInventoryComponent();
 	virtual UInventoryComponent* GetInventoryComponent_Implementation() override;
  
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Inventory Interface")
     TArray<FItemTable> GetInventory();
 	virtual TArray<FItemTable> GetInventory_Implementation() override;
  
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Inventory Interface")
 	FItemTable GetInventoryItemAt(int32 SlotIndex);
 	virtual FItemTable GetInventoryItemAt_Implementation(int32 SlotIndex) override;
  
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Inventory Interface")
 	void AddItem(FItemTable Item);
 	virtual void AddItem_Implementation(FItemTable Item) override;
 	
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Inventory Interface")
     void UseItem(int32 SlotIndex);
 	virtual void UseItem_Implementation(int32 SlotIndex) override;
  
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Inventory Interface")
 	void SwapItem(int32 FromIndex, int32 ToIndex);
 	virtual void SwapItem_Implementation(int32 FromIndex, int32 ToIndex) override;
 	
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Inventory Interface")
 	void MoveItem(int32 FromIndex, int32 ToIndex);
 	virtual void MoveItem_Implementation(int32 FromIndex, int32 ToIndex) override;
 	
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Inventory Interface")
 	void RemoveItemAt(int32 SlotIndex, int32 Count);
 	virtual void RemoveItemAt_Implementation(int32 SlotIndex, int32 Count) override;
  
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Inventory Interface")
     void LockItemAt(int32 SlotIndex);
 	virtual void LockItemAt_Implementation(int32 SlotIndex) override;
  
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Inventory Interface")
     void SortItem();
 	virtual void SortItem_Implementation() override;
 
 	// 장비 컴포넌트
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Equipment Interface")
 	UEquipmentComponent* GetEquipmentComponent();
 	virtual UEquipmentComponent* GetEquipmentComponent_Implementation() override;
 	
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Equipment Interface")
 	float GetEquipWeight();
 	virtual float GetEquipWeight_Implementation() override;
 	
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Equipment Interface")
 	void UnEquipItem(EItemFilter ItemFilter, int32 EquipIndex);
 	virtual void UnEquipItem_Implementation(EItemFilter ItemFilter, int32 EquipIndex) override;
 	
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Equipment Interface")
 	void AddQuickItem(FItemTable Item);
 	virtual void AddQuickItem_Implementation(FItemTable Item) override;
 
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Equipment Interface")
     void AddQuickItemAt(FItemTable Item, int32 EquipIndex);
 	virtual void AddQuickItemAt_Implementation(FItemTable Item, int32 EquipIndex) override;
 	
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Equipment Interface")
 	void RemoveQuickItemAt(EItemFilter ItemFilter, int32 EquipIndex);
 	virtual void RemoveQuickItemAt_Implementation(EItemFilter ItemFilter, int32 EquipIndex) override;
-	
+
 protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void PossessedBy(AController* NewController) override;
 
-	/** Space Bar 입력 */
-	void StartRoll();
-	UFUNCTION(BlueprintCallable)
-	void EndRoll();
-
-	/** Left or Right 마우스 입력 */
-	void StartAttack(EPlayerAttack Attack);
-	
-	UFUNCTION(BlueprintCallable)
-    void EndAttack();
-	
-	/** V키 입력 */
-	void StartBlock();
-	UFUNCTION(BlueprintCallable)
-	void EndBlock();
-
-	/** Tab 키 입력 */
-	void StartTarget();
-	
-	UFUNCTION(BlueprintCallable)
-	void StartDead();
-
-	void UseQuickPotion();
-	void ShowMenuHUD();
-	void BackMenuHUD();
-	void TurnOffHUD();
-	
-	void ShiftLeftEquipments(EMouseWheel MouseWheel);
-	
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 	virtual void AddControllerYawInput(float Val) override;
@@ -250,104 +241,106 @@ protected:
 	//// 구르기
 	
 	/** True : 구르기중, False : 일반  */
-	UPROPERTY(ReplicatedUsing = OnRep_Rolling, VisibleAnywhere, BlueprintReadOnly, Category = Status)
+	UPROPERTY(ReplicatedUsing = OnRep_Rolling, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	bool bRolling;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Cost)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Status")
 	float RollCost;
 
+	void StartRoll(); // 스페이스바
+    void EndRoll();
+	
+	UFUNCTION(Server, Reliable)
+    void ServerRoll();
+
+	UFUNCTION(NetMulticast, Reliable)
+    void MulticastRoll();
+	
 	UFUNCTION()
 	void OnRep_Rolling();
 
 public:
 	void SetRolling(bool bRoll);
-	
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerRoll();
-
-	UFUNCTION(NetMulticast, Reliable, WithValidation)
-	void MulticastRoll();
 
 protected:
 	////////////////////////////////////////////////////////////////////////////
 	//// 공격
 	
 	/** True : 공격중, False : 일반 */
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Status)
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	bool bAttacking;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Cost)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Status")
 	float LightAttackCost;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Cost)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Status")
 	float HeavyAttackCost;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Status")
 	float LightAttackRadius;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Status")
 	float HeavyAttackRadius;
-	
+
+	/** Left or Right 마우스 입력 */
+	void StartAttack(EPlayerAttack Attack);
+	void EndAttack();
+
+	UFUNCTION(Server, Reliable)
+    void ServerAttack(EPlayerAttack Attack);
+
 public:
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerAttack(EPlayerAttack Attack);
-
-	UFUNCTION(BlueprintCallable)
-    void LightAttack();
-
-	UFUNCTION(BlueprintCallable)
-    void HeavyAttack();
+	void SetAttacking(bool bAttack);
 	
+    void LightAttack(); // 좌클릭
+    void HeavyAttack(); // 좌클릭 + 시프트키
+
+	void CreateOverlapSphere(float AttackRadius); // LightAttack과 HeavyAttack 다른점은 OverlapSphere의 생성지점이다. 즉 AttackRadius만 달리하면된다.
 	void ApplyDamageToActorInOverlapSphere(TArray<AActor*>& OverlappedActors, EPlayerAttack PlayerAttack);
-	
-	////////////////////////////////////////////////////////////////////////////
-	//// 상호 작용
-
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerInteractActor();
 
 protected:
 	////////////////////////////////////////////////////////////////////////////
 	//// 사망
 	
 	/** True : 죽음, False : 살아있음 */
-	UPROPERTY(ReplicatedUsing = OnRep_Dead, BlueprintReadOnly, Category = Stat)
+	UPROPERTY(ReplicatedUsing = OnRep_Dead, BlueprintReadOnly, Category = "Status")
 	bool bDead;
+
+	void EndDead() const; // 캐릭터 사망후 애니메이션 재생 금지 용도
+	
+	UFUNCTION()
+	void OnPlayerStatHpChanged(float Damage, const UDamageType * Type, AController * InstigatedBy, AActor * DamageCauser);
+
+	UFUNCTION(Server, Reliable)
+    void ServerDeath();
 
 	UFUNCTION()
     void OnRep_Dead();
 
-	UFUNCTION(BlueprintImplementableEvent, Category = Stat)
-    void OnUpdateDeath();
-	
-
-	UFUNCTION()
-	void OnHpChanged(float Damage, const UDamageType * Type, AController * InstigatedBy, AActor * DamageCauser);
-
 public:
-	UFUNCTION(Server, Reliable, WithValidation)
-    void ServerDeath();
-
 	void HitReaction(float StunTime, FVector KnockBack, bool bKnockDown);
 	
 protected:
 	////////////////////////////////////////////////////////////////////////////
 	//// 블럭
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Cost)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Status")
 	float BlockCost;
 
 	/** True : 블럭중, False : 일반  */
-	UPROPERTY(ReplicatedUsing = OnRep_Blocking, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
+	UPROPERTY(ReplicatedUsing = OnRep_Blocking, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	bool bBlocking;
+
+	void StartBlock(); // 마우스 우클릭
+	void EndBlock();
+
+	UFUNCTION(Server, Reliable)
+    void ServerBlock(bool bBlock);
 
 	UFUNCTION()
 	void OnRep_Blocking();
 
 public:
-	UFUNCTION(Server, Reliable, WithValidation)
-    void ServerBlock(bool bBlock);
-	
 	/** 공격방향과 블럭방향이 너무 틀어져있으면 안됨. */
 	UFUNCTION()
 	bool IsBlocked(AActor* Enemy) const;
@@ -356,19 +349,16 @@ public:
 
 protected:
 	////////////////////////////////////////////////////////////////////////////
-	//// 보스 몬스터
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
-	AEnemy* BossEnemy;
+	//// 액터 컴퍼넌트
 
-public:
-	void SetBossEnemy(AEnemy* InEnemy);
+	UFUNCTION(Server, Reliable)
+    void ServerEquip(bool bEquip);
 
-	UFUNCTION()
-	void OnEnemyHpChanged(float CurHp, float MaxHp);
-
-protected:
-	////////////////////////////////////////////////////////////////////////////
-	//// 타겟팅
+	UFUNCTION(NetMulticast, Reliable)
+    void MulticastEquip(bool bEquip);
+	
+	UFUNCTION(Server, Reliable)
+    void ServerInteractActor();
 	
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
 	AActor* Target;
@@ -381,11 +371,33 @@ protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
 	bool bLockCamera;
 
+	/** Tab 키 입력 */
+	void StartTarget();
+
 public:
 	void SetLockCamera(AActor* InTarget, bool bLock);
 
 	void AddSoulsValue(int32 Value);
 
+protected:
+	////////////////////////////////////////////////////////////////////////////
+	//// 보스 몬스터
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
+	AEnemy* BossEnemy;
+
+public:
+	void SetBossEnemy(AEnemy* InEnemy);
+
+	UFUNCTION()
+    void OnEnemyHpChanged(float CurHp, float MaxHp);
+
+	void UseQuickPotion();
+	void ShowMenuHUD();
+	void BackMenuHUD();
+	void TurnOffHUD();
+	
+	void ShiftLeftEquipments(EMouseWheel MouseWheel); // 무기, 방패, 포션 퀵 전환
+	
 	// 게터
 	FORCEINLINE bool IsDead() const { return bDead; }
 	FORCEINLINE bool IsRoll() const { return bRolling; }
@@ -399,13 +411,13 @@ public:
 	FORCEINLINE void SetPlayingScene(const bool bScene) { bPlayingScene = bScene; }
 
 	// 멀티 캐스트
-	UFUNCTION(NetMulticast, Reliable, WithValidation)
+	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayMontage(UAnimMontage* AnimMontage, float PlayRate, FName AnimName = NAME_None);
 
-	UFUNCTION(NetMulticast, Reliable, WithValidation)
+	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlaySound(USoundBase* Sound);
 
-	UFUNCTION(NetMulticast, Reliable, WithValidation)
+	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayParticle(UParticleSystem* Particle);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

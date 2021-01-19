@@ -6,34 +6,33 @@
 #include "UObject/Interface.h"
 #include "ControllerInterface.generated.h"
 
+/**
+* 용도: SoulPlayerController 함수를 Widget의 GetOwningPlayer에서 바로 사용하기 위함.
+*/
 
-// This class does not need to be modified.
 UINTERFACE(MinimalAPI)
 class UControllerInterface : public UInterface
 {
 	GENERATED_BODY()
 };
 
-/**
- * 
- */
 class SOULSLIKE_API IControllerInterface
 {
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Equipment")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PlayerController")
 	void ShowEquipmentWidget();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Inventory")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PlayerController")
 	void ShowInventoryWidget();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Status")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PlayerController")
 	void ShowStatusWidget();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Option")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PlayerController")
 	void ShowOptionWidget();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ItemDescription")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PlayerController")
 	void ClearItemDescription();
 };

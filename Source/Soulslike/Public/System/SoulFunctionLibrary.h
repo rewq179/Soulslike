@@ -20,7 +20,7 @@ class SOULSLIKE_API USoulFunctionLibrary : public UBlueprintFunctionLibrary
 	
 public:
 	// OverlapSphere를 생성한다. Enemy와 SoulCharacter에서 사용된다.
-	static void CreateOverlapSphere(UWorld* World, FVector SphereLocation, float Radius, UClass* ClassFilter, AActor* IgnoreActor, TArray<AActor*>& OverlapActors);
+	static void CreateOverlapSphere(UWorld* World, const FVector& SphereLocation, float Radius, UClass* ClassFilter, AActor* IgnoreActor, TArray<AActor*>& OverlapActors);
 
 	// OverlapSphere를 생성시 형태를 그려준다.
 	static void DrawDLine(UWorld* World, FVector Start, FVector End);

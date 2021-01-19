@@ -40,9 +40,8 @@ void APickUpActor::Interact(ASoulCharacter* SoulCharacter)
 {
 	if (!bInteracted && SoulCharacter)
 	{
-		bInteracted= true;
+		// bInteracted= true;
 		SoulCharacter->AddItem(ItemTable);
-
 
 		Mesh->SetRenderCustomDepth(false);
 	}

@@ -72,32 +72,41 @@ public:
 	//// 인터페이스
 
 	// 애니메이션
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Anim_Notify")
-    void LightAttackAnimStart(bool bStart);
-	virtual void LightAttackAnimStart_Implementation(bool bStart) override;
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
+    void StartLightAttackAnim();
+	virtual void StartLightAttackAnim_Implementation() override;
 
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Anim_Notify")
-    void HeavyAttackAnimStart(float Radius, float Height, bool bKnockDown);
-	virtual void HeavyAttackAnimStart_Implementation(float Radius, float Height, bool bKnockDown) override;
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
+    void StartHeavyAttackAnim(float Radius, float Height, bool bKnockDown);
+	virtual void StartHeavyAttackAnim_Implementation(float Radius, float Height, bool bKnockDown) override;
 
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Anim_Notify")
-    void ChargeAttackAnimStart(float Radius, float Height, bool bKnockDown);
-	virtual void ChargeAttackAnimStart_Implementation(float Radius, float Height, bool bKnockDown) override;
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
+    void StartChargeAttackAnim(float Radius, float Height, bool bKnockDown);
+	virtual void StartChargeAttackAnim_Implementation(float Radius, float Height, bool bKnockDown) override;
 
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Anim_Notify")
-    void RangeAttackAnimStart();
-	virtual void RangeAttackAnimStart_Implementation() override;
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
+    void StartRangeAttackAnim();
+	virtual void StartRangeAttackAnim_Implementation() override;
 
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Anim_Notify")
-    void HandAttackAnimStart(float Radius, float Height, bool bKnockDown);
-	virtual void HandAttackAnimStart_Implementation(float Radius, float Height, bool bKnockDown) override;
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
+    void StartHandAttackAnim(float Radius, float Height, bool bKnockDown);
+	virtual void StartHandAttackAnim_Implementation(float Radius, float Height, bool bKnockDown) override;
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
+	void EndLightAttackAnim();
+	virtual void EndLightAttackAnim_Implementation() override;
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
+	void EndAggroAnim();
+	virtual void EndAggroAnim_Implementation() override;
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
+    void EndDeadAnim();
+	virtual void EndDeadAnim_Implementation() override;
 
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Anim_Notify")
-    void DeadAnimStart();
-	virtual void DeadAnimStart_Implementation() override;
 
 	// 파티클 재생
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Anim_Notify")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
     void PlayEffect(UParticleSystem* InParticle, USoundBase* InSound, const FTransform InTransform);
 	virtual void PlayEffect_Implementation(UParticleSystem* InParticle, USoundBase* InSound, const FTransform InTransform) override;
 
@@ -169,6 +178,7 @@ public:
 	float RangeDelayTime;
 
     void StartAggro(); // 어그로 애니메이션 재생
+	void EndAggro();
 	
 	void StartAttack(EEnemyAttack Attack);
 	void StartFirstAttack(int32 AttackNumber);
@@ -235,9 +245,6 @@ public:
 	FOnChargeAttackEndDelegate OnChargeAttackEnd;
 	FOnChargeAttackEndDelegate OnFirstAttackEnd;
 
-	/** True: WB_Targeting Off, False: WB_Targeting On */
-	void ToggleTargetWidget(ASoulCharacter* InCharacter, bool bHide);
-	
 	UFUNCTION(BlueprintNativeEvent)
 	void ShowTargetWidget(ASoulCharacter* InCharacter, bool bHide);
 

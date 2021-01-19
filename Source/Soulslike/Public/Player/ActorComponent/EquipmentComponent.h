@@ -19,11 +19,6 @@
 #include "Chaos/AABB.h"
 #include "Chaos/AABB.h"
 #include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-
 
 #include "EquipmentComponent.generated.h"
 
@@ -31,6 +26,12 @@ class ASoulCharacter;
 class ASoulPlayerController;
 class AWeapon;
 
+/**
+* 용도: 플레이어의 장비 장착, 퀵 아이템 장착
+*
+* 무기, 방패, 포션을 장착 및 예비로 둘 수 있다.
+* 플레이어는 마우스 휠을 아래로 내려, 퀵 아이템을 바꿀 수 있다.
+*/
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class SOULSLIKE_API UEquipmentComponent : public UActorComponent
@@ -69,7 +70,6 @@ protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
 	float EquipWeight;
 
-protected:
 	/** True : 장비 퀵슬롯 새로고침 */
 	UPROPERTY(ReplicatedUsing = OnRep_RefreshEquipments, VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
 	bool bRefeshEquipments;
@@ -77,9 +77,8 @@ protected:
 	UFUNCTION()
     void OnRep_RefreshEquipments();
 
-	public:
+public:
 	void SetRefreshEquipments(bool bRefresh);
-
 		
 	////////////////////////////////////////////////////////////////////////////
 	//// 장착 아이템
@@ -94,7 +93,9 @@ protected:
 public:
 	void SetCurrentWeapon(bool bEquip);
 
-public:
+	////////////////////////////////////////////////////////////////////////////
+	//// 외부에서 실행되는 함수
+	
 	void UseQuickItem();
 
 	void EquipItem(FItemTable Item);
@@ -108,6 +109,9 @@ public:
 	void ShiftLeftEquipments(EMouseWheel MouseWheel);
 
 protected:
+	////////////////////////////////////////////////////////////////////////////
+	//// 클라이언트가 서버에게 요청하는 함수
+	
 	UFUNCTION(Server, Reliable)
     void ServerUseQuickItem();
 
@@ -129,8 +133,15 @@ protected:
 	UFUNCTION(Server, Reliable)
     void ServerChangeQuickSlot(EMouseWheel MouseWheel);
 
+	////////////////////////////////////////////////////////////////////////////
+	//// 멀티 캐스트
+
+	/** 현재는 사용할 필요 없음. */
 	UFUNCTION(NetMulticast, Reliable)
     void MulticastRefreshClients(UEquipmentComponent* EquipComponent);
+
+	////////////////////////////////////////////////////////////////////////////
+	//// 실제로 동작되는 함수
 	
 	bool UseQuickInventoryItem();
 	bool EquipInventoryItem(FItemTable Item);
@@ -141,43 +152,49 @@ protected:
 	bool AddQuickEquipmentItemAt(FItemTable Item, int32 EquipIndex);
 	void AddItemInEquipmentAt(TArray<FItemTable>& QuickEquipments, int32 EquipIndex, FItemTable Item);
 
-	bool RemoveQuickEquipmentItemAt(EItemFilter ItemFilter, int32 EquipIndex, bool bShiftLeft);
-	void RemoveItemInEquipmentAt(TArray<FItemTable>& QuickEquipments, int32 EquipIndex, bool bShiftLeft);
+	bool RemoveQuickEquipmentItemAt(const EItemFilter ItemFilter, const int32 EquipIndex, const bool bShiftLeft);
+	void RemoveItemInEquipmentAt(TArray<FItemTable>& QuickEquipments, const int32 EquipIndex, const bool bShiftLeft);
 
-	bool ShilftLeftEquipmentSlot(EItemFilter ItemFilter);
-	void ShiftLeft(TArray<FItemTable>& QuickEquipments, EItemFilter ItemFilter);
+	bool ShiftLeftEquipmentSlot(const EItemFilter ItemFilter);
+	void ShiftLeftArrayByFilter(TArray<FItemTable>& QuickEquipments, const EItemFilter ItemFilter);
 	
 public:
+	////////////////////////////////////////////////////////////////////////////
+	//// 개터
+		
 	FORCEINLINE bool IsWeaponEquip() const {return QuickWeapons.Num()>0;}
 	FORCEINLINE float GetEquipWeight() const {return EquipWeight;}
 	
-	float GetWeaponDamage(EPlayerAttack PlayerAttack);
-	
-	UFUNCTION(BlueprintCallable)
-    FORCEINLINE TArray<FItemTable> GetQuickWeapons() const {return QuickWeapons ;}
-
-	UFUNCTION(BlueprintCallable)
-    FORCEINLINE TArray<FItemTable> GetQuickShields() const {return QuickShields ;}
-
-	UFUNCTION(BlueprintCallable)
-    TArray<FText> GetDamageText (EItemFilter ItemFilter);
-	
-	UFUNCTION(BlueprintCallable)
-	FText GetArmorText(bool bMeleeArmor);
-
-	UFUNCTION(BlueprintCallable)
-    FORCEINLINE TArray<FItemTable> GetQuickPotions() const {return QuickPotions;}
-	
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
     FORCEINLINE TMap<int32, FItemTable> GetArmorMap() const {return ArmorMap;}
 
-	UFUNCTION(BlueprintCallable)
-    TArray<UTexture2D*> GetItemIconsByQuickIndex(EItemFilter ItemFilter) const ;
+	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
+    FORCEINLINE TArray<FItemTable> GetQuickWeapons() const {return QuickWeapons ;}
 
-	UFUNCTION(BlueprintCallable)
-	void HoverEquipmentSlot(EItemFilter ItemFilter, int32 EquipIndex);
+	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
+    FORCEINLINE TArray<FItemTable> GetQuickShields() const {return QuickShields ;}
 
-	void UpdateItemDescription(TArray<FItemTable>& QuickEquipments, int32 EquipIndex);
+	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
+    FORCEINLINE TArray<FItemTable> GetQuickPotions() const {return QuickPotions;}
+
+	float GetWeaponDamage(const EPlayerAttack PlayerAttack);
+	
+	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
+    FText GetArmorText(const bool bMeleeArmor);
+	
+	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
+    TArray<FText> GetDamageText (const EItemFilter ItemFilter);
+
+	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
+    TArray<UTexture2D*> GetItemIconsByQuickIndex(const EItemFilter ItemFilter) const ;
+
+	////////////////////////////////////////////////////////////////////////////
+	//// HUD
+	
+	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
+	void HoverEquipmentSlot(const EItemFilter ItemFilter, const int32 EquipIndex);
+
+	void UpdateItemDescriptionByFilter(TArray<FItemTable>& QuickEquipments, const int32 EquipIndex) const;
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 		

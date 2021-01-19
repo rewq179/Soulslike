@@ -5,7 +5,6 @@
 #include "Player/SoulCharacter.h"
 #include "Player/SoulPlayerController.h"
 #include "Player/Weapon.h"
-#include "Player/PlayerAnimInstance.h"
 
 #include "Engine/World.h"
 #include "Animation/AnimInstance.h"
@@ -21,7 +20,7 @@ UEquipmentComponent::UEquipmentComponent()
 }
 
 ////////////////////////////////////////////////////////////////////////////
-////  초기화
+//// 초기화
 
 void UEquipmentComponent::Initialize()
 {
@@ -43,6 +42,8 @@ void UEquipmentComponent::Initialize()
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////
+//// 장비 슬롯 및 현재 무기 업데이트
 
 void UEquipmentComponent::OnRep_RefreshEquipments()
 {
@@ -86,7 +87,7 @@ void UEquipmentComponent::SetCurrentWeapon(bool bEquip)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-////
+//// 외부에서 실행되는 함수
 
 void UEquipmentComponent::UseQuickItem()
 {
@@ -192,15 +193,15 @@ void UEquipmentComponent::ShiftLeftEquipments(EMouseWheel MouseWheel)
 			break;
 
 		case EMouseWheel::Wheel_Weapon:
-			bChanged = ShilftLeftEquipmentSlot(EItemFilter::Filter_Weapon);
+			bChanged = ShiftLeftEquipmentSlot(EItemFilter::Filter_Weapon);
 			break;
 
 		case EMouseWheel::Wheel_Shield:
-			bChanged = ShilftLeftEquipmentSlot(EItemFilter::Filter_Shield);
+			bChanged = ShiftLeftEquipmentSlot(EItemFilter::Filter_Shield);
 			break;
 
 		case EMouseWheel::Wheel_Potion:
-			bChanged = ShilftLeftEquipmentSlot(EItemFilter::Filter_Potion);
+			bChanged = ShiftLeftEquipmentSlot(EItemFilter::Filter_Potion);
 			break;
 
 		default: ;
@@ -219,60 +220,46 @@ void UEquipmentComponent::ShiftLeftEquipments(EMouseWheel MouseWheel)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-////  서버 ::
+//// 클라이언트가 서버에게 요청하는 함수
 
 void UEquipmentComponent::ServerUseQuickItem_Implementation()
 {
 	UseQuickItem();
-
-	// MulticastRefreshClients(this);
 }
 
 void UEquipmentComponent::ServerEquipItem_Implementation(FItemTable Item)
 {
 	EquipItem(Item);
-
-	// MulticastRefreshClients(this);
 }
 
 
 void UEquipmentComponent::ServerUnEquipItem_Implementation(EItemFilter ItemFilter, int32 EquipIndex)
 {
 	UnEquipItem(ItemFilter, EquipIndex);
-
-	// MulticastRefreshClients(this);
 }
 
 void UEquipmentComponent::ServerAddQuickItem_Implementation(FItemTable Item, bool bShiftLeft)
 {
 	AddQuickItem(Item, bShiftLeft);
-
-	// MulticastRefreshClients(this);
 }
 
 void UEquipmentComponent::ServerAddQuickItemAt_Implementation(FItemTable Item, int32 QuickIndex)
 {
 	AddQuickItemAt(Item, QuickIndex);
-
-	// MulticastRefreshClients(this);
 }
 
 void UEquipmentComponent::ServerRemoveQuickItem_Implementation(EItemFilter ItemFilter, int32 QuickIndex, bool bShiftLeft)
 {
 	RemoveQuickItemAt(ItemFilter, QuickIndex, bShiftLeft);
-
-	// MulticastRefreshClients(this);
 }
 
 void UEquipmentComponent::ServerChangeQuickSlot_Implementation(EMouseWheel MouseWheel)
 {
 	ShiftLeftEquipments(MouseWheel);
-
-	// MulticastRefreshClients(this);
 }
 
 ////////////////////////////////////////////////////////////////////////////
-////
+//// 멀티캐스트
 
 void UEquipmentComponent::MulticastRefreshClients_Implementation(UEquipmentComponent* EquipComponent)
 {
@@ -282,7 +269,7 @@ void UEquipmentComponent::MulticastRefreshClients_Implementation(UEquipmentCompo
 }
 
 ////////////////////////////////////////////////////////////////////////////
-////
+//// 실제로 동작되는 함수
 
 bool UEquipmentComponent::UseQuickInventoryItem()
 {
@@ -465,7 +452,7 @@ void UEquipmentComponent::AddItemInEquipmentAt(TArray<FItemTable>& QuickEquipmen
 }
 
 
-bool UEquipmentComponent::RemoveQuickEquipmentItemAt(EItemFilter ItemFilter, int32 EquipIndex, bool bShiftLeft)
+bool UEquipmentComponent::RemoveQuickEquipmentItemAt(const EItemFilter ItemFilter, const int32 EquipIndex, const bool bShiftLeft)
 {
 	if(OwnerController)
 	{
@@ -492,7 +479,7 @@ bool UEquipmentComponent::RemoveQuickEquipmentItemAt(EItemFilter ItemFilter, int
 	return false;
 }
 
-void UEquipmentComponent::RemoveItemInEquipmentAt(TArray<FItemTable>& QuickEquipments, int32 EquipIndex, bool bShiftLeft)
+void UEquipmentComponent::RemoveItemInEquipmentAt(TArray<FItemTable>& QuickEquipments, const int32 EquipIndex, const bool bShiftLeft)
 {
 	if(EquipIndex < QuickEquipments.Num())
 	{
@@ -512,25 +499,25 @@ void UEquipmentComponent::RemoveItemInEquipmentAt(TArray<FItemTable>& QuickEquip
 	}
 }
 
-bool UEquipmentComponent::ShilftLeftEquipmentSlot(EItemFilter ItemFilter)
+bool UEquipmentComponent::ShiftLeftEquipmentSlot(const EItemFilter ItemFilter)
 {
 	if(OwnerController)
 	{
 		switch (ItemFilter)
 		{
 		case EItemFilter::Filter_Weapon:
-			ShiftLeft(QuickWeapons, ItemFilter);
+			ShiftLeftArrayByFilter(QuickWeapons, ItemFilter);
 			break;
 
 		case EItemFilter::Filter_Shield:
-			ShiftLeft(QuickShields, ItemFilter);
+			ShiftLeftArrayByFilter(QuickShields, ItemFilter);
 			break;
 			
 		case EItemFilter::Filter_Armor:
 			break;
 			
 		case EItemFilter::Filter_Potion:
-			ShiftLeft(QuickPotions, ItemFilter);
+			ShiftLeftArrayByFilter(QuickPotions, ItemFilter);
 			break;
 			
 		default:
@@ -545,16 +532,83 @@ bool UEquipmentComponent::ShilftLeftEquipmentSlot(EItemFilter ItemFilter)
 	return false;
 }
 
-void UEquipmentComponent::ShiftLeft(TArray<FItemTable>& QuickEquipments, EItemFilter ItemFilter)
+void UEquipmentComponent::ShiftLeftArrayByFilter(TArray<FItemTable>& QuickEquipments, const EItemFilter ItemFilter)
 {
-	if(QuickEquipments.Num() > 1)
+	if(QuickEquipments.Num() > 1) 
 	{
 		AddQuickItem(QuickEquipments[0], true);
+
 		RemoveQuickItemAt(ItemFilter, 0, true);
 	}
 }
 
-TArray<UTexture2D*> UEquipmentComponent::GetItemIconsByQuickIndex(EItemFilter ItemFilter) const
+////////////////////////////////////////////////////////////////////////////
+//// 게터
+
+float UEquipmentComponent::GetWeaponDamage(const EPlayerAttack PlayerAttack)
+{
+	if(QuickWeapons.Num() > 0)
+	{
+		switch (PlayerAttack)
+		{
+		case EPlayerAttack::Player_LightAttack: 
+			return QuickWeapons[0].LightDamage;
+
+		case EPlayerAttack::Player_HeavyAttack:
+			return QuickWeapons[0].HeavyDamage;
+			
+		default:
+			return 0.f;
+		}
+	}
+
+	return 0.f;
+}
+
+FText UEquipmentComponent::GetArmorText(const bool bMeleeArmor)
+{
+	float TotalArmor = 0.f;
+	
+	for(auto& Armor : ArmorMap)
+	{
+		if(bMeleeArmor)
+		{
+			TotalArmor += Armor.Value.MeleeArmor;
+		}
+
+		else
+		{
+			TotalArmor += Armor.Value.MagicArmor;
+		}
+	}
+
+	return FText::FromString(FString::SanitizeFloat(TotalArmor));
+}
+
+TArray<FText> UEquipmentComponent::GetDamageText(const EItemFilter ItemFilter)
+{
+	TArray<FText> Damages;
+	
+	if(ItemFilter == EItemFilter::Filter_Weapon)
+	{
+		for(auto& Weapon : QuickWeapons)
+		{
+			Damages.Add(FText::FromString(FString::SanitizeFloat(Weapon.LightDamage)));
+		}
+	}
+
+	else
+	{
+		for(auto& Shield : QuickShields)
+		{
+			Damages.Add(FText::FromString(FString::SanitizeFloat(Shield.LightDamage)));
+		}
+	}
+
+	return Damages;
+}
+
+TArray<UTexture2D*> UEquipmentComponent::GetItemIconsByQuickIndex(const EItemFilter ItemFilter) const
 {
 	TArray<UTexture2D*> TempIcons;
 
@@ -581,101 +635,43 @@ TArray<UTexture2D*> UEquipmentComponent::GetItemIconsByQuickIndex(EItemFilter It
 	return TempIcons;
 }
 
-float UEquipmentComponent::GetWeaponDamage(EPlayerAttack PlayerAttack)
+////////////////////////////////////////////////////////////////////////////
+//// HUD
+
+void UEquipmentComponent::HoverEquipmentSlot(const EItemFilter ItemFilter, const int32 EquipIndex)
 {
-	if(QuickWeapons.Num() > 0)
+	if(OwnerController == nullptr)
 	{
-		switch (PlayerAttack)
-		{
-		case EPlayerAttack::Player_LightAttack: 
-			return QuickWeapons[0].LightDamage;
-
-		case EPlayerAttack::Player_HeavyAttack:
-			return QuickWeapons[0].HeavyDamage;
-			
-		default:
-			return 0.f;
-		}
+		return;
 	}
-
-	return 0.f;
-}
-
-TArray<FText> UEquipmentComponent::GetDamageText(EItemFilter ItemFilter)
-{
-	TArray<FText> Damages;
 	
-	if(ItemFilter == EItemFilter::Filter_Weapon)
+	switch (ItemFilter)
 	{
-		for(auto& Weapon : QuickWeapons)
+	case EItemFilter::Filter_Weapon:
+		UpdateItemDescriptionByFilter(QuickWeapons, EquipIndex);
+		break;
+
+	case EItemFilter::Filter_Shield:
+		UpdateItemDescriptionByFilter(QuickShields, EquipIndex);
+		break;
+
+	case EItemFilter::Filter_Armor:
+		if(ArmorMap.Contains(EquipIndex))
 		{
-			Damages.Add(FText::FromString(FString::SanitizeFloat(Weapon.LightDamage)));
+			OwnerController->ClientUpdateItemDescription(ArmorMap[EquipIndex]);
 		}
-	}
-
-	else
-	{
-		for(auto& Shield : QuickShields)
-		{
-			Damages.Add(FText::FromString(FString::SanitizeFloat(Shield.LightDamage)));
-		}
-	}
-
-	return Damages;
-}
-
-FText UEquipmentComponent::GetArmorText(bool bMeleeArmor)
-{
-	float TotalArmor = 0.f;
-	
-	for(auto& Armor : ArmorMap)
-	{
-		if(bMeleeArmor)
-		{
-			TotalArmor += Armor.Value.MeleeArmor;
-		}
-
-		else
-		{
-			TotalArmor += Armor.Value.MagicArmor;
-		}
-	}
-
-	return FText::FromString(FString::SanitizeFloat(TotalArmor));
-}
-
-void UEquipmentComponent::HoverEquipmentSlot(EItemFilter ItemFilter, int32 EquipIndex)
-{
-	if(OwnerController)
-	{
-		switch (ItemFilter)
-		{
-		case EItemFilter::Filter_Weapon:
-			UpdateItemDescription(QuickWeapons, EquipIndex);
-			break;
-
-		case EItemFilter::Filter_Shield:
-			UpdateItemDescription(QuickShields, EquipIndex);
-			break;
-
-		case EItemFilter::Filter_Armor:
-			if(ArmorMap.Contains(EquipIndex))
-			{
-				OwnerController->ClientUpdateItemDescription(ArmorMap[EquipIndex]);
-			}
-			break;
+		break;
 			
 
-		case EItemFilter::Filter_Potion:
-			UpdateItemDescription(QuickPotions, EquipIndex);
-			break;
+	case EItemFilter::Filter_Potion:
+		UpdateItemDescriptionByFilter(QuickPotions, EquipIndex);
+		break;
 
-		default: ;
-		}
+	default: ;
 	}
 }
 
-void UEquipmentComponent::UpdateItemDescription(TArray<FItemTable>& QuickEquipments, int32 EquipIndex)
+void UEquipmentComponent::UpdateItemDescriptionByFilter(TArray<FItemTable>& QuickEquipments, const int32 EquipIndex) const
 {
 	if(EquipIndex < QuickEquipments.Num())
 	{

@@ -14,13 +14,16 @@ UComboComponent::UComboComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
+	// 설정
 	ComboTime = 0.5f;
 
+	// 콤보 데미지 가중치
 	ComboDamages.Add(1.f);
 	ComboDamages.Add(1.15f);
 	ComboDamages.Add(1.22f);
 	ComboDamages.Add(1.45f);
 
+	// 콤보 코스트 가중치
 	ComboCosts.Add(1.f);
 	ComboCosts.Add(1.1f);
 	ComboCosts.Add(1.2f);
@@ -43,8 +46,7 @@ void UComboComponent::Initialize()
 	}
 }
 
-
-void UComboComponent::AddComboCount(bool bReset)
+void UComboComponent::AddComboCount(const bool bReset) // ComboCount가 Max를 초과하거나, 리셋시 0이 된다.
 {
 	if(bReset)
 	{

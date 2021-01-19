@@ -4,24 +4,19 @@
 #include "Player/ActorComponent/StatComponent.h"
 #include "Player/SoulCharacter.h"
 #include "Player/SoulPlayerController.h"
-
 #include "System/SoulGameModeBase.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
-
 #include "Engine/Engine.h"
 #include "TimerManager.h"
 
 #include "Net/UnrealNetwork.h"
 
-
-// Sets default values for this component's properties
 UStatComponent::UStatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
-	RecoveryRate = 4.5f;
-	DrainRate = -3.2f;
+	RecoveryRate = 9.5f;
 
 	// 스텟 초기화
 	PlayerStat.MaxHp = 500.f;
@@ -65,35 +60,27 @@ void UStatComponent::Initialize()
 ////////////////////////////////////////////////////////////////////////////
 //// 타이머 관련
 
-void UStatComponent::PlayStaminaTimer(bool bDrain)
+void UStatComponent::PlayStaminaTimer()
 {
-	ClearStaminaTimers();
-
-	if (bDrain)
+	if(OwnerCharacter)
 	{
-		OwnerCharacter->GetWorldTimerManager().SetTimer(StaminaDrainTimer, this, &UStatComponent::DrainStamina, 0.25f, true, 0.1f);
-	}
-
-	else
-	{
+		ClearStaminaTimer();
+		
 		OwnerCharacter->GetWorldTimerManager().SetTimer(StaminaRecoveryTimer, this, &UStatComponent::RecoveryStamina, 0.25f, true, 2.f);
 	}
 }
 
-void UStatComponent::ClearStaminaTimers()
+void UStatComponent::ClearStaminaTimer()
 {
-	OwnerCharacter->GetWorldTimerManager().ClearTimer(StaminaDrainTimer);
-	OwnerCharacter->GetWorldTimerManager().ClearTimer(StaminaRecoveryTimer);
+	if(OwnerCharacter)
+	{
+		OwnerCharacter->GetWorldTimerManager().ClearTimer(StaminaRecoveryTimer);
+	}
 }
 
 void UStatComponent::RecoveryStamina()
 {
 	AddStaminaValue(RecoveryRate);
-}
-
-void UStatComponent::DrainStamina()
-{
-	AddStaminaValue(DrainRate);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -122,7 +109,7 @@ void UStatComponent::HandleTakeAnyDamage(AActor * DamagedActor, float Damage, co
 	}
 }
 
-void UStatComponent::AddStaminaValue(float Value)
+void UStatComponent::AddStaminaValue(const float Value)
 {
 	PlayerStat.CurStamina += Value;
 
@@ -135,7 +122,7 @@ void UStatComponent::AddStaminaValue(float Value)
 	{
 		PlayerStat.CurStamina = PlayerStat.MaxStamina;
 
-		OwnerCharacter->GetWorldTimerManager().ClearTimer(StaminaRecoveryTimer);
+		ClearStaminaTimer();
 	}
 
 	if (OwnerController)
@@ -145,9 +132,10 @@ void UStatComponent::AddStaminaValue(float Value)
 
 }
 
-void UStatComponent::AddSoulsValue(float Value)
+void UStatComponent::AddSoulsValue(const float Value)
 {
 	PlayerStat.SoulsCount += Value;
+
 	if (OwnerController)
 	{
 		OwnerController->ClientUpdateSoulsCount(PlayerStat.SoulsCount);
@@ -155,7 +143,7 @@ void UStatComponent::AddSoulsValue(float Value)
 }
 
 
-TArray<FText> UStatComponent::GetStatText()
+TArray<FText> UStatComponent::GetStatText() const
 {
 	TArray<FText> Texts;
 
@@ -171,15 +159,15 @@ TArray<FText> UStatComponent::GetStatText()
 	
 }
 
-FText UStatComponent::GetHealthText(EHealthType HealthType)
+FText UStatComponent::GetHealthText(const EHealthType HealthType) const
 {
-	TArray<FStringFormatArg> args;
+	TArray<FStringFormatArg> Args;
 
 	switch (HealthType)
 	{
 	case EHealthType::Health_Hp:
-		args.Add(FStringFormatArg(static_cast<int32>(GetCurHp())));
-		args.Add(FStringFormatArg(static_cast<int32>(GetMaxHp())));
+		Args.Add(FStringFormatArg(static_cast<int32>(GetCurHp())));
+		Args.Add(FStringFormatArg(static_cast<int32>(GetMaxHp())));
 		break;
 
 	case EHealthType::Health_Mp:
@@ -188,15 +176,14 @@ FText UStatComponent::GetHealthText(EHealthType HealthType)
 		break;
 
 	case EHealthType::Health_Stamina:
-		args.Add(FStringFormatArg(static_cast<int32>(GetCurStamina())));
-		args.Add(FStringFormatArg(static_cast<int32>(GetMaxStamina())));
+		Args.Add(FStringFormatArg(static_cast<int32>(GetCurStamina())));
+		Args.Add(FStringFormatArg(static_cast<int32>(GetMaxStamina())));
 		break;
 		
-	default:
-		;
+	default: ;
 	}
 
-	return FText::FromString(FString::Format(TEXT("{0}/{1}"), args));
+	return FText::FromString(FString::Format(TEXT("{0}/{1}"), Args));
 }
 
 void UStatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

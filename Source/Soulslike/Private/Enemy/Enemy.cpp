@@ -94,34 +94,44 @@ void AEnemy::BeginPlay()
 ////////////////////////////////////////////////////////////////////////////
 //// 인터페이스
 
-void AEnemy::LightAttackAnimStart_Implementation(bool bStart)
+void AEnemy::StartLightAttackAnim_Implementation()
 {
-	SetLightCollision(bStart);
+	SetLightCollision(true);
 }
 
-void AEnemy::HeavyAttackAnimStart_Implementation(float Radius, float Height, bool bKnockDown)
+void AEnemy::StartHeavyAttackAnim_Implementation(float Radius, float Height, bool bKnockDown)
 {
 	HeavyAttack(Radius, Height, bKnockDown);
 }
 
-void AEnemy::ChargeAttackAnimStart_Implementation(float Radius, float Height, bool bKnockDown)
+void AEnemy::StartChargeAttackAnim_Implementation(float Radius, float Height, bool bKnockDown)
 {
 	ChargeAttack(Radius, Height, bKnockDown);
 }
 
-void AEnemy::RangeAttackAnimStart_Implementation()
+void AEnemy::StartRangeAttackAnim_Implementation()
 {
 	RangeAttack();
 }
 
-void AEnemy::HandAttackAnimStart_Implementation(float Radius, float Height, bool bKnockDown)
+void AEnemy::StartHandAttackAnim_Implementation(float Radius, float Height, bool bKnockDown)
 {
 	// 나중에 HandAttack() 함수 만들면 수정
 
 	HeavyAttack(Radius, Height, bKnockDown);
 }
 
-void AEnemy::DeadAnimStart_Implementation()
+void AEnemy::EndLightAttackAnim_Implementation()
+{
+	SetLightCollision(false);
+}
+
+void AEnemy::EndAggroAnim_Implementation()
+{
+	EndAggro();
+}
+
+void AEnemy::EndDeadAnim_Implementation()
 {
 	StartDead();
 }
@@ -204,16 +214,17 @@ void AEnemy::StartAggro()
 
 	Player->SetBossEnemy(this);
 	MulticastPlayMontage(AggroMontage, 1.f);
+}
 
-	// 어그로 종료후 플레이어 이동, BT 공격 실행
-	FTimerHandle WaitHandle;
-	GetWorld()->GetTimerManager().SetTimer(WaitHandle, FTimerDelegate::CreateLambda([&]()
-    {
-        OnAggroMoitionEnd.Broadcast();
-
-        Player->SetPlayingScene(false);
-
-    }), AggroMontage->GetPlayLength(), false);
+void AEnemy::EndAggro()
+{
+	OnAggroMoitionEnd.Broadcast();
+	
+	auto const Player = Cast<ASoulCharacter>(Target);
+	if (Player)
+	{
+		Player->SetPlayingScene(false);
+	}
 }
 
 void AEnemy::StartAttack(EEnemyAttack Attack)

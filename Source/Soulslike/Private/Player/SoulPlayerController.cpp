@@ -1,15 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Player/SoulPlayerController.h"
+
 #include "Player/SoulCharacter.h"
-
-#include "Net/UnrealNetwork.h"
-
-ASoulPlayerController::ASoulPlayerController()
-{
-
-}
 
 ////////////////////////////////////////////////////////////////////////////
 //// 인터페이스
@@ -55,8 +48,14 @@ void ASoulPlayerController::ClearItemDescription_Implementation()
 	ClientClearItemDescription();
 }
 
+void ASoulPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+}
+
 ////////////////////////////////////////////////////////////////////////////
-////
+//// HUD를 관리한다.
 
 void ASoulPlayerController::ClientTurnOffHUD_Implementation()
 {
@@ -202,10 +201,3 @@ void ASoulPlayerController::ClientShowOption_Implementation()
 	OnShowOption(true);
 }
 
-////////////////////////////////////////////////////////////////////////////
-//// 기타
-
-void ASoulPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-}

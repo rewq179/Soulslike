@@ -8,7 +8,15 @@
 #include "Chaos/AABB.h"
 #include "Chaos/AABB.h"
 
+
 #include "StatComponent.generated.h"
+
+/**
+* 용도: 플레이어의 스텟을 관리함
+*
+* 플레이어의 Health를 회복 시킨다.
+* 
+*/
 
 class ASoulCharacter;
 class ASoulPlayerController;
@@ -18,17 +26,7 @@ class SOULSLIKE_API UStatComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-	FTimerHandle StaminaDrainTimer;
 	FTimerHandle StaminaRecoveryTimer;
-
-protected:
-	/** 회복되는 스태미나 비율 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat)
-	float RecoveryRate;
-
-	/** 감소 되는 비율 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat)
-	float DrainRate;
 
 public:	
 	UStatComponent();
@@ -42,44 +40,54 @@ public:
 	void Initialize();
 
 protected:
+	////////////////////////////////////////////////////////////////////////////
+	//// 타이머
+	
+	/** 회복되는 스태미나 비율 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat)
+	float RecoveryRate;
+	
+public:
+	void PlayStaminaTimer();
+	void RecoveryStamina();
+	
+	void ClearStaminaTimer();
+
+protected:
+	////////////////////////////////////////////////////////////////////////////
+	//// 스텟 관련
+
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Stat)
 	FPlayerStat PlayerStat;
 
 	UFUNCTION()
-	void HandleTakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* Type, class AController* InstigatedBy, AActor* DamageCauser);
+    void HandleTakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* Type, class AController* InstigatedBy, AActor* DamageCauser);
 
 public:
+	void AddStaminaValue(const float Value);
+	void AddSoulsValue(const float Value);
+	
 	FOnHpChangedDelegate OnHpChanged;
-
-	/** True : 스테미너 소모 타이머, False : 회복 타이머 */
-	void PlayStaminaTimer(bool bDrain);
 	
-	/** 2개의 스테미너 타이머 모두 초기화 */
-	void ClearStaminaTimers();
-
-	void RecoveryStamina();
-	void DrainStamina();
-
-	void AddStaminaValue(float Value);
-	void AddSoulsValue(float Value);
+	////////////////////////////////////////////////////////////////////////////
+	//// 게터
 	
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "StatComponent")
 	FORCEINLINE FPlayerStat GetPlayerStat() const {return PlayerStat;}
-
+	
+	UFUNCTION(BlueprintCallable, Category = "StatComponent")
+    FORCEINLINE int32 GetSoulsCount() const { return PlayerStat.SoulsCount; }
+	
 	FORCEINLINE float GetCurHp() const { return PlayerStat.CurHp; }
 	FORCEINLINE float GetMaxHp() const { return PlayerStat.MaxHp; }
 	FORCEINLINE float GetCurStamina() const { return PlayerStat.CurStamina; }
 	FORCEINLINE float GetMaxStamina() const { return PlayerStat.MaxStamina; }
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE int32 GetSoulsCount() const { return PlayerStat.SoulsCount; }
 
-	/** Con, Men, Wit, Str, Dex, Int, Luck을 Text로 출력해줌 */
-	UFUNCTION(BlueprintCallable)
-	TArray<FText> GetStatText();
+	UFUNCTION(BlueprintCallable, Category = "StatComponent")
+	TArray<FText> GetStatText() const; //  Con, Men, Wit, Str, Dex, Int, Luck을 Text로 출력해줌
 
-	/** Hp, Mp, Stamina를 Text로 출력해줌 */
-	UFUNCTION(BlueprintCallable)
-	FText GetHealthText(EHealthType HealthType);
+	UFUNCTION(BlueprintCallable, Category = "StatComponent")
+	FText GetHealthText(const EHealthType HealthType) const; // Hp, Mp, Stamina를 Text로 출력해줌
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

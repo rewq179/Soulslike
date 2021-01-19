@@ -6,6 +6,14 @@
 #include "Components/ActorComponent.h"
 #include "ComboComponent.generated.h"
 
+/**
+* 용도: 플레이어의 콤보 공격을 관리하기 위함
+*
+* 라이트 공격(마우스 좌클릭)에 따라 ComboCount가 올라간다.
+* 시간내 재입력시 ComboCount에 해당하는 Light Attack Montages가 실행된다.
+* 시간이 오버되면 초기화한다.
+*/
+
 class ASoulCharacter;
 class ASoulPlayerController;
 
@@ -15,9 +23,8 @@ class SOULSLIKE_API UComboComponent : public UActorComponent
 	GENERATED_BODY()
 	
 	FTimerHandle ComboTimer;
-	
-	public:	
-	// Sets default values for this component's properties
+
+public:	
 	UComboComponent();
 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = Components)
@@ -26,7 +33,7 @@ class SOULSLIKE_API UComboComponent : public UActorComponent
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = Components)
 	ASoulPlayerController* OwnerController;
 
-	void Initialize();
+	void Initialize(); // Owner 설정 및 초기 설정
 
 protected:
 	/** 콤보의 최대치 */
@@ -50,11 +57,12 @@ protected:
 	float ComboTime;
 
 public:
-	void AddComboCount(bool bReset);
+	void AddComboCount(const bool bReset); // ComboCount가 Max를 초과하거나, 리셋시 0이 된다.
 	void StartComboTimer();
 	void ClearComboTimer();
-	
-	int32 GetComboCount();
+
+	/** 콤보가 맥스를 넘을 경우 0을, 나머지는 ComboCount를 가져온다. */
+	int32 GetComboCount(); 
 	FORCEINLINE float GetComboDamage() {return ComboDamages[ComboCount];}
 	FORCEINLINE float GetComboCost() {return ComboCosts[ComboCount];}
 	

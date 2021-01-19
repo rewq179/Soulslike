@@ -57,6 +57,7 @@ void UInteractComponent::InteractActor()
 	if (CurrentDoor)
 	{
 		CurrentDoor->Interact(OwnerCharacter);
+		CurrentDoor = nullptr;
 
 		return;
 	}
@@ -64,31 +65,8 @@ void UInteractComponent::InteractActor()
 	if (CurrentPickUpActor)
 	{
 		CurrentPickUpActor->Interact(OwnerCharacter);
+		// CurrentPickUpActor = nullptr;
 	}
-}
-
-void UInteractComponent::SetPickUpActor(APickUpActor* PickUpActor)
-{
-	if (PickUpActor == nullptr)
-	{
-		CurrentPickUpActor = nullptr;
-
-		return;
-	}
-
-	CurrentPickUpActor = PickUpActor;
-}
-
-void UInteractComponent::SetInteractDoor(AInteractDoor* DoorActor)
-{
-	if (DoorActor == nullptr)
-	{
-		CurrentDoor = nullptr;
-
-		return;
-	}
-
-	CurrentDoor = DoorActor;
 }
 
 ////////////////////////////////////////////////////////////////////////////

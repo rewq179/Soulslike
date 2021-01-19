@@ -12,7 +12,7 @@
 #include "DrawDebugHelpers.h"
 #include "Player/SoulCharacter.h"
 
-void USoulFunctionLibrary::CreateOverlapSphere(UWorld* World, FVector SphereLocation, float Radius, UClass* ClassFilter, AActor* IgnoreActor, TArray<AActor*>& OverlapActors)
+void USoulFunctionLibrary::CreateOverlapSphere(UWorld* World, const FVector& SphereLocation, float Radius, UClass* ClassFilter, AActor* IgnoreActor, TArray<AActor*>& OverlapActors)
 {
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));

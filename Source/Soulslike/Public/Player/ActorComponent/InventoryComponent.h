@@ -11,6 +11,16 @@ class ASoulCharacter;
 class ASoulPlayerController;
 class AWeapon;
 
+/**
+* 용도: 플레이어의 인벤토리
+*
+* 인벤토리에서는 아이엠을 추가, 제거, 스왑, 이동, 퀵슬롯 등록이 가능하다.
+* 인벤토리에는 최대 무게와 슬롯이 존재한다.
+* 
+* 아이템 추가는 1개씩 For문을 통해 넣어진다
+* 아이템 제거는 1~Max까지 가능하다.
+*/
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class SOULSLIKE_API UInventoryComponent : public UActorComponent
 {
@@ -58,30 +68,27 @@ public:
 	void SetRefreshInventory(bool bRefresh);
 
 	////////////////////////////////////////////////////////////////////////////
-	////
+	//// 외부에서 실행되는 함수
 	
     void UseItem(int32 SlotIndex);
 
 	void AddItem(FItemTable Item);
-	/** 새로운 Index에 아이템을 넣을 때*/
 	void AddItemAt(FItemTable Item, int32 SlotIndex);
 
 	void RemoveItem(FItemTable Item);
-	/** 해당 Index의 아이템을 제거할 때 */
 	void RemoveItemAt(int32 SlotIndex, int32 Count);
 
-	void SwapItem(int32 FromIndex, int32 ToIndex);
-	
-	/** FromIndex의 아이템을 ToIndex로 옮긴다 */
-    void MoveItem(int32 FromIndex, int32 ToIndex);
-
-    void LockItemAt(int32 SlotIndex);
-
 	void SortItem();
+	void SwapItem(int32 FromIndex, int32 ToIndex);
+	void MoveItem(int32 FromIndex, int32 ToIndex);
+	void LockItemAt(int32 SlotIndex);
 
 	bool IsEnoughCount(FItemTable Item);
 
 protected:
+	////////////////////////////////////////////////////////////////////////////
+	//// 클라이언트가 서버에게 요청하는 함수
+	
 	UFUNCTION(Server, Reliable)
 	void ServerUseItem(int32 SlotIndex);
 
@@ -98,6 +105,9 @@ protected:
     void ServerRemoveItemAt(int32 SlotIndex, int32 Count);
 
 	UFUNCTION(Server, Reliable)
+    void ServerSortItem();
+	
+	UFUNCTION(Server, Reliable)
     void ServerSwapItem(int32 FromIndex, int32 ToIndex);
 	
 	UFUNCTION(Server, Reliable)
@@ -105,57 +115,59 @@ protected:
 	
 	UFUNCTION(Server, Reliable)
 	void ServerLockItemAt(int32 SlotIndex);
-
-	UFUNCTION(Server, Reliable)
-    void ServerSortItem();
 		
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRefreshClients(UInventoryComponent* InvComponent);
 
 public:
+	////////////////////////////////////////////////////////////////////////////
+	//// 멀티 캐스트
+	
     bool UseInventoryItem(int32 SlotIndex);
+
+	////////////////////////////////////////////////////////////////////////////
+	//// 실제로 동작되는 함수
 	
 	void UsePotion(int32 SlotIndex);
 	
-	/** True : 아이템 1개를 인벤토리에 Add */
 	bool AddInventoryItem(FItemTable Item);
 	bool AddInventoryItemAt(FItemTable Item, int32 SlotIndex);
 
-	/** True : 아이템 1개를 제거한다면 */
 	bool RemoveInventoryItem(FItemTable Item);
 	bool RemoveInventoryItemAt(int32 SlotIndex, int32 Count);
 
-	/** True : 이동에 성공하면 */
+	bool SortInventoryItem();
 	bool MoveInventoryItem(int32 FromIndex, int32 ToIndex);
-
 	bool LockInventoryItemAt(int32 SlotIndex);
 
-	bool SortInventoryItem();
-	
-	int32 GetInventoryIndex(int32 Id, int32 StartIndex);
+	////////////////////////////////////////////////////////////////////////////
+	//// 게터
 
-public:
-	UFUNCTION(BlueprintCallable)
+	FORCEINLINE FItemTable GetInventoryItem(const int32 SlotIndex) {return Inventory[SlotIndex];}
+	FORCEINLINE	bool IsEnoughWeight(const float Weight) const {return Weight + GetCurWeight() < MaxWeight; }
+	
+	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
     FORCEINLINE TArray<FItemTable> GetInventory() const {return Inventory;}
 
-    FORCEINLINE FItemTable GetInventoryItem(int32 SlotIndex) const {return Inventory[SlotIndex];}
-
-	float GetFreeWeight() const;
-	
-	UFUNCTION(BlueprintCallable)
-	float GetCurWeight() const;
-	UFUNCTION(BlueprintCallable)
-    FORCEINLINE float GetMaxWeight() const {return MaxWeight;}
+	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
+	FORCEINLINE float GetMaxWeight() const {return MaxWeight;}
     
-    UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
 	FORCEINLINE int32 GetCurSlot() const {return MaxSlot - FreeSlot;}
-	UFUNCTION(BlueprintCallable)
-    FORCEINLINE int32 GetMaxSlot() const {return MaxSlot;}
-    UFUNCTION(BlueprintCallable)
-	FText GetWeightText();
 
-	UFUNCTION(BlueprintCallable)
-	void HoverInventorySlot(int32 SlotIndex);
+	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
+	FORCEINLINE int32 GetMaxSlot() const {return MaxSlot;}
+
+	int32 GetInventoryIndex(int32 Id, int32 StartIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
+	float GetCurWeight() const;
+
+	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
+	FText GetWeightText() const;
+	
+	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
+	void HoverInventorySlot(const int32 SlotIndex);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

@@ -6,6 +6,13 @@
 #include "Components/ActorComponent.h"
 #include "InteractComponent.generated.h"
 
+/**
+* 용도: 플레이어의 상호작용(물체, 루팅 아이템, 문)
+*
+* 플레이어의 시야에서 200 이내 물체가 상호작용이 가능하다면 외각선이 강조된다
+* 플레이어가 상호 작용(F 키)를 입력하면 상호작용이 된다.
+*/
+
 class ASoulCharacter;
 class ASoulPlayerController;
 class AInteractActor;
@@ -40,10 +47,8 @@ protected:
 		
 public:
 	void InteractActor();
-	void SetPickUpActor(APickUpActor* PickUpActor);
-	void SetInteractDoor(AInteractDoor* DoorActor);
-
-	void EquipWeapon(AActor* Item);
+	FORCEINLINE void SetInteractDoor(AInteractDoor* DoorActor) {CurrentDoor = DoorActor;}
+	FORCEINLINE void SetPickUpActor(APickUpActor* PickUpActor) {CurrentPickUpActor = PickUpActor;}
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Status)

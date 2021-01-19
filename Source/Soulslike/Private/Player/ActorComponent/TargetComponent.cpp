@@ -2,15 +2,18 @@
 
 
 #include "Player/ActorComponent/TargetComponent.h"
+
 #include "Player/SoulPlayerController.h"
 #include "Player/SoulCharacter.h"
 
 #include "Enemy/Enemy.h"
+#include "System/SoulFunctionLibrary.h"
 
 #include "GameFramework/Pawn.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 #include "Net/UnrealNetwork.h"
+#include "System/SoulFunctionLibrary.h"
 
 
 UTargetComponent::UTargetComponent()
@@ -35,6 +38,9 @@ void UTargetComponent::Initialize()
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////
+//// 타게팅
+
 void UTargetComponent::Targeting()
 {
 	if (!bTargeting)
@@ -53,23 +59,16 @@ void UTargetComponent::UnTargeting()
 	}
 }
 
-bool UTargetComponent::ServerFindTarget_Validate()
-{
-	return true;
-}
+////////////////////////////////////////////////////////////////////////////
+//// 대상 찾기
 
 void UTargetComponent::ServerFindTarget_Implementation()
 {
 	TArray<AActor*> OverlappedActors;
 
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
-	TArray<AActor*>IgnoreTypes;
-	IgnoreTypes.Add(GetOwner());
 	const FVector SphereLocation = OwnerCharacter->GetActorLocation();
-
-	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), SphereLocation, DetectRange, ObjectTypes, AEnemy::StaticClass(), IgnoreTypes, OverlappedActors);
-
+	USoulFunctionLibrary::CreateOverlapSphere(GetWorld(), SphereLocation, DetectRange, AEnemy::StaticClass(), GetOwner(), OverlappedActors);
+	
 	TargetActors.Empty();
 	Target = nullptr;
 
@@ -77,12 +76,14 @@ void UTargetComponent::ServerFindTarget_Implementation()
 	{
 		if (Actor->ActorHasTag("Enemy"))
 		{
-			if (AEnemy* const Enemy = Cast<AEnemy>(Actor))
+			if (auto const Enemy = Cast<AEnemy>(Actor))
 			{
-				if (!Enemy->IsDead())
+				if(Enemy->IsDead())
 				{
-					TargetActors.AddUnique(Actor);
+					break;
 				}
+				
+				TargetActors.AddUnique(Actor);
 			}
 		}
 	}
@@ -105,12 +106,7 @@ void UTargetComponent::ServerFindTarget_Implementation()
 	ServerSetLock(false);
 }
 
-bool UTargetComponent::ServerSetLock_Validate(bool bLock)
-{
-	return true;
-}
-
-void UTargetComponent::ServerSetLock_Implementation(bool bLock)
+void UTargetComponent::ServerSetLock_Implementation(const bool bLock)
 {
 	if (Target == nullptr)
 	{
@@ -125,14 +121,12 @@ void UTargetComponent::ServerSetLock_Implementation(bool bLock)
 	
 	if (!bLock)
 	{
-		Enemy->ShowTargetWidget(OwnerCharacter, true);
-
 		Target = nullptr;
 	}
 
 	OwnerCharacter->SetLockCamera(Target, bLock);
 
-	Enemy->ShowTargetWidget(OwnerCharacter, false);
+	Enemy->ShowTargetWidget(OwnerCharacter, !bLock);
 	bTargeting = bLock;
 }
 

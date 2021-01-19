@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -6,12 +5,10 @@
 #include "GameFramework/PlayerController.h"
 #include "Player/ControllerInterface.h"
 #include "DataType.h"
-
-
 #include "SoulPlayerController.generated.h"
 
 /**
- * 
+ * 용도: HUD를 관리하는 클래스로, SoulCharacter나 ActorComponent에서 접근한다.
  */
 
 UCLASS()
@@ -20,9 +17,8 @@ class SOULSLIKE_API ASoulPlayerController : public APlayerController, public ICo
 	GENERATED_BODY()
 	
 public:
-	ASoulPlayerController();
+	ASoulPlayerController() {}
 
-	
 	////////////////////////////////////////////////////////////////////////////
 	//// 인터페이스
 	
@@ -47,7 +43,7 @@ public:
 	virtual void ClearItemDescription_Implementation() override;
 	
 	////////////////////////////////////////////////////////////////////////////
-	//// 
+	//// 매뉴 및 HUD 관련
 	
 	/** True : 메뉴 HUD On, False : Off */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = HUD)
@@ -213,11 +209,5 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = Option)
     void OnShowOption(bool bActive);
 
-
-	
-	
-	///////////////////////////////////////////////////////////////////////////////
-	//// 기타
-	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

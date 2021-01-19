@@ -24,7 +24,7 @@ UInventoryComponent::UInventoryComponent()
 }
 
 ////////////////////////////////////////////////////////////////////////////
-////  초기화
+//// 초기화
 
 void UInventoryComponent::Initialize()
 {
@@ -38,6 +38,9 @@ void UInventoryComponent::Initialize()
 		}
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////
+//// 인벤토리 슬롯 업데이트
 
 void UInventoryComponent::OnRep_RefreshInventory()
 {
@@ -60,7 +63,7 @@ void UInventoryComponent::SetRefreshInventory(bool bRefresh)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-////
+//// 외부에서 실행되는 함수
 
 void UInventoryComponent::UseItem(int32 SlotIndex)
 {
@@ -162,21 +165,6 @@ void UInventoryComponent::RemoveItemAt(int32 SlotIndex, int32 Count)
 	}
 }
 
-void UInventoryComponent::SwapItem(int32 FromIndex, int32 ToIndex)
-{
-	if(GetOwnerRole() == ROLE_Authority)
-	{
-		Inventory.Swap(FromIndex,ToIndex);
-
-		SetRefreshInventory(true);
-	}
-
-	else
-	{
-		ServerSwapItem(FromIndex,ToIndex);		
-	}
-}
-
 void UInventoryComponent::MoveItem(int32 FromIndex, int32 ToIndex)
 {
 	if(GetOwnerRole() == ROLE_Authority)
@@ -193,19 +181,20 @@ void UInventoryComponent::MoveItem(int32 FromIndex, int32 ToIndex)
 	}
 }
 
-void UInventoryComponent::LockItemAt(int32 SlotIndex)
+void UInventoryComponent::SwapItem(int32 FromIndex, int32 ToIndex)
 {
 	if(GetOwnerRole() == ROLE_Authority)
 	{
-		LockInventoryItemAt(SlotIndex);
+		Inventory.Swap(FromIndex,ToIndex);
+
+		SetRefreshInventory(true);
 	}
 
 	else
 	{
-		ServerLockItemAt(SlotIndex);
+		ServerSwapItem(FromIndex,ToIndex);		
 	}
 }
-
 
 void UInventoryComponent::SortItem()
 {
@@ -220,6 +209,19 @@ void UInventoryComponent::SortItem()
 	else
 	{
 		ServerSortItem();
+	}
+}
+
+void UInventoryComponent::LockItemAt(int32 SlotIndex)
+{
+	if(GetOwnerRole() == ROLE_Authority)
+	{
+		LockInventoryItemAt(SlotIndex);
+	}
+
+	else
+	{
+		ServerLockItemAt(SlotIndex);
 	}
 }
 
@@ -245,7 +247,7 @@ bool UInventoryComponent::IsEnoughCount(FItemTable Item)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-////  서버 :: 아이템 추가, 제거, 이동
+//// 클라이언트가 서버에게 요청하는 함수
 
 void UInventoryComponent::ServerUseItem_Implementation(int32 SlotIndex)
 {
@@ -282,13 +284,6 @@ void UInventoryComponent::ServerRemoveItemAt_Implementation(int32 SlotIndex, int
 	MulticastRefreshClients(this);
 }
 
-void UInventoryComponent::ServerSwapItem_Implementation(int32 FromIndex, int32 ToIndex)
-{
-	SwapItem(FromIndex, ToIndex);
-
-	MulticastRefreshClients(this);
-}
-
 void UInventoryComponent::ServerMoveItem_Implementation(int32 FromIndex, int32 ToIndex)
 {
 	MoveItem(FromIndex,ToIndex);
@@ -296,14 +291,23 @@ void UInventoryComponent::ServerMoveItem_Implementation(int32 FromIndex, int32 T
 	MulticastRefreshClients(this);
 }
 
-void UInventoryComponent::ServerLockItemAt_Implementation(int32 SlotIndex)
+void UInventoryComponent::ServerSwapItem_Implementation(int32 FromIndex, int32 ToIndex)
 {
-	LockInventoryItemAt(SlotIndex);
+	SwapItem(FromIndex, ToIndex);
+
+	MulticastRefreshClients(this);
 }
 
 void UInventoryComponent::ServerSortItem_Implementation()
 {
 	SortItem();
+
+	MulticastRefreshClients(this);
+}
+
+void UInventoryComponent::ServerLockItemAt_Implementation(int32 SlotIndex)
+{
+	LockInventoryItemAt(SlotIndex);
 
 	MulticastRefreshClients(this);
 }
@@ -319,7 +323,7 @@ void UInventoryComponent::MulticastRefreshClients_Implementation(UInventoryCompo
 }
 
 ////////////////////////////////////////////////////////////////////////////
-////  인벤토리 기능
+//// 실제로 동작되는 함수
 
 bool UInventoryComponent::UseInventoryItem(int32 SlotIndex)
 {
@@ -369,20 +373,20 @@ bool UInventoryComponent::AddInventoryItem(FItemTable Item)
 
 			if (SlotIndex != -1 && Inventory[SlotIndex].Count < Inventory[SlotIndex].MaxCount) // 아이템이 있고, MaxCount를 넘지 않으면?
 			{
-				if(Item.Weight <= GetFreeWeight()) // 무게가 적당하면?
+				if(IsEnoughWeight(Item.Weight)) // 무게가 적당하면?
 				{
 					Inventory[SlotIndex].Count += 1;
 					FreeWeight -= Item.Weight;
 
 					return true;
 				}
-
+				
 				return false;
 			}
 		}
 	}
 	
-	if(Item.Weight <= GetFreeWeight()  && FreeSlot >0)
+	if(FreeSlot >0 && IsEnoughWeight(Item.Weight))
 	{
 		Item.Count = 1;
 		Inventory.Add(Item);
@@ -392,13 +396,13 @@ bool UInventoryComponent::AddInventoryItem(FItemTable Item)
 
 		return true;
 	}
-
+	
 	return false;
 }
 
 bool UInventoryComponent::AddInventoryItemAt(FItemTable Item, int32 SlotIndex)
 {
-	if(FreeSlot > 0 && Item.Weight <= GetFreeWeight())
+	if(FreeSlot > 0 && IsEnoughWeight(Item.Weight))
 	{
 		Inventory.Insert(Item, SlotIndex);
 
@@ -460,19 +464,6 @@ bool UInventoryComponent::MoveInventoryItem(int32 FromIndex, int32 ToIndex)
 	return false;
 }
 
-
-bool UInventoryComponent::LockInventoryItemAt(int32 SlotIndex)
-{
-	if(Inventory.IsValidIndex(SlotIndex))
-	{
-		Inventory[SlotIndex].bLocked= !Inventory[SlotIndex].bLocked;
-
-		return true;
-	}
-
-	return false;
-}
-
 bool UInventoryComponent::SortInventoryItem()
 {
 	if(Inventory.Num() > 0)
@@ -484,6 +475,21 @@ bool UInventoryComponent::SortInventoryItem()
 
 	return false;
 }
+
+bool UInventoryComponent::LockInventoryItemAt(int32 SlotIndex)
+{
+	if(SlotIndex < Inventory.Num())
+	{
+		Inventory[SlotIndex].bLocked= !Inventory[SlotIndex].bLocked;
+
+		return true;
+	}
+
+	return false;
+}
+
+////////////////////////////////////////////////////////////////////////////
+//// 
 
 int32 UInventoryComponent::GetInventoryIndex(int32 Id, int32 StartIndex)
 {
@@ -498,16 +504,6 @@ int32 UInventoryComponent::GetInventoryIndex(int32 Id, int32 StartIndex)
 	return -1;
 }
 
-float UInventoryComponent::GetFreeWeight() const
-{
-	if(OwnerCharacter)
-	{
-		return FreeWeight - OwnerCharacter->GetEquipWeight();
-	}
-	
-	return -1.f;
-}
-
 float UInventoryComponent::GetCurWeight() const
 {
 	if(OwnerCharacter)
@@ -515,19 +511,19 @@ float UInventoryComponent::GetCurWeight() const
 		return MaxWeight - FreeWeight + OwnerCharacter->GetEquipWeight();
     }
 
-	return -1.f;
+	return 999.f;
 }
 
-FText UInventoryComponent::GetWeightText()
+FText UInventoryComponent::GetWeightText() const
 {
-	TArray<FStringFormatArg> args;
-	args.Add(FStringFormatArg(static_cast<int32>(GetCurWeight())));
-	args.Add(FStringFormatArg(static_cast<int32>(GetMaxWeight())));
+	TArray<FStringFormatArg> Args;
+	Args.Add(FStringFormatArg(static_cast<int32>(GetCurWeight())));
+	Args.Add(FStringFormatArg(static_cast<int32>(GetMaxWeight())));
 
-	return FText::FromString(FString::Format(TEXT("Weight : {0}/{1}"), args));
+	return FText::FromString(FString::Format(TEXT("Weight : {0}/{1}"), Args));
 }
 
-void UInventoryComponent::HoverInventorySlot(int32 SlotIndex)
+void UInventoryComponent::HoverInventorySlot(const int32 SlotIndex)
 {
 	if(SlotIndex < Inventory.Num() && OwnerController)
 	{
@@ -549,6 +545,8 @@ void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME(UInventoryComponent, MaxSlot);
 	DOREPLIFETIME(UInventoryComponent, FreeSlot);
 	DOREPLIFETIME(UInventoryComponent, MaxWeight);
-	DOREPLIFETIME(UInventoryComponent, bRefreshInventory);
+	DOREPLIFETIME_CONDITION(UInventoryComponent, bRefreshInventory, COND_SkipOwner);
+	
+	// DOREPLIFETIME(UInventoryComponent, bRefreshInventory);
 }
 

@@ -23,22 +23,28 @@ class SOULSLIKE_API IEnemyAnimNotifyInterface
 
 public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy")
-	void LightAttackAnimStart(bool bStart);
+	void StartLightAttackAnim();
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy")
-	void HeavyAttackAnimStart(float Radius, float Height, bool bKnockDown);
+	void StartHeavyAttackAnim(float Radius, float Height, bool bKnockDown);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy")
-	void ChargeAttackAnimStart(float Radius, float Height, bool bKnockDown);
+	void StartChargeAttackAnim(float Radius, float Height, bool bKnockDown);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy")
-	void RangeAttackAnimStart();
+	void StartRangeAttackAnim();
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy")
-	void HandAttackAnimStart(float Radius, float Height, bool bKnockDown);
+	void StartHandAttackAnim(float Radius, float Height, bool bKnockDown);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy")
-    void DeadAnimStart();
+    void EndLightAttackAnim();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy")
+	void EndAggroAnim();
+	
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy")
+    void EndDeadAnim();
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy")
 	void PlayEffect(UParticleSystem* InParticle, USoundBase* InSound, const FTransform InTransform);
