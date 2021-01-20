@@ -585,23 +585,37 @@ FText UEquipmentComponent::GetArmorText(const bool bMeleeArmor)
 	return FText::FromString(FString::SanitizeFloat(TotalArmor));
 }
 
-TArray<FText> UEquipmentComponent::GetDamageText(const EItemFilter ItemFilter)
+TArray<FText> UEquipmentComponent::GetDamageTexts(const EItemFilter ItemFilter)
 {
 	TArray<FText> Damages;
 	
 	if(ItemFilter == EItemFilter::Filter_Weapon)
 	{
-		for(auto& Weapon : QuickWeapons)
+		for(int32 EquipIndex = 0; EquipIndex < 4; ++EquipIndex)
 		{
-			Damages.Add(FText::FromString(FString::SanitizeFloat(Weapon.LightDamage)));
+			if(EquipIndex < QuickWeapons.Num())
+			{
+				Damages.Add(FText::FromString(FString::SanitizeFloat(QuickWeapons[EquipIndex].LightDamage)));
+				
+				continue;
+			}
+			
+			Damages.Add(FText::FromString("0"));
 		}
 	}
 
 	else
 	{
-		for(auto& Shield : QuickShields)
+		for(int32 EquipIndex = 0; EquipIndex < 4; ++EquipIndex)
 		{
-			Damages.Add(FText::FromString(FString::SanitizeFloat(Shield.LightDamage)));
+			if(EquipIndex < QuickShields.Num())
+			{
+				Damages.Add(FText::FromString(FString::SanitizeFloat(QuickShields[EquipIndex].LightDamage)));
+				
+				continue;
+			}
+			
+			Damages.Add(FText::FromString("0"));
 		}
 	}
 

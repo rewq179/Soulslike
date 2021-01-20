@@ -143,7 +143,7 @@ void UStatComponent::AddSoulsValue(const float Value)
 }
 
 
-TArray<FText> UStatComponent::GetStatText() const
+TArray<FText> UStatComponent::GetStatTexts() const
 {
 	TArray<FText> Texts;
 
@@ -157,6 +157,17 @@ TArray<FText> UStatComponent::GetStatText() const
 
 	return Texts;
 	
+}
+
+TArray<FText> UStatComponent::GetHealthTexts() const
+{
+	TArray<FText> Texts;
+
+	Texts.Add(GetHealthText(EHealthType::Health_Hp));
+	Texts.Add(GetHealthText(EHealthType::Health_Mp));
+	Texts.Add(GetHealthText(EHealthType::Health_Stamina));
+
+	return Texts;
 }
 
 FText UStatComponent::GetHealthText(const EHealthType HealthType) const

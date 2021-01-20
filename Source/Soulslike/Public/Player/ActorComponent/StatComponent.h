@@ -7,6 +7,8 @@
 #include "DataType.h"
 #include "Chaos/AABB.h"
 #include "Chaos/AABB.h"
+#include "Chaos/AABB.h"
+#include "Chaos/AABB.h"
 
 
 #include "StatComponent.generated.h"
@@ -83,11 +85,14 @@ public:
 	FORCEINLINE float GetCurStamina() const { return PlayerStat.CurStamina; }
 	FORCEINLINE float GetMaxStamina() const { return PlayerStat.MaxStamina; }
 
+	/** Con부터 Luck까지 정수의 형태(1, 2, ...)로 출력한다 */
 	UFUNCTION(BlueprintCallable, Category = "StatComponent")
-	TArray<FText> GetStatText() const; //  Con, Men, Wit, Str, Dex, Int, Luck을 Text로 출력해줌
+	TArray<FText> GetStatTexts() const;
 
+	/** Health(체력, 마나, 스태미나)를 {Cur}/{Max} 형식으로 출력한다. */
 	UFUNCTION(BlueprintCallable, Category = "StatComponent")
-	FText GetHealthText(const EHealthType HealthType) const; // Hp, Mp, Stamina를 Text로 출력해줌
+	TArray<FText> GetHealthTexts() const;
+	FText GetHealthText(const EHealthType HealthType) const;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

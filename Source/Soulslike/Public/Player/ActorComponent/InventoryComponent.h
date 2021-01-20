@@ -69,18 +69,24 @@ public:
 
 	////////////////////////////////////////////////////////////////////////////
 	//// 외부에서 실행되는 함수
-	
+
+	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
     void UseItem(int32 SlotIndex);
 
 	void AddItem(FItemTable Item);
 	void AddItemAt(FItemTable Item, int32 SlotIndex);
 
 	void RemoveItem(FItemTable Item);
+	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
 	void RemoveItemAt(int32 SlotIndex, int32 Count);
-
+	
+	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
 	void SortItem();
+	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
 	void SwapItem(int32 FromIndex, int32 ToIndex);
+	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
 	void MoveItem(int32 FromIndex, int32 ToIndex);
+	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
 	void LockItemAt(int32 SlotIndex);
 
 	bool IsEnoughCount(FItemTable Item);
@@ -142,8 +148,9 @@ public:
 
 	////////////////////////////////////////////////////////////////////////////
 	//// 게터
-
-	FORCEINLINE FItemTable GetInventoryItem(const int32 SlotIndex) {return Inventory[SlotIndex];}
+	
+	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
+	FORCEINLINE FItemTable GetInventoryItemAt(const int32 SlotIndex) {return Inventory[SlotIndex];}
 	FORCEINLINE	bool IsEnoughWeight(const float Weight) const {return Weight + GetCurWeight() < MaxWeight; }
 	
 	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
@@ -158,13 +165,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
 	FORCEINLINE int32 GetMaxSlot() const {return MaxSlot;}
 
+	/** 해당 Id와 같은 아이템의 인벤토리내 위치(Index)를 얻을 수 있다. */
 	int32 GetInventoryIndex(int32 Id, int32 StartIndex);
 
+	/** 현재 보유한 무게(10.5, 20.3, ...)로 출력한다. */
 	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
 	float GetCurWeight() const;
 
+	/** Weight : {Cur}/{Max} 형태로 출력한다 */
 	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
-	FText GetWeightText() const;
+	FText GetTotalWeightText() const;
 	
 	UFUNCTION(BlueprintCallable, Category = "InventoryComponent")
 	void HoverInventorySlot(const int32 SlotIndex);

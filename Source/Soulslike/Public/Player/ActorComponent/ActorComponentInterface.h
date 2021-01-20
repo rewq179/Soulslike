@@ -34,9 +34,6 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "StatComponent")
 	class UStatComponent* GetStatComponent();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "StatComponent")
-	int32 GetSoulsCount();
-
 	////////////////////////////////////////////////////////////////////////////
 	//// 인벤토리	
 
@@ -47,28 +44,7 @@ public:
     TArray<FItemTable> GetInventory();
 	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "InventoryComponent")
-    FItemTable GetInventoryItemAt(int32 SlotIndex);
-	
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "InventoryComponent")
     void AddItem(FItemTable Item);
-	
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "InventoryComponent")
-    void UseItem(int32 SlotIndex);
-	
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "InventoryComponent")
-    void SwapItem(int32 FromIndex, int32 ToIndex);
- 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "InventoryComponent")
-    void MoveItem(int32 FromIndex, int32 ToIndex);
- 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "InventoryComponent")
-    void RemoveItemAt(int32 SlotIndex, int32 Count);
- 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "InventoryComponent")
-    void LockItemAt(int32 SlotIndex);
- 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "InventoryComponent")
-    void SortItem();
 
 	////////////////////////////////////////////////////////////////////////////
 	//// 장비
@@ -80,14 +56,6 @@ public:
 	float GetEquipWeight();
 	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "EquipmentComponent")
-	void UnEquipItem(EItemFilter ItemFilter, int32 EquipIndex);
-	
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "EquipmentComponent")
-	void AddQuickItem(FItemTable Item);
-
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "EquipmentComponent")
     void AddQuickItemAt(FItemTable Item, int32 EquipIndex);
 	
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "EquipmentComponent")
-	void RemoveQuickItemAt(EItemFilter ItemFilter, int32 EquipIndex);
 };

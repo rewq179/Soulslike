@@ -514,7 +514,7 @@ float UInventoryComponent::GetCurWeight() const
 	return 999.f;
 }
 
-FText UInventoryComponent::GetWeightText() const
+FText UInventoryComponent::GetTotalWeightText() const
 {
 	TArray<FStringFormatArg> Args;
 	Args.Add(FStringFormatArg(static_cast<int32>(GetCurWeight())));

@@ -95,15 +95,20 @@ public:
 
 	////////////////////////////////////////////////////////////////////////////
 	//// 외부에서 실행되는 함수
-	
+
+	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
 	void UseQuickItem();
 
 	void EquipItem(FItemTable Item);
+	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
 	void UnEquipItem(EItemFilter ItemFilter, int32 EquipIndex);
-
+	
+	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
 	void AddQuickItem(FItemTable Item, bool bShiftLeft);
+	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
 	void AddQuickItemAt(FItemTable Item, int32 QuickIndex);
 	
+	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
 	void RemoveQuickItemAt(EItemFilter ItemFilter, int32 EquipIndex, bool bShiftLeft);
 
 	void ShiftLeftEquipments(EMouseWheel MouseWheel);
@@ -178,13 +183,16 @@ public:
     FORCEINLINE TArray<FItemTable> GetQuickPotions() const {return QuickPotions;}
 
 	float GetWeaponDamage(const EPlayerAttack PlayerAttack);
-	
+
+	/** True: 물리 방어력, False: 마법 방어력을 출력한다. */
 	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
     FText GetArmorText(const bool bMeleeArmor);
-	
-	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
-    TArray<FText> GetDamageText (const EItemFilter ItemFilter);
 
+	/** 무기와 방패(장착: LightDamage, 미장착: 0)의 데미지 Texts를 출력한다. */
+	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
+    TArray<FText> GetDamageTexts (const EItemFilter ItemFilter);
+	
+	/** 장착된 장비의 아이콘들을 출력한다. */
 	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
     TArray<UTexture2D*> GetItemIconsByQuickIndex(const EItemFilter ItemFilter) const ;
 

@@ -147,11 +147,6 @@ UStatComponent* ASoulCharacter::GetStatComponent_Implementation()
 	return StatComponent;
 }
 
-int32 ASoulCharacter::GetSoulsCount_Implementation()
-{
-	return StatComponent->GetSoulsCount();
-}
-
 // 인벤토리
 UInventoryComponent* ASoulCharacter::GetInventoryComponent_Implementation()
 {
@@ -163,64 +158,11 @@ TArray<FItemTable> ASoulCharacter::GetInventory_Implementation()
 	return InventoryComponent->GetInventory();
 }
 
-FItemTable ASoulCharacter::GetInventoryItemAt_Implementation(int32 SlotIndex)
-{
-	return InventoryComponent->GetInventoryItem(SlotIndex);
-}
-
 void ASoulCharacter::AddItem_Implementation(FItemTable Item)
 {
 	if(InventoryComponent)
 	{
 		InventoryComponent->AddItem(Item);
-	}
-}
-
-void ASoulCharacter::UseItem_Implementation(int32 SlotIndex)
-{
-	if(InventoryComponent)
-	{
-		InventoryComponent->UseItem(SlotIndex);
-	}
-}
-
-void ASoulCharacter::SwapItem_Implementation(int32 FromIndex, int32 ToIndex)
-{
-	if(InventoryComponent)
-	{
-		InventoryComponent->SwapItem(FromIndex, ToIndex);
-	}
-}
-
-void ASoulCharacter::MoveItem_Implementation(int32 FromIndex, int32 ToIndex)
-{
-	if(InventoryComponent)
-	{
-		InventoryComponent->MoveItem(FromIndex, ToIndex);
-	}
-}
-
-void ASoulCharacter::RemoveItemAt_Implementation(int32 SlotIndex, int32 Count)
-{
-	if(InventoryComponent)
-	{
-		InventoryComponent->RemoveItemAt(SlotIndex, Count);
-	}	
-}
-
-void ASoulCharacter::LockItemAt_Implementation(int32 SlotIndex)
-{
-	if(InventoryComponent)
-	{
-		InventoryComponent->LockItemAt(SlotIndex);
-	}
-}
-
-void ASoulCharacter::SortItem_Implementation()
-{
-	if(InventoryComponent)
-	{
-		InventoryComponent->SortItem();
 	}
 }
 
@@ -235,36 +177,12 @@ float ASoulCharacter::GetEquipWeight_Implementation()
 	return EquipmentComponent->GetEquipWeight();
 }
 
-void ASoulCharacter::UnEquipItem_Implementation(EItemFilter ItemFilter, int32 EquipIndex)
-{
-	if(EquipmentComponent)
-	{
-		EquipmentComponent->UnEquipItem(ItemFilter, EquipIndex);
-	}
-}
-
-void ASoulCharacter::AddQuickItem_Implementation(FItemTable Item)
-{
-	if(EquipmentComponent)
-	{
-		EquipmentComponent->AddQuickItem(Item, false);
-	}	
-}
-
 void ASoulCharacter::AddQuickItemAt_Implementation(FItemTable Item, int32 EquipIndex)
 {
 	if(EquipmentComponent)
 	{
 		EquipmentComponent->AddQuickItemAt(Item, EquipIndex);
 	}	
-}
-
-void ASoulCharacter::RemoveQuickItemAt_Implementation(EItemFilter ItemFilter, int32 EquipIndex)
-{
-	if(EquipmentComponent)
-	{
-		EquipmentComponent->RemoveQuickItemAt(ItemFilter, EquipIndex, false);
-	}
 }
 
 ////////////////////////////////////////////////////////////////////////////
