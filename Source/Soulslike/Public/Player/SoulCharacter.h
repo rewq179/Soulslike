@@ -111,6 +111,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	TSubclassOf<UDamageType> DamageType;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	TSubclassOf<AWeapon> WeaponClass;
+	
 	////////////////////////////////////////////////////////////////////////////
 	//// 인터페이스
 
@@ -360,6 +363,8 @@ public:
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE int32 GetLightAttackLength() const { return LightAttackMontages.Num(); }
+
+	bool IsEnoughStamina(const float Cost) const;
 	
 	// 세터
 	FORCEINLINE void SetPlayerAnimInstance(UPlayerAnimInstance* AnimInstance) {PlayerAnimInstance = AnimInstance;}

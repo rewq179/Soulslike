@@ -209,5 +209,14 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = Option)
     void OnShowOption(bool bActive);
 
+	///////////////////////////////////////////////////////////////////////////////
+	//// 기타
+
+	UFUNCTION(Client, Reliable)
+	void ClientUpdateWeight(const float Weight);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Text")
+	void OnUpdateWeight(const float Weight);
+	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

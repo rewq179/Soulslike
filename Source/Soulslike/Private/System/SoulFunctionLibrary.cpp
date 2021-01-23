@@ -2,6 +2,7 @@
 
 
 #include "System/SoulFunctionLibrary.h"
+#include "Player/ActorComponent/StatComponent.h"
 
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
@@ -46,4 +47,36 @@ void USoulFunctionLibrary::ApplyDamageToPlayer(AActor* InPlayer, float Damage, A
 	{
 		Player->HitReaction(1.f, UnitVector, bKnockDown);
 	}
+}
+
+void USoulFunctionLibrary::ApplyPotion(UStatComponent* StatComponent, FItemTable& Item)
+{
+	switch (Item.ItemType) // 효과 저굥
+    {
+	case EItemType::Item_HpPotion:
+		StatComponent->AddHpValue(Item.Hp);
+		break;
+				
+	case EItemType::Item_MpPotion:
+		// StatComponent.AddMpValue(Item.Mp);
+		break;
+				
+	case EItemType::Item_StaminaPotion:
+		StatComponent->AddStaminaValue(Item.Stamina);
+		break;
+		
+	default: ;
+    }
+}
+
+void USoulFunctionLibrary::ApplyEquipmentStat(UStatComponent* StatComponent, FItemTable& Item, const bool bEquip)
+{
+	float EquipConst = 1.f; // 장착은 +, 해제는 -값 적용
+	if(!bEquip)
+	{
+		EquipConst *= -1.f;
+	}
+	
+	StatComponent->AddHealthValue(Item.MaxHp * EquipConst, Item.Mp * EquipConst, Item.Stamina * EquipConst);
+	StatComponent->AddArmorValue(Item.MeleeArmor * EquipConst, Item.MagicArmor * EquipConst);
 }

@@ -20,7 +20,7 @@ UStatComponent::UStatComponent()
 
 	// 스텟 초기화
 	PlayerStat.MaxHp = 500.f;
-	PlayerStat.CurHp = PlayerStat.MaxHp;
+	PlayerStat.CurHp = PlayerStat.MaxHp * 0.5f;
 	PlayerStat.MaxStamina = 200.f;
 	PlayerStat.CurStamina = PlayerStat.MaxStamina;
 
@@ -109,6 +109,26 @@ void UStatComponent::HandleTakeAnyDamage(AActor * DamagedActor, float Damage, co
 	}
 }
 
+void UStatComponent::AddHpValue(const float Value)
+{
+	PlayerStat.CurHp += Value;
+
+	if(PlayerStat.CurHp <= 0.f)
+	{
+		PlayerStat.CurHp = 0.f;
+	}
+
+	else if(PlayerStat.CurHp > PlayerStat.MaxHp)
+	{
+		PlayerStat.CurHp = PlayerStat.MaxHp;
+	}
+
+	if(OwnerController)
+	{
+		OwnerController->ClientUpdateHpBar(PlayerStat.CurHp, PlayerStat.MaxHp);
+	}
+}
+
 void UStatComponent::AddStaminaValue(const float Value)
 {
 	PlayerStat.CurStamina += Value;
@@ -140,6 +160,19 @@ void UStatComponent::AddSoulsValue(const float Value)
 	{
 		OwnerController->ClientUpdateSoulsCount(PlayerStat.SoulsCount);
 	}
+}
+
+void UStatComponent::AddArmorValue(const float MeleeArmor, const float MagicArmor)
+{
+	PlayerStat.MeleeArmor += MeleeArmor;	
+	PlayerStat.MagicArmor += MagicArmor;
+}
+
+void UStatComponent::AddHealthValue(const float MaxHp, const float MaxMp, const float MaxStamina)
+{
+	PlayerStat.MaxHp += MaxHp;
+	PlayerStat.MaxMp += MaxMp;
+	PlayerStat.MaxStamina += MaxStamina;
 }
 
 

@@ -2,6 +2,7 @@
 
 
 #include "Player/ActorComponent/EquipmentComponent.h"
+#include "Player/ActorComponent/StatComponent.h"
 #include "Player/SoulCharacter.h"
 #include "Player/SoulPlayerController.h"
 #include "Player/Weapon.h"
@@ -10,6 +11,7 @@
 #include "Animation/AnimInstance.h"
 
 #include "Net/UnrealNetwork.h"
+#include "System/SoulFunctionLibrary.h"
 
 // Sets default values for this component's properties
 UEquipmentComponent::UEquipmentComponent()
@@ -33,7 +35,7 @@ void UEquipmentComponent::Initialize()
 			OwnerController = Controller;
 		}
 
-		CurrentWeapon = (GetWorld()->SpawnActor<AWeapon>(WeaponClass));
+		CurrentWeapon = (GetWorld()->SpawnActor<AWeapon>(OwnerCharacter->WeaponClass));
 		if(CurrentWeapon)
 		{
 			CurrentWeapon->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Weapon_R_Socket");
@@ -95,7 +97,7 @@ void UEquipmentComponent::UseQuickItem()
 	{
 		if(UseQuickInventoryItem())
 		{
-			
+			SetRefreshEquipments(true);
 		}
 	}
 
@@ -274,17 +276,22 @@ void UEquipmentComponent::MulticastRefreshClients_Implementation(UEquipmentCompo
 bool UEquipmentComponent::UseQuickInventoryItem()
 {
 	const int32 QuickIndex = 0;
-	
-	if(QuickPotions.Num() > 0)
+
+	if(QuickPotions.Num() == 0)
 	{
-		const int32 Count = QuickPotions[QuickIndex].Count;
-		
-		if(Count > 0)
+		return false;
+	}
+
+	if(QuickPotions[QuickIndex].Count > 0)
+	{
+		USoulFunctionLibrary::ApplyPotion(OwnerCharacter->GetStatComponent(), QuickPotions[QuickIndex]);
+
+		if(--QuickPotions[QuickIndex].Count == 0)
 		{
-			// 효과 적용
-			
-			QuickPotions[QuickIndex].Count--;
-					
+			RemoveQuickItemAt(EItemFilter::Filter_Potion, 0, false);
+
+			OwnerController->ClientClearQuickBar(3);
+
 			return true;
 		}
 	}
@@ -294,64 +301,73 @@ bool UEquipmentComponent::UseQuickInventoryItem()
 
 bool UEquipmentComponent::EquipInventoryItem(FItemTable Item)
 {
-	if(OwnerController)
+	if(OwnerCharacter == nullptr || OwnerController == nullptr)
 	{
-		// 착용 데미지 증가라던가 하자
-		
-		switch (Item.ItemFilter)
-		{
-			case EItemFilter::Filter_Weapon:
-				SetCurrentWeapon(true);
-				OwnerController->ClientUpdateQuickBar(1, Item.Icon, Item.Name);
-				break;
-
-			case EItemFilter::Filter_Shield:
-				OwnerController->ClientUpdateQuickBar(2, Item.Icon, Item.Name);
-				break;
-
-			case EItemFilter::Filter_Potion:
-				OwnerController->ClientUpdateQuickBar(3, Item.Icon, Item.Name);
-				break;
-
-			default: ;
-		}
-		
-		return true;
+		return false;
 	}
-	
-	return false;
+
+	switch (Item.ItemFilter)
+	{
+	case EItemFilter::Filter_Weapon:
+		SetCurrentWeapon(true);
+		OwnerController->ClientUpdateQuickBar(1, Item.Icon, Item.Name);
+		break;
+
+	case EItemFilter::Filter_Shield:
+		OwnerController->ClientUpdateQuickBar(2, Item.Icon, Item.Name);
+		break;
+
+	case EItemFilter::Filter_Armor:
+		USoulFunctionLibrary::ApplyEquipmentStat(OwnerCharacter->GetStatComponent(), Item, true);
+		break;
+
+	case EItemFilter::Filter_Potion:
+		OwnerController->ClientUpdateQuickBar(3, Item.Icon, Item.Name);
+		break;
+
+	default:
+		return false;
+	}
+		
+	return true;
 }
 
 bool UEquipmentComponent::UnEquipEquipmentItem(EItemFilter ItemFilter, int32 EquipIndex)
 {
-	if(OwnerController)
+	if(OwnerCharacter == nullptr || OwnerController == nullptr)
 	{
-		// 해제 버프 디버프 적용
-
-		switch (ItemFilter)
-		{
-		case EItemFilter::Filter_Weapon:
-			SetCurrentWeapon(false);
-			OwnerController->ClientClearQuickBar(1);
-			break;
-
-		case EItemFilter::Filter_Shield:
-			OwnerController->ClientClearQuickBar(2);
-			break;
-
-		case EItemFilter::Filter_Potion:
-			OwnerController->ClientClearQuickBar(3);
-			break;
-
-		default: ;
-		}
-
-		RemoveQuickItemAt(ItemFilter, 0, false);
-		
-		return true;
+		return false;
 	}
+
+	int32 NewEquipIndex = 0; // Weapon, Shield, Potion은 0이고, Armor는 매개변수 EquipIndex를 사용하기 때문.
 	
-	return false;
+	switch (ItemFilter)
+	{
+	case EItemFilter::Filter_Weapon:
+		SetCurrentWeapon(false);
+		OwnerController->ClientClearQuickBar(1);
+		break;
+
+	case EItemFilter::Filter_Shield:
+		OwnerController->ClientClearQuickBar(2);
+		break;
+
+	case EItemFilter::Filter_Armor:
+		NewEquipIndex = EquipIndex;
+		USoulFunctionLibrary::ApplyEquipmentStat(OwnerCharacter->GetStatComponent(), ArmorMap[EquipIndex], false);
+		break;
+
+	case EItemFilter::Filter_Potion:
+		OwnerController->ClientClearQuickBar(3);
+		break;
+
+	default:
+		return false;
+	}
+
+	RemoveQuickItemAt(ItemFilter, NewEquipIndex, false);
+		
+	return true;
 }
 
 
@@ -374,8 +390,12 @@ bool UEquipmentComponent::AddQuickEquipmentItem(FItemTable Item, bool bShiftLeft
 		ArmorIndex = static_cast<int32>(Item.ItemType) - 2;
 		if(ArmorMap.Contains(ArmorIndex))
 		{
+			AddEquipWeight(-ArmorMap[ArmorIndex].Weight);
+			
 			OwnerCharacter->AddItem(ArmorMap[ArmorIndex]);
 		}
+
+		AddEquipWeight(Item.Weight);
 		ArmorMap.Add(ArmorIndex, Item);
 		return true;
 		
@@ -394,7 +414,7 @@ void UEquipmentComponent::AddItemInEquipment(TArray<FItemTable>& QuickEquipments
 
 	if(!bShiftLeft)
 	{
-		EquipWeight += Item.Weight * Item.Count;
+		AddEquipWeight(Item.Weight * Item.Count);
 	}
 	
 	if(QuickEquipments.Num() == 1) // 처음 퀵등록을 한다면 바로 장착함.
@@ -413,6 +433,7 @@ void UEquipmentComponent::AddItemInEquipment(TArray<FItemTable>& QuickEquipments
 bool UEquipmentComponent::AddQuickEquipmentItemAt(FItemTable Item, int32 EquipIndex)
 {
 	const EItemFilter ItemFilter = Item.ItemFilter;
+	int32 ArmorIndex;
 	
 	switch (ItemFilter)
 	{
@@ -421,7 +442,17 @@ bool UEquipmentComponent::AddQuickEquipmentItemAt(FItemTable Item, int32 EquipIn
 		return true;
 		
 	case EItemFilter::Filter_Shield:
+		AddItemInEquipmentAt(QuickShields, EquipIndex, Item);
+		return true;
+
+	case EItemFilter::Filter_Armor:
+		ArmorIndex = static_cast<int32>(Item.ItemType) - 2;
+		if(ArmorMap.Contains(ArmorIndex))
+			RemoveQuickItemAt(EItemFilter::Filter_Armor, ArmorIndex, false);
 		
+
+		AddEquipWeight(Item.Weight);
+		ArmorMap.Add(ArmorIndex, Item);
 		return true;
 				
 	case EItemFilter::Filter_Potion:
@@ -436,7 +467,7 @@ bool UEquipmentComponent::AddQuickEquipmentItemAt(FItemTable Item, int32 EquipIn
 void UEquipmentComponent::AddItemInEquipmentAt(TArray<FItemTable>& QuickEquipments, int32 EquipIndex, FItemTable Item)
 {
 	QuickEquipments.Insert(Item, EquipIndex);
-	EquipWeight += Item.Weight * Item.Count;
+	AddEquipWeight(Item.Weight * Item.Count);
 	
 	if(QuickEquipments.Num() == 1) // 처음 퀵등록을 한다면 바로 장착함.
 	{
@@ -454,7 +485,7 @@ void UEquipmentComponent::AddItemInEquipmentAt(TArray<FItemTable>& QuickEquipmen
 
 bool UEquipmentComponent::RemoveQuickEquipmentItemAt(const EItemFilter ItemFilter, const int32 EquipIndex, const bool bShiftLeft)
 {
-	if(OwnerController)
+	if(OwnerController && OwnerCharacter)
 	{
 		switch (ItemFilter)
 		{
@@ -463,9 +494,21 @@ bool UEquipmentComponent::RemoveQuickEquipmentItemAt(const EItemFilter ItemFilte
 			return true;
 		
 		case EItemFilter::Filter_Shield:
-		
+			RemoveItemInEquipmentAt(QuickShields, EquipIndex, bShiftLeft);
 			return true;
-				
+
+		case EItemFilter::Filter_Armor: 
+			if(ArmorMap.Contains(EquipIndex))
+			{
+				AddEquipWeight(-ArmorMap[EquipIndex].Weight);
+				OwnerCharacter->AddItem(ArmorMap[EquipIndex]);
+				ArmorMap.Remove(EquipIndex);
+
+				return true;
+			}
+			
+			return false;
+			
 		case EItemFilter::Filter_Potion:
 			RemoveItemInEquipmentAt(QuickPotions, EquipIndex, bShiftLeft);
 			return true;
@@ -485,7 +528,7 @@ void UEquipmentComponent::RemoveItemInEquipmentAt(TArray<FItemTable>& QuickEquip
 	{
 		if(!bShiftLeft)
 		{
-			EquipWeight -= QuickEquipments[EquipIndex].Weight * QuickEquipments[EquipIndex].Count;
+			AddEquipWeight(-QuickEquipments[EquipIndex].Weight * QuickEquipments[EquipIndex].Count);
 
 			OwnerCharacter->AddItem(QuickEquipments[EquipIndex]);
 		}
@@ -514,7 +557,7 @@ bool UEquipmentComponent::ShiftLeftEquipmentSlot(const EItemFilter ItemFilter)
 			break;
 			
 		case EItemFilter::Filter_Armor:
-			break;
+			return false;
 			
 		case EItemFilter::Filter_Potion:
 			ShiftLeftArrayByFilter(QuickPotions, ItemFilter);
@@ -539,6 +582,16 @@ void UEquipmentComponent::ShiftLeftArrayByFilter(TArray<FItemTable>& QuickEquipm
 		AddQuickItem(QuickEquipments[0], true);
 
 		RemoveQuickItemAt(ItemFilter, 0, true);
+	}
+}
+
+void UEquipmentComponent::AddEquipWeight(const float Weight)
+{
+	EquipWeight += Weight;
+
+	if(OwnerController)
+	{
+		OwnerController->ClientUpdateWeight(EquipWeight);
 	}
 }
 
@@ -634,14 +687,21 @@ TArray<UTexture2D*> UEquipmentComponent::GetItemIconsByQuickIndex(const EItemFil
 			TempIcons.Add(Weapon.Icon);
 		}
 		break;
-
+		
+	case EItemFilter::Filter_Shield:
+		for(auto& Shield  : QuickShields)
+		{
+			TempIcons.Add(Shield.Icon);
+		}
+		break;
+		
 	case EItemFilter::Filter_Potion:
 		for(auto& Weapon  : QuickPotions)
 		{
 			TempIcons.Add(Weapon.Icon);
 		}
 		break;
-
+		
 	default:
 		break;
 	}

@@ -3,6 +3,8 @@
 
 #include "Interact/PickUpActor.h"
 
+
+#include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 
 #include "Player/SoulCharacter.h"
@@ -10,8 +12,9 @@
 
 APickUpActor::APickUpActor()
 {
-	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	
+	// Sphere 설정
+	SphereComponent->InitSphereRadius(100.f);
+
 	static ConstructorHelpers::FObjectFinder<UDataTable> DataTable(TEXT("/Game/DataTable/ItemTable"));
 	if (DataTable.Succeeded())
 	{
@@ -60,7 +63,7 @@ FText APickUpActor::GetInteractMessage()
 	TArray<FStringFormatArg> args;
 	args.Add(FStringFormatArg(ItemTable.Name.ToString()));
 
-	return FText::FromString(FString::Format(TEXT("[F] Interact : {0}"), args));
+	return FText::FromString(FString::Format(TEXT("[F] 상호작용 : {0}"), args));
 }
 
 ////////////////////////////////////////////////////////////////////////////

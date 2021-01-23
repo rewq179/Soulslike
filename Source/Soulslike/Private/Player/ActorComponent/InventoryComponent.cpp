@@ -9,6 +9,7 @@
 #include "Engine/World.h"
 
 #include "Net/UnrealNetwork.h"
+#include "System/SoulFunctionLibrary.h"
 
 // Sets default values for this component's properties
 UInventoryComponent::UInventoryComponent()
@@ -349,18 +350,9 @@ bool UInventoryComponent::UseInventoryItem(int32 SlotIndex)
 
 void UInventoryComponent::UsePotion(int32 SlotIndex)
 {
-	bool bQuickEmpty = false;
-	if(Inventory[SlotIndex].bQuicked && Inventory[SlotIndex].Count == 1 && Inventory[SlotIndex].ItemFilter == EItemFilter::Filter_Potion)
-	{
-		bQuickEmpty = true;
-	}
+	USoulFunctionLibrary::ApplyPotion(OwnerCharacter->GetStatComponent(), Inventory[SlotIndex]);
 	
 	RemoveItemAt(SlotIndex, 1);
-
-	if(OwnerController && bQuickEmpty)
-	{
-		OwnerController->ClientClearQuickBar(3);
-	}
 }
 
 bool UInventoryComponent::AddInventoryItem(FItemTable Item)
@@ -376,7 +368,8 @@ bool UInventoryComponent::AddInventoryItem(FItemTable Item)
 				if(IsEnoughWeight(Item.Weight)) // 무게가 적당하면?
 				{
 					Inventory[SlotIndex].Count += 1;
-					FreeWeight -= Item.Weight;
+
+					AddWeight(-Item.Weight);
 
 					return true;
 				}
@@ -392,7 +385,7 @@ bool UInventoryComponent::AddInventoryItem(FItemTable Item)
 		Inventory.Add(Item);
 
 		FreeSlot--;
-		FreeWeight -= Item.Weight;
+		AddWeight(-Item.Weight);
 
 		return true;
 	}
@@ -423,7 +416,8 @@ bool UInventoryComponent::RemoveInventoryItem(FItemTable Item)
 			Inventory.RemoveAt(SlotIndex);
 		}
 
-		FreeWeight += Item.Weight;
+		AddWeight(Item.Weight);
+		
 		return true;
 	}
 
@@ -441,7 +435,8 @@ bool UInventoryComponent::RemoveInventoryItemAt(int32 SlotIndex, int32 Count)
 
 		else // 1=1, 65=65 일 경우
 		{
-			FreeWeight += Inventory[SlotIndex].Weight;
+			AddWeight(Inventory[SlotIndex].Weight);
+			
 			Inventory.RemoveAt(SlotIndex);
 		}
 	
@@ -486,6 +481,16 @@ bool UInventoryComponent::LockInventoryItemAt(int32 SlotIndex)
 	}
 
 	return false;
+}
+
+void UInventoryComponent::AddWeight(float Weight)
+{
+	FreeWeight += Weight;
+
+	if(OwnerController)
+	{
+		OwnerController->ClientUpdateWeight(GetCurWeight());
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////

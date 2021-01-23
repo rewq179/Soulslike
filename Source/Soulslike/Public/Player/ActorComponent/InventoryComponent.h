@@ -146,6 +146,8 @@ public:
 	bool MoveInventoryItem(int32 FromIndex, int32 ToIndex);
 	bool LockInventoryItemAt(int32 SlotIndex);
 
+	void AddWeight(float Weight);
+
 	////////////////////////////////////////////////////////////////////////////
 	//// 게터
 	

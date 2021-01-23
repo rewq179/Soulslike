@@ -14,7 +14,7 @@
 
 AInteractDoor::AInteractDoor()
 {
-	Mesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	// Mesh : 플레이어 Block
 	Mesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 
 	// Box :: 문입장시
@@ -26,24 +26,25 @@ AInteractDoor::AInteractDoor()
 
 	// 욀쪽 문 :: 폰만 Block
 	DoorLeft = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorLeft"));
-	DoorLeft->SetupAttachment(GetRootComponent());
+	DoorLeft->SetupAttachment(Mesh);
+	DoorLeft->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	DoorLeft->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	DoorLeft->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Overlap);
+	DoorLeft->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 	DoorLeft->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 	DoorLeft->SetGenerateOverlapEvents(false);
-	DoorLeft->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
 	// 오른쪽 문 :: 폰만 Block
 	DoorRight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorLight"));
-	DoorRight->SetupAttachment(GetRootComponent());
+	DoorRight->SetupAttachment(Mesh);
+	DoorRight->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	DoorRight->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	DoorRight->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 	DoorRight->SetGenerateOverlapEvents(false);
-	DoorRight->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
-	InteractType = EInteractType::Interact_Door;
-
+	// 값 설정
 	OpenTime = 0.5f;
+	Name = "Door";
+	InteractType = EInteractType::Interact_Door;
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -80,7 +81,7 @@ FText AInteractDoor::GetInteractMessage()
 	TArray<FStringFormatArg> args;
 	args.Add(FStringFormatArg(Name));
 
-	return FText::FromString(FString::Format(TEXT("[F] Interact : {0}"), args));
+	return FText::FromString(FString::Format(TEXT("[F] 상호작용: {0}"), args));
 }
 
 ////////////////////////////////////////////////////////////////////////////

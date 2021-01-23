@@ -66,8 +66,12 @@ protected:
     void HandleTakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* Type, class AController* InstigatedBy, AActor* DamageCauser);
 
 public:
+	void AddHpValue(const float Value);
 	void AddStaminaValue(const float Value);
 	void AddSoulsValue(const float Value);
+
+	void AddArmorValue(const float MeleeArmor, const float MagicArmor);
+	void AddHealthValue(const float MaxHp, const float MaxMp, const float MaxStamina);
 	
 	FOnHpChangedDelegate OnHpChanged;
 	

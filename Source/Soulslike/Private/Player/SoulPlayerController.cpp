@@ -48,12 +48,6 @@ void ASoulPlayerController::ClearItemDescription_Implementation()
 	ClientClearItemDescription();
 }
 
-void ASoulPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-}
-
 ////////////////////////////////////////////////////////////////////////////
 //// HUD를 관리한다.
 
@@ -75,12 +69,6 @@ void ASoulPlayerController::ClientUpdateHpBar_Implementation(float CurHp, float 
 void ASoulPlayerController::ClientUpdateStaminaBar_Implementation(float CurStamina, float MaxStamina)
 {
 	OnUpdateStaminaValue(CurStamina, MaxStamina);
-}
-
-
-void ASoulPlayerController::ClientUpdateSoulsCount_Implementation(int32 SoulsCount)
-{
-	OnUpdateSoulsCount(SoulsCount);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -201,3 +189,21 @@ void ASoulPlayerController::ClientShowOption_Implementation()
 	OnShowOption(true);
 }
 
+////////////////////////////////////////////////////////////////////////////
+//// 기타
+
+void ASoulPlayerController::ClientUpdateWeight_Implementation(const float Weight)
+{
+	OnUpdateWeight(Weight);
+}
+
+void ASoulPlayerController::ClientUpdateSoulsCount_Implementation(int32 SoulsCount)
+{
+	OnUpdateSoulsCount(SoulsCount);
+}
+
+void ASoulPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+}

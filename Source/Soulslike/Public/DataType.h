@@ -71,7 +71,7 @@ UENUM(BlueprintType)
 enum class EItemType : uint8
 {
 	Item_Sword UMETA(DisplayName = "Sword"),
-	Item_Shield UMETA(DisplayName = "Sword"),
+	Item_Shield UMETA(DisplayName = "Shield"),
 	Item_Helmet UMETA(DisplayName = "Helmet"),
 	Item_Chest UMETA(DisplayName = "Chest"),
 	Item_Gloves UMETA(DisplayName = "Gloves"),

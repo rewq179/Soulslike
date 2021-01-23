@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "DataType.h"
+#include "Player/ActorComponent/StatComponent.h"
+
 #include "SoulFunctionLibrary.generated.h"
 
 class UDamageType;
@@ -27,4 +30,7 @@ public:
 	
 	// 몬스터가 플레이어에게 데미지를 준다. Enemy와 EnemyProjectile 클래스에서 사용된다.
 	static void ApplyDamageToPlayer(AActor* InPlayer, float Damage, AController* Controller, AActor* DamageCauser, TSubclassOf<UDamageType> DamageType, float Height, bool bKnockDown);
+
+	static void ApplyPotion(UStatComponent* StatComponent, FItemTable& Item);
+	static void ApplyEquipmentStat(UStatComponent* StatComponent, FItemTable& Item, const bool bEquip);
 };

@@ -15,20 +15,24 @@ AInteractActor::AInteractActor()
 	SetCanBeDamaged(false);
 	SetReplicateMovement(true);
 
-	// Mesh :: 모든 반응이 Ingore. 다만 월드 스태틱이나 다이나믹은 Block
-	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	Mesh->SetGenerateOverlapEvents(false);
-	Mesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	Mesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
-	Mesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);
-	RootComponent = Mesh;
-
 	// Sphere :: 모든 반응이 Ignore. 다만 Pawn은 Overlap
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
 	SphereComponent->SetupAttachment(GetRootComponent());
 	SphereComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	SphereComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-
+	SphereComponent->InitSphereRadius(200.f);
+	RootComponent = SphereComponent;
+	
+	// Mesh :: 모든 반응이 Ingore. 다만 Visiblity와 Static, Dynamic은 Block을 시켜준다.
+	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+	Mesh->SetupAttachment(SphereComponent);
+	Mesh->SetGenerateOverlapEvents(false);
+	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	Mesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	Mesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	Mesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
+	Mesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);
+	
 	// 태그 설정
 	Tags.Add(FName("Interact"));
 }
@@ -36,7 +40,7 @@ AInteractActor::AInteractActor()
 void AInteractActor::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &AInteractActor::OnOverlapBegin);
 	SphereComponent->OnComponentEndOverlap.AddDynamic(this, &AInteractActor::OnOverlapEnd);
 }

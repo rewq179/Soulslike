@@ -90,6 +90,7 @@ ASoulCharacter::ASoulCharacter()
 ////////////////////////////////////////////////////////////////////////////
 //// 인터페이스 :: 애님 인스턴스, 액터 컴포넌트
 
+// 애님 인스턴스
 void ASoulCharacter::SetEquip_Implementation(bool bEquip)
 {
 	ServerEquip(bEquip);
@@ -141,13 +142,12 @@ void ASoulCharacter::SetPickUpActor_Implementation(APickUpActor* Actor)
     }
 }
 
-// 스텟
+// 액터 컴포넌트
 UStatComponent* ASoulCharacter::GetStatComponent_Implementation()
 {
 	return StatComponent;
 }
 
-// 인벤토리
 UInventoryComponent* ASoulCharacter::GetInventoryComponent_Implementation()
 {
 	return InventoryComponent;
@@ -166,7 +166,6 @@ void ASoulCharacter::AddItem_Implementation(FItemTable Item)
 	}
 }
 
-// 장비
 UEquipmentComponent* ASoulCharacter::GetEquipmentComponent_Implementation()
 {
 	return EquipmentComponent;
@@ -338,12 +337,13 @@ void ASoulCharacter::AddControllerPitchInput(float Val)
 
 void ASoulCharacter::StartRoll()
 {
-	if (bMoveable && !bPlayingScene && !bRolling && StatComponent->GetCurStamina() >= RollCost) 
+	if (!bMoveable || bPlayingScene || bRolling || !IsEnoughStamina(RollCost))
 	{
-		StatComponent->ClearStaminaTimer();
-
-		ServerRoll();
+		return;
 	}
+
+	StatComponent->ClearStaminaTimer();
+	ServerRoll();
 }
 
 void ASoulCharacter::EndRoll()
@@ -387,24 +387,23 @@ void ASoulCharacter::OnRep_Rolling()
 
 void  ASoulCharacter::StartAttack(EPlayerAttack Attack)
 {
-	if (bMoveable && !bPlayingScene && EquipmentComponent && EquipmentComponent->IsWeaponEquip())
+	const bool bEquipment = EquipmentComponent == nullptr || !EquipmentComponent->IsWeaponEquip(); // 장비 장착중?
+	const bool bAlreadyDo = bAttacking || bRolling || bDead || bBlocking; // 다른 애니메이션이 이미 진행중인가?
+	
+	if (!bMoveable || bPlayingScene || bEquipment || bAlreadyDo || !IsEnoughStamina(LightAttackCost))
 	{
-		ServerAttack(Attack);
+		return;
 	}
+	
+	ServerAttack(Attack);
 }
 
 void ASoulCharacter::ServerAttack_Implementation(EPlayerAttack Attack)
 {
-	if (bAttacking || bRolling || bDead || bBlocking || StatComponent == nullptr)
-	{
-		return;
-	}
-
-	
 	switch (Attack)
 	{
 	case EPlayerAttack::Player_LightAttack:
-		if (StatComponent->GetCurStamina() < LightAttackCost || ComboComponent == nullptr)
+		if (ComboComponent == nullptr)
 		{
 			return;
 		}
@@ -416,9 +415,11 @@ void ASoulCharacter::ServerAttack_Implementation(EPlayerAttack Attack)
 		break;
 
 	case EPlayerAttack::Player_HeavyAttack:
-		if (StatComponent->GetCurStamina() < HeavyAttackCost)
+		if (!IsEnoughStamina(HeavyAttackCost))
+		{
 			return;
-
+		}
+		
 		MulticastPlayMontage(HeavyAttackMontage, 1.f);
 		StatComponent->AddStaminaValue(-HeavyAttackCost);
 		break;
@@ -564,11 +565,11 @@ void ASoulCharacter::HitReaction(float StunTime, FVector KnockBack, bool bKnockD
 
 void ASoulCharacter::StartBlock()
 {
-	if (bMoveable && !bPlayingScene && StatComponent->GetCurStamina() < BlockCost)
+	if (!bMoveable || bPlayingScene || !IsEnoughStamina(BlockCost) || !EquipmentComponent->IsWeaponEquip())
 	{
 		return;
 	}
-
+	
 	bMoveable = false;
 	ServerBlock(true);
 }
@@ -673,21 +674,23 @@ void ASoulCharacter::AddSoulsValue(int32 Value)
 
 void ASoulCharacter::StartTarget()
 {
-	if (bMoveable && TargetComponent)
+	if (!bMoveable && TargetComponent == nullptr)
 	{
-		if (!bTargeting)
-		{
-			bTargeting = true;
+		return;
+	}
+	
+	if (!bTargeting)
+	{
+		bTargeting = true;
 
-			TargetComponent->Targeting();
-		}
+		TargetComponent->Targeting();
+	}
 
-		else
-		{
-			bTargeting = false;
+	else
+	{
+		bTargeting = false;
 
-			TargetComponent->UnTargeting();
-		}
+		TargetComponent->UnTargeting();
 	}
 }
 
@@ -788,6 +791,16 @@ void ASoulCharacter::ShiftLeftEquipments(EMouseWheel MouseWheel)
 	{
 		EquipmentComponent->ShiftLeftEquipments(MouseWheel);
 	}
+}
+
+bool ASoulCharacter::IsEnoughStamina(const float Cost) const
+{
+	if(StatComponent && Cost < StatComponent->GetPlayerStat().CurStamina)
+	{
+		return true;
+	}
+	
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////

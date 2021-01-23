@@ -51,9 +51,6 @@ public:
 	void Initialize();
 
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")
-	TSubclassOf<AWeapon> WeaponClass;
-
 	/** 0:헬멧, 1:갑옷, 2:장갑, 3:신발 */
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
 	TMap<int32, FItemTable> ArmorMap;
@@ -162,12 +159,14 @@ protected:
 
 	bool ShiftLeftEquipmentSlot(const EItemFilter ItemFilter);
 	void ShiftLeftArrayByFilter(TArray<FItemTable>& QuickEquipments, const EItemFilter ItemFilter);
+
+	void AddEquipWeight(const float Weight);
 	
 public:
 	////////////////////////////////////////////////////////////////////////////
 	//// 개터
 		
-	FORCEINLINE bool IsWeaponEquip() const {return QuickWeapons.Num()>0;}
+	FORCEINLINE bool IsWeaponEquip() const {return QuickWeapons.Num() > 0;}
 	FORCEINLINE float GetEquipWeight() const {return EquipWeight;}
 	
 	UFUNCTION(BlueprintCallable, Category = "EquipmentComponent")
