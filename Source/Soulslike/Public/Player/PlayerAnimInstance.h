@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "System/CharacterAnimInstance.h"
 
 #include "PlayerAnimInstance.generated.h"
 
@@ -12,18 +13,11 @@
  */
 
 UCLASS()
-class SOULSLIKE_API UPlayerAnimInstance : public UAnimInstance
+class SOULSLIKE_API UPlayerAnimInstance : public UCharacterAnimInstance
 {
 	GENERATED_BODY()
 
-protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Pawn)
-	APawn* Pawn;
-	
-	/** 이동속도로 블랜드 스페이스에서 활용된다. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
-	float MoveSpeed;
-	
+protected:	
 	/** True: 블럭중이며 FullBody를 한다. False: UpperBody를 사용한다. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	bool bBlocking;
@@ -36,12 +30,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	bool bRolling;
 
+	/** True: 타겟팅 중이며 블랜드 스페이스를 변경한다. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	bool bTargeting;
+
 public:
+	virtual void NativeInitializeAnimation() override;
+	
 	FORCEINLINE void SetBlock(const bool bBlock) {bBlocking = bBlock;}
 	FORCEINLINE void SetEquip(const bool bEquip) {bEquiped = bEquip;}
 	FORCEINLINE void SetRoll(const bool bRoll) {bRolling = bRoll;}
-	
-	virtual void NativeInitializeAnimation() override;
-
-	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
+	FORCEINLINE void SetTargeting(const bool bTarget) {bTargeting = bTarget;}
 };

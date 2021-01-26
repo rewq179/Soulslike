@@ -14,5 +14,11 @@ class SOULSLIKE_API ASoulGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
 
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TArray<USoundBase*> FootStepSounds;
+
+public:
+	FORCEINLINE TArray<USoundBase*> GetFootStepSounds()	const {return FootStepSounds;}
 };
 

@@ -39,9 +39,13 @@ public:
 	virtual void ShowOptionWidget_Implementation() override;
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
+    void ShowKeyWidget(const bool bActive);
+	virtual void ShowKeyWidget_Implementation(const bool bActive) override;
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interface")
 	void ClearItemDescription();
 	virtual void ClearItemDescription_Implementation() override;
-	
+		
 	////////////////////////////////////////////////////////////////////////////
 	//// 매뉴 및 HUD 관련
 	
@@ -90,10 +94,10 @@ public:
 	//// 적 체력바
 	
 	UFUNCTION(Client, Reliable)
-	void ClientShowEnemyHpBar(bool bActive);
+	void ClientShowBossHpBar(bool bActive);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = Enemy)
-	void OnShowEnemyHpBar(bool bActive);
+	void OnShowBossHpBar(bool bActive);
 
 	UFUNCTION(Client, Reliable)
 	void ClientUpdateBossName(const FText& Name);
@@ -209,6 +213,15 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = Option)
     void OnShowOption(bool bActive);
 
+	///////////////////////////////////////////////////////////////////////////////
+	//// 키
+	///
+	UFUNCTION(Client, Reliable)
+	void ClientShowKey(const bool bActive);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Key")
+    void OnShowKey(const bool bActive);
+	
 	///////////////////////////////////////////////////////////////////////////////
 	//// 기타
 

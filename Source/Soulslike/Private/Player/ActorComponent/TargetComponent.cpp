@@ -10,10 +10,7 @@
 #include "System/SoulFunctionLibrary.h"
 
 #include "GameFramework/Pawn.h"
-#include "Kismet/KismetSystemLibrary.h"
-
 #include "Net/UnrealNetwork.h"
-#include "System/SoulFunctionLibrary.h"
 
 
 UTargetComponent::UTargetComponent()
@@ -126,7 +123,7 @@ void UTargetComponent::ServerSetLock_Implementation(const bool bLock)
 
 	OwnerCharacter->SetLockCamera(Target, bLock);
 
-	Enemy->ShowTargetWidget(OwnerCharacter, !bLock);
+	Enemy->ShowTargetWidget(OwnerCharacter, bLock);
 	bTargeting = bLock;
 }
 

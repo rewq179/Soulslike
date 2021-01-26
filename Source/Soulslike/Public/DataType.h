@@ -289,7 +289,8 @@ enum class EPlayerHUD : uint8
 	Player_Inventory UMETA(DisplayName = "Inventory"),
 	Player_Equipment UMETA(DisplayName = "Equipment"),
 	Player_Status UMETA(DisplayName = "Status"),
-	Player_Option UMETA(DisplayName = "Option")
+	Player_Option UMETA(DisplayName = "Option"),
+	Player_Key UMETA(DisplayName = "Key")
 };
 
 ////////////////////////////////////////////////////////////////////////////
@@ -301,7 +302,8 @@ DECLARE_MULTICAST_DELEGATE(FOnLightAttackEndDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnHeavyAttackEndDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnRangeAttackEndDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnChargeAttackEndDelegate);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnemyHpChangedDelegate, float, CurHp, float, MaxHp);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnNormalEnemyHpChangedDelegate, float, CurHp);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBossEnemyHpChangedDelegate, float, CurHp, float, MaxHp);
 
 // 플레이어
 DECLARE_DELEGATE_OneParam(FMouseClickDelegate, EPlayerAttack);

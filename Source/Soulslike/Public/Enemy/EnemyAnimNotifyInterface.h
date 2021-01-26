@@ -47,5 +47,8 @@ public:
     void EndDeadAnim();
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy")
+	void PlayFootStepSound();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy")
 	void PlayEffect(UParticleSystem* InParticle, USoundBase* InSound, const FTransform InTransform);
 };

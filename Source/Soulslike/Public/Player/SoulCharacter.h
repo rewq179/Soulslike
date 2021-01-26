@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "DataType.h"
+#include "Chaos/AABB.h"
+#include "Chaos/AABB.h"
 #include "Player/ActorComponent/ActorComponentInterface.h"
 #include "Player/PlayerAnimNotifyInterface.h"
 
@@ -45,9 +47,10 @@ class ASoulCharacter : public ACharacter, public IActorComponentInterface, publi
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animtaion, meta = (AllowPrivateAccess = "true"))
 	UPlayerAnimInstance* PlayerAnimInstance;
-	
+
+	/** 상, 우상, 우, 우하, 하, 좌하, 좌, 좌상순으로 배치(시계 방향) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Montage, meta = (AllowPrivateAccess = "true"))
-	UAnimMontage* RollMontage;
+	TArray<UAnimMontage*> RollMontages;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Montage, meta = (AllowPrivateAccess = "true"))
 	TArray<UAnimMontage*> LightAttackMontages;
@@ -88,6 +91,12 @@ class ASoulCharacter : public ACharacter, public IActorComponentInterface, publi
 	float BaseTurnRate;
 	float BaseLookUpRate;
 	float MoveSpeed;
+
+	UPROPERTY(VisibleAnywhere)
+	float MoveX;
+	
+	UPROPERTY(VisibleAnywhere)
+	float MoveY;
 
 protected:
 	/** True : 이동가능, False : 이동 불가능 */
@@ -145,6 +154,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
 	void EndRollAnim();
 	virtual void EndRollAnim_Implementation() override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
+	void PlayFootStepSound();
+	virtual  void PlayFootStepSound_Implementation() override;
 	
 	// 상호작용
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interact Interface")
@@ -210,16 +223,17 @@ protected:
     void EndRoll();
 	
 	UFUNCTION(Server, Reliable)
-    void ServerRoll();
+    void ServerRoll(int32 RollIndex);
 
 	UFUNCTION(NetMulticast, Reliable)
-    void MulticastRoll();
+    void MulticastRoll(int32 RollIndex);
 	
 	UFUNCTION()
 	void OnRep_Rolling();
 
 public:
 	void SetRolling(bool bRoll);
+	int32 GetRollIndex() const;
 
 protected:
 	////////////////////////////////////////////////////////////////////////////
@@ -302,7 +316,7 @@ protected:
 public:
 	/** 공격방향과 블럭방향이 너무 틀어져있으면 안됨. */
 	UFUNCTION()
-	bool IsBlocked(AActor* Enemy) const;
+	bool IsBlocked(AActor* InEnemy) const;
 
 	void PlayBlockEffect();
 
@@ -323,33 +337,68 @@ protected:
 	AActor* Target;
 
 	/** True : 타게팅중, False : 일반  */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat)
+	UPROPERTY(ReplicatedUsing = OnRep_Targeting, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
 	bool bTargeting;
 
 	/** True : 카메라 잠금, False, 카메라 잠금 해제 */
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
 	bool bLockCamera;
 
+	UFUNCTION()
+    void OnRep_Targeting();
+
 	/** Tab 키 입력 */
 	void StartTarget();
 
 public:
+	void SetTarting(const bool bTarget);
 	void SetLockCamera(AActor* InTarget, bool bLock);
 
 	void AddSoulsValue(int32 Value);
 
 protected:
 	////////////////////////////////////////////////////////////////////////////
-	//// 보스 몬스터
+	//// 일반 몬스터 Hp HUD
+	
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
+	TArray<AEnemy*> CombatEnemys;
+
+public:
+	UFUNCTION(Server, Reliable)
+	void ServerAddNormalEnemy(AEnemy* InEnemy, const bool bAlive);
+
+	UFUNCTION(NetMulticast, Reliable)
+    void MulticastSetNormalEnemy(AEnemy* InEnemy, const bool bAlive);
+
+	UFUNCTION(NetMulticast, Reliable)
+    void MulticastUpdateNormalEnemyHp(const float CurHp);
+	
+	UFUNCTION()
+    void OnNormalEnemyHpChanged(float CurHp);
+
+	////////////////////////////////////////////////////////////////////////////
+	//// 보스 몬스터 Hp HUD
+	
+protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Combat)
 	AEnemy* BossEnemy;
 
 public:
-	void SetBossEnemy(AEnemy* InEnemy);
+	UFUNCTION(Server, Reliable)
+    void ServerAddBossEnemy(AEnemy* InEnemy, const bool bAlive);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSetBossEnemy(AEnemy* InEnemy, const bool bAlive);
 
+	UFUNCTION(NetMulticast, Reliable)
+    void MulticastUpdateBossEnemyHp(const float CurHp, const float MaxHp);
+		
 	UFUNCTION()
-    void OnEnemyHpChanged(float CurHp, float MaxHp);
+    void OnBossEnemyHpChanged(float CurHp, float MaxHp);
 
+	////////////////////////////////////////////////////////////////////////////
+	//// 보스 몬스터
+	
 	void UseQuickPotion();
 	void ShowMenuHUD();
 	void BackMenuHUD();
@@ -363,7 +412,7 @@ public:
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE int32 GetLightAttackLength() const { return LightAttackMontages.Num(); }
-
+	
 	bool IsEnoughStamina(const float Cost) const;
 	
 	// 세터

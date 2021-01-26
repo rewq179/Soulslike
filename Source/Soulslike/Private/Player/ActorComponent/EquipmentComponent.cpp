@@ -35,12 +35,7 @@ void UEquipmentComponent::Initialize()
 			OwnerController = Controller;
 		}
 
-		CurrentWeapon = (GetWorld()->SpawnActor<AWeapon>(OwnerCharacter->WeaponClass));
-		if(CurrentWeapon)
-		{
-			CurrentWeapon->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Weapon_R_Socket");
-			CurrentWeapon->SetHidden(true);
-		}
+		SetCurrentWeapon(GetWorld()->SpawnActor<AWeapon>(OwnerCharacter->WeaponClass));
 	}
 }
 
@@ -67,25 +62,35 @@ void UEquipmentComponent::SetRefreshEquipments(bool bRefresh)
 	OnRep_RefreshEquipments();
 }
 
+void UEquipmentComponent::SetCurrentWeapon(AWeapon* InWeapon)
+{
+	CurrentWeapon = InWeapon;
 
-void UEquipmentComponent::OnRep_Weapon()
+	OnRep_CurrentWeapon();
+}
+
+
+void UEquipmentComponent::OnRep_CurrentWeapon()
+{
+	CurrentWeapon->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Weapon_R_Socket");
+
+	HideWeapon(true);
+}
+
+
+void UEquipmentComponent::HideWeapon(const bool bHide)
+{
+	bWeaponHide = bHide;
+
+	OnRep_WeaponHide();
+}
+
+void UEquipmentComponent::OnRep_WeaponHide()
 {
 	if(OwnerCharacter)
 	{
-		OwnerCharacter->SetEquip(!CurrentWeapon->IsHidden());
+		CurrentWeapon->SetHidden(bWeaponHide);
 	}
-}
-
-void UEquipmentComponent::SetCurrentWeapon(bool bEquip)
-{
-	if(CurrentWeapon == nullptr)
-	{
-		return;
-	}
-	
-	CurrentWeapon->SetHidden(!bEquip);
-	
-	OnRep_Weapon();
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -309,7 +314,7 @@ bool UEquipmentComponent::EquipInventoryItem(FItemTable Item)
 	switch (Item.ItemFilter)
 	{
 	case EItemFilter::Filter_Weapon:
-		SetCurrentWeapon(true);
+		HideWeapon(false);
 		OwnerController->ClientUpdateQuickBar(1, Item.Icon, Item.Name);
 		break;
 
@@ -344,7 +349,7 @@ bool UEquipmentComponent::UnEquipEquipmentItem(EItemFilter ItemFilter, int32 Equ
 	switch (ItemFilter)
 	{
 	case EItemFilter::Filter_Weapon:
-		SetCurrentWeapon(false);
+		HideWeapon(true);
 		OwnerController->ClientClearQuickBar(1);
 		break;
 
@@ -765,4 +770,6 @@ void UEquipmentComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME(UEquipmentComponent, QuickShields);
 	DOREPLIFETIME(UEquipmentComponent, QuickPotions);
 	DOREPLIFETIME(UEquipmentComponent, EquipWeight);
+	DOREPLIFETIME(UEquipmentComponent, bRefeshEquipments);
+	DOREPLIFETIME(UEquipmentComponent, CurrentWeapon);
 }

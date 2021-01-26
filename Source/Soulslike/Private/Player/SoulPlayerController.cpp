@@ -48,6 +48,11 @@ void ASoulPlayerController::ClearItemDescription_Implementation()
 	ClientClearItemDescription();
 }
 
+void ASoulPlayerController::ShowKeyWidget_Implementation(const bool bActive)
+{
+	ClientShowKey(bActive);
+}
+
 ////////////////////////////////////////////////////////////////////////////
 //// HUD를 관리한다.
 
@@ -74,9 +79,9 @@ void ASoulPlayerController::ClientUpdateStaminaBar_Implementation(float CurStami
 ////////////////////////////////////////////////////////////////////////////
 //// 적 체력바 
 
-void ASoulPlayerController::ClientShowEnemyHpBar_Implementation(bool bActive)
+void ASoulPlayerController::ClientShowBossHpBar_Implementation(bool bActive)
 {
-	OnShowEnemyHpBar(bActive);
+	OnShowBossHpBar(bActive);
 }
 
 void ASoulPlayerController::ClientUpdateBossName_Implementation(const FText& Name)
@@ -187,6 +192,14 @@ void ASoulPlayerController::ClientShowStatus_Implementation()
 void ASoulPlayerController::ClientShowOption_Implementation()
 {
 	OnShowOption(true);
+}
+
+////////////////////////////////////////////////////////////////////////////
+//// 옵션
+
+void ASoulPlayerController::ClientShowKey_Implementation(const bool bActive)
+{
+	OnShowKey(bActive);
 }
 
 ////////////////////////////////////////////////////////////////////////////

@@ -34,5 +34,8 @@ public:
 	void ShowOptionWidget();
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PlayerController")
+    void ShowKeyWidget(const bool bActive);
+	
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PlayerController")
 	void ClearItemDescription();
 };

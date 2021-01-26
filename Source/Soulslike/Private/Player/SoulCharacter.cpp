@@ -126,6 +126,14 @@ void ASoulCharacter::EndRollAnim_Implementation()
 	EndRoll();
 }
 
+void ASoulCharacter::PlayFootStepSound_Implementation()
+{
+	if(PlayerAnimInstance)
+	{
+		PlayerAnimInstance->FootStep();
+	}
+}
+
 void ASoulCharacter::SetInteractDoor_Implementation(AInteractDoor* Door)
 {
 	if(InteractComponent)
@@ -269,6 +277,8 @@ void ASoulCharacter::PossessedBy(AController* NewController)
 
 void ASoulCharacter::MoveForward(float Value)
 {
+	MoveX = Value;
+	
 	if ((Controller != nullptr) && (Value != 0.0f) && bMoveable && !bPlayingScene)
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
@@ -281,6 +291,8 @@ void ASoulCharacter::MoveForward(float Value)
 
 void ASoulCharacter::MoveRight(float Value)
 {
+	MoveY = Value;
+	
 	if ((Controller != nullptr) && (Value != 0.0f) && bMoveable && !bPlayingScene)
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
@@ -297,19 +309,17 @@ void ASoulCharacter::AddControllerYawInput(float Val)
 	{
 		if (bLockCamera)
 		{
-			auto CameraLocation = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->GetCameraLocation();
-			auto TargetLocation = Target->GetActorLocation();
+			const auto ActorLocation =GetActorLocation() + FVector(0.f, 0.f, 100.f);
+			const auto TargetLocation = Target->GetActorLocation();
 
-			float PitchConst = -15.f;
+			auto LookRotation = UKismetMathLibrary::FindLookAtRotation(ActorLocation, TargetLocation);
 
-			CameraLocation.Z = 0.f;
-			TargetLocation.Z = 0.f;
+			float PitchClamp = LookRotation.Pitch;
+			FMath::Clamp(PitchClamp, -90.f, 70.f);
 
-
-			auto LookRotation = UKismetMathLibrary::FindLookAtRotation(CameraLocation, TargetLocation);
-			LookRotation.Pitch += PitchConst;
-
-			GetController()->SetControlRotation(LookRotation);
+			LookRotation.Pitch = PitchClamp;
+			
+			GetController()->SetControlRotation(FMath::RInterpTo(GetController()->GetControlRotation(), LookRotation, 0.01f, 8.f));
 		}
 
 		else if (Val != 0.f && !bLockCamera)
@@ -343,7 +353,8 @@ void ASoulCharacter::StartRoll()
 	}
 
 	StatComponent->ClearStaminaTimer();
-	ServerRoll();
+
+	ServerRoll(GetRollIndex());
 }
 
 void ASoulCharacter::EndRoll()
@@ -353,17 +364,17 @@ void ASoulCharacter::EndRoll()
 	StatComponent->PlayStaminaTimer();
 }
 
-void ASoulCharacter::ServerRoll_Implementation()
+void ASoulCharacter::ServerRoll_Implementation(int32 RollIndex)
 {
 	StatComponent->AddStaminaValue(-RollCost);
 	SetRolling(true);
 
-	MulticastRoll();
+	MulticastRoll(RollIndex);
 }
 
-void ASoulCharacter::MulticastRoll_Implementation()
+void ASoulCharacter::MulticastRoll_Implementation(int32 RollIndex)
 {
-	MulticastPlayMontage(RollMontage, 0.8f);
+	MulticastPlayMontage(RollMontages[RollIndex], 0.8f);
 }
 
 
@@ -372,6 +383,58 @@ void ASoulCharacter::SetRolling(bool bRoll)
 	bRolling = bRoll;
 
 	OnRep_Rolling();
+}
+
+int32 ASoulCharacter::GetRollIndex() const
+{
+	if(bTargeting)
+	{
+		if(MoveX != 0)
+		{
+			if(MoveX > 0.f)
+			{
+				if(MoveY > 0.f)
+					return 1; // 우상단
+
+				if(MoveY < 0.f)
+					return 7; // 좌상
+
+				return 0; // 상
+			}
+
+			if(MoveY > 0.f)
+				return 3; // 우하단
+
+			if(MoveY < 0.f)
+				return 5; // 좌하단
+
+			return 4; // 하단
+		}
+
+		if(MoveY != 0)
+		{
+			if(MoveY > 0.f) 
+			{
+				if(MoveX > 0.f)
+					return 1; // 우상단
+
+				if(MoveX < 0.f)
+					return 3; // 우하단
+
+				return 2; // 우측
+			}
+
+			if(MoveX > 0.f)
+				return 7; // 좌상단
+
+			if(MoveX < 0.f) // 좌하단
+				return 5;
+
+			return 6; // 좌측
+		}
+	}
+
+	return 0;
 }
 
 void ASoulCharacter::OnRep_Rolling()
@@ -488,6 +551,11 @@ void ASoulCharacter::ApplyDamageToActorInOverlapSphere(TArray<AActor*>& Overlapp
 		{
 			if (Actor->ActorHasTag("Enemy"))
 			{
+				if(const auto InEnemy = Cast<AEnemy>(Actor))
+				{
+					ServerAddNormalEnemy(InEnemy, true);
+				}
+				
 				UGameplayStatics::ApplyDamage(Actor, EquipmentComponent->GetWeaponDamage(PlayerAttack), GetController(), this, DamageType);
 			}
 		}
@@ -605,14 +673,14 @@ void ASoulCharacter::OnRep_Blocking()
 	}
 }
 
-bool ASoulCharacter::IsBlocked(AActor* Enemy) const
+bool ASoulCharacter::IsBlocked(AActor* InEnemy) const
 {
 	if (!bBlocking)
 	{
 		return false;
 	}
 
-	auto UnitDirection = UKismetMathLibrary::GetDirectionUnitVector(Enemy->GetActorLocation(), GetActorLocation());
+	auto UnitDirection = UKismetMathLibrary::GetDirectionUnitVector(InEnemy->GetActorLocation(), GetActorLocation());
 	UnitDirection.Z = 0.f;
 	UnitDirection.Normalize();
 
@@ -681,71 +749,150 @@ void ASoulCharacter::StartTarget()
 	
 	if (!bTargeting)
 	{
-		bTargeting = true;
-
 		TargetComponent->Targeting();
 	}
 
 	else
 	{
-		bTargeting = false;
-
 		TargetComponent->UnTargeting();
+	}
+}
+
+void ASoulCharacter::SetTarting(const bool bTarget)
+{
+	bTargeting = bTarget;
+
+	OnRep_Targeting();
+}
+
+void ASoulCharacter::OnRep_Targeting()
+{
+	if(PlayerAnimInstance)
+	{
+		PlayerAnimInstance->SetTargeting(bTargeting);
+
+		GetCharacterMovement()->bOrientRotationToMovement = !bTargeting; // 캐릭터의 이동방향에 따라 방향을 움직여준다.
+		GetCharacterMovement()->bUseControllerDesiredRotation = bTargeting;
 	}
 }
 
 void ASoulCharacter::SetLockCamera(AActor* InTarget, bool bLock)
 {
-	if (bLock)
-	{
-		Target = InTarget;
-
-		bLockCamera = true;
-	}
-
-	else
-	{
-		Target = nullptr;
-
-		bLockCamera = false;
-	}
+	Target = InTarget;
+	bLockCamera = bLock;
+	SetTarting(bLock);
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// 보스 몬스터
+//// 일반 몬스터 HUD
 
-void ASoulCharacter::SetBossEnemy(AEnemy* InEnemy)
+void ASoulCharacter::ServerAddNormalEnemy_Implementation(AEnemy* InEnemy, const bool bAlive)
 {
-	if(SoulPC == nullptr)
+	if(InEnemy)
+	{
+		MulticastSetNormalEnemy(InEnemy, bAlive);
+	}
+}
+
+void ASoulCharacter::MulticastSetNormalEnemy_Implementation(AEnemy* InEnemy, const bool bAlive)
+{
+	int32 LastIndex = CombatEnemys.Num() -1;
+	
+	if(bAlive) // Show And Set
+	{
+		if(!CombatEnemys.Contains(InEnemy))
+		{
+			++LastIndex; // 1개가 Add 되었기 때문
+			CombatEnemys.Add(InEnemy);
+
+			CombatEnemys[LastIndex]->OnNormalHpChanged.AddDynamic(this, &ASoulCharacter::ASoulCharacter::OnNormalEnemyHpChanged);
+			CombatEnemys[LastIndex]->ShowHpBarWidget(true);
+			
+		}
+	}
+
+	else // Clear
+	{
+		if(CombatEnemys.Contains(InEnemy))
+		{
+			CombatEnemys[LastIndex]->OnNormalHpChanged.RemoveDynamic(this, &ASoulCharacter::ASoulCharacter::OnNormalEnemyHpChanged);
+			CombatEnemys[LastIndex]->ShowHpBarWidget(false);
+			
+			CombatEnemys.Remove(InEnemy);
+		}
+	}
+}
+
+void ASoulCharacter::OnNormalEnemyHpChanged(float CurHp)
+{
+	if(CombatEnemys.Num() > 0)
+	{
+		MulticastUpdateNormalEnemyHp(CurHp);
+	}
+}
+
+void ASoulCharacter::MulticastUpdateNormalEnemyHp_Implementation(const float CurHp)
+{
+	for(auto& Enemy : CombatEnemys)
+	{
+		Enemy->OnUpdateHpPercent(CurHp);
+	}
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+//// 보스 몬스터 HUD
+
+void ASoulCharacter::ServerAddBossEnemy_Implementation(AEnemy* InEnemy, const bool bAlive)
+{
+	if(InEnemy)
+	{
+		MulticastSetBossEnemy(InEnemy, bAlive);
+	}
+}
+
+
+void ASoulCharacter::MulticastSetBossEnemy_Implementation(AEnemy* InEnemy, const bool bAlive)
+{
+	auto const PC = Cast<ASoulPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+	if(PC == nullptr)
 	{
 		return;
 	}
 	
-	if (InEnemy == nullptr)
-	{
-		BossEnemy->OnEnemyHpChanged.RemoveDynamic(this, &ASoulCharacter::OnEnemyHpChanged);
-		BossEnemy = nullptr;
-
-		SoulPC->ClientShowEnemyHpBar(false);
-	}
-
-	else
+	if(bAlive) // Set And Show
 	{
 		bPlayingScene = true;
 		BossEnemy = InEnemy;
-		BossEnemy->OnEnemyHpChanged.AddDynamic(this, &ASoulCharacter::OnEnemyHpChanged);
+		BossEnemy->OnBossHpChanged.AddDynamic(this, &ASoulCharacter::OnBossEnemyHpChanged);
 
-		SoulPC->ClientShowEnemyHpBar(true);
-		SoulPC->ClientUpdateBossName(BossEnemy->GetEnemyName());
-		SoulPC->ClientUpdateBossHp(BossEnemy->GetCurHp(), BossEnemy->GetMaxHp());
+		PC->ClientShowBossHpBar(true);
+		PC->ClientUpdateBossName(BossEnemy->GetEnemyName());
+		PC->ClientUpdateBossHp(BossEnemy->GetCurHp(), BossEnemy->GetMaxHp());
+	}
+
+	else // Clear
+	{
+		BossEnemy->OnBossHpChanged.RemoveDynamic(this, &ASoulCharacter::ASoulCharacter::OnBossEnemyHpChanged);
+		BossEnemy = nullptr;
+		
+		PC->ClientShowBossHpBar(false);
 	}
 }
 
-void ASoulCharacter::OnEnemyHpChanged(float CurHp, float MaxHp)
+void ASoulCharacter::OnBossEnemyHpChanged(float CurHp, float MaxHp)
 {
-	if (SoulPC)
+	if(BossEnemy)
 	{
-		SoulPC->ClientUpdateBossHp(CurHp, MaxHp);
+		MulticastUpdateBossEnemyHp(CurHp, MaxHp);
+	}
+}
+
+void ASoulCharacter::MulticastUpdateBossEnemyHp_Implementation(const float CurHp, const float MaxHp)
+{
+	if(auto const PC = Cast<ASoulPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0)))
+	{
+		PC->ClientUpdateBossHp(CurHp, MaxHp);
 	}
 }
 
@@ -841,7 +988,10 @@ void ASoulCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(ASoulCharacter, bMoveable);
 	DOREPLIFETIME(ASoulCharacter, bBlocking);
 	DOREPLIFETIME(ASoulCharacter, bAttacking);
+	DOREPLIFETIME(ASoulCharacter, bTargeting);
 	DOREPLIFETIME(ASoulCharacter, bPlayingScene);
 	DOREPLIFETIME(ASoulCharacter, bLockCamera);
 	DOREPLIFETIME(ASoulCharacter, Target);
+	DOREPLIFETIME(ASoulCharacter, CombatEnemys);
+	DOREPLIFETIME(ASoulCharacter, BossEnemy);
 }

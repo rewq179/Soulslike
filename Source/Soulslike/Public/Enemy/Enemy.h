@@ -4,20 +4,18 @@
 #include "GameFramework/Character.h"
 #include "EnemyAnimNotifyInterface.h"
 #include "DataType.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
 
 #include "Enemy.generated.h"
 
 class UStaticMeshComponent;
+class UWidgetComponent;
 class USphereComponent;
 class UArrowComponent;
 class AEnemyProjectile;
 class UAnimationAsset;
 class ASoulCharacter;
 class USoundCue;
+class UEnemyAnimInstance;
 
 /**
 * Enemy가 보유한 데이터들을 바탕으로 전투 및 애니메이션들을 재생한다.
@@ -32,6 +30,9 @@ class SOULSLIKE_API AEnemy : public ACharacter, public IEnemyAnimNotifyInterface
 	FTimerHandle AttackTimer;
 	FTimerHandle RangeDelayTimer;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animtaion, meta = (AllowPrivateAccess = "true"))
+	UEnemyAnimInstance* EnemyAnimInstance;
+	
 public:
 	AEnemy();
 
@@ -43,7 +44,7 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
 	UArrowComponent* ProjectilePoint;
-	
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Montage)
 	UAnimMontage* AggroMontage;
 
@@ -67,7 +68,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Enemy)
 	TSubclassOf<UDamageType> DamageType;
-
+	
 	////////////////////////////////////////////////////////////////////////////
 	//// 인터페이스
 
@@ -104,6 +105,9 @@ public:
     void EndDeadAnim();
 	virtual void EndDeadAnim_Implementation() override;
 
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
+	void PlayFootStepSound();
+	virtual void PlayFootStepSound_Implementation() override;
 
 	// 파티클 재생
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AnimNotify Interface")
@@ -144,7 +148,7 @@ public:
 	////////////////////////////////////////////////////////////////////////////
 	//// 세터
 	
-	void SetMovementState(EMovementState State);
+	void SetMovementState(const EMovementState State);
 
 	void SetTarget(AActor* InTarget);
 	void ClearTarget();
@@ -179,7 +183,7 @@ public:
 
     void StartAggro(); // 어그로 애니메이션 재생
 	void EndAggro();
-	
+
 	void StartAttack(EEnemyAttack Attack);
 	void StartFirstAttack(int32 AttackNumber);
 	void PlayAttackMontage(TArray<UAnimMontage*>& AttackMontages);
@@ -204,7 +208,7 @@ protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Health")
 	bool bDead;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Health")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
 	float CurHp;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Health")
@@ -221,6 +225,8 @@ protected:
 
 	void StartDead() const; // 죽은 뒤 애니메이션을 정지함
 
+	void SetEnemyHpBarHUD(ASoulCharacter* Player);
+	
 public:
 	FORCEINLINE FText GetEnemyName() const { return Name; }
 	FORCEINLINE float GetCurHp() const { return CurHp; }
@@ -231,11 +237,13 @@ public:
 	FORCEINLINE bool IsDead() const { return bDead; }
 	FORCEINLINE bool IsBossEnemy() const { return bBossEnemy; }
 	FORCEINLINE void SetEnemyAttack(EEnemyAttack Attack) { EnemyAttack = Attack; }
+	FORCEINLINE void SetEnemyAnimInstance(UEnemyAnimInstance* AnimInstance) {EnemyAnimInstance = AnimInstance;}
 	
 	float GetDamage() const;
 
 	/** Enemy의 체력이 변화하면 SoulPC에서 UMG 값 변경해줌 */
-	FOnEnemyHpChangedDelegate OnEnemyHpChanged;
+	FOnBossEnemyHpChangedDelegate OnBossHpChanged;
+	FOnNormalEnemyHpChangedDelegate OnNormalHpChanged;
 
 	/** Attack 애니메이션 종료시, BT에게 종료되었다는 정보를 준다. */
 	FOnAggroMoitionEndDelegate OnAggroMoitionEnd;
@@ -246,8 +254,14 @@ public:
 	FOnChargeAttackEndDelegate OnFirstAttackEnd;
 
 	UFUNCTION(BlueprintNativeEvent)
-	void ShowTargetWidget(ASoulCharacter* InCharacter, bool bHide);
+	void ShowTargetWidget(ASoulCharacter* InCharacter, bool bActive);
 
+	UFUNCTION(BlueprintNativeEvent)
+    void ShowHpBarWidget(bool bActive);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnUpdateHpPercent(const float Hp);
+	
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayMontage(UAnimMontage* AnimMontage, float PlayRate, FName AnimName = NAME_None);
 

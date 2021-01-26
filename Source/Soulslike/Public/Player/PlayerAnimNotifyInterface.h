@@ -46,4 +46,8 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Player")
     void EndDeadAnim();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Player")
+	void PlayFootStepSound();
+
 };

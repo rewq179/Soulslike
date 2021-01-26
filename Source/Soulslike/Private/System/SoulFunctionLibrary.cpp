@@ -7,6 +7,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "UObject/ConstructorHelpers.h"
 
 #include "Engine/Engine.h"
 #include "Containers/EnumAsByte.h"

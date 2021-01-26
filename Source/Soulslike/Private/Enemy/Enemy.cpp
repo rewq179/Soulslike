@@ -4,7 +4,7 @@
 #include "Enemy/Enemy.h"
 #include "Enemy/EnemyAIController.h"
 #include "Enemy/EnemyProjectile.h"
-
+#include "Enemy/EnemyAnimInstance.h"
 #include "Player/SoulCharacter.h"
 
 #include "System/SoulFunctionLibrary.h"
@@ -22,7 +22,6 @@
 #include "TimerManager.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimSequenceBase.h"
-#include "Engine/SkeletalMeshSocket.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Engine/World.h"
@@ -69,12 +68,11 @@ AEnemy::AEnemy()
 
 	// Mesh :: 모든 반응이 Ingore. 
 	GetMesh()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-
+	
 	// 태그 설정
 	Tags.Add(FName("Enemy"));
 }
 
-// Called when the game starts or when spawned
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
@@ -136,6 +134,14 @@ void AEnemy::EndDeadAnim_Implementation()
 	StartDead();
 }
 
+void AEnemy::PlayFootStepSound_Implementation()
+{
+	if(EnemyAnimInstance)
+	{
+		EnemyAnimInstance->FootStep();
+	}
+}
+
 // 이펙트 재생
 void AEnemy::PlayEffect_Implementation(UParticleSystem* InParticle, USoundBase* InSound, const FTransform InTransform)
 {
@@ -145,7 +151,7 @@ void AEnemy::PlayEffect_Implementation(UParticleSystem* InParticle, USoundBase* 
 ////////////////////////////////////////////////////////////////////////////
 //// Set 또는 Clear
 
-void AEnemy::SetMovementState(EMovementState State)
+void AEnemy::SetMovementState(const EMovementState State)
 {
 	MovementState = State;
 
@@ -164,6 +170,7 @@ void AEnemy::SetMovementState(EMovementState State)
 		break;
 
 	default:
+		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 		break;
 	}
 }
@@ -199,11 +206,11 @@ void AEnemy::SetLightCollision(bool bActive) const // Overlap 이벤트를 설�
 ////////////////////////////////////////////////////////////////////////////
 //// 행동 트리에서 실행되는 함수들
 
-void AEnemy::StartAggro() 
+void AEnemy::StartAggro()
 {
 	if(Target == nullptr)
 	{
-		return ;
+		return;
 	}
 	
 	auto const Player = Cast<ASoulCharacter>(Target);
@@ -211,8 +218,8 @@ void AEnemy::StartAggro()
 	{
 		return;
 	}
-
-	Player->SetBossEnemy(this);
+	
+	SetEnemyHpBarHUD(Player);
 	MulticastPlayMontage(AggroMontage, 1.f);
 }
 
@@ -365,8 +372,10 @@ void AEnemy::RangeAttack()
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
 
-		const auto Projectile = GetWorld()->SpawnActor<AEnemyProjectile>(ProjectileClass, ProjectilePoint->GetComponentTransform(), SpawnParams);
-		Projectile->SetDamage(GetDamage());
+		if(const auto Projectile = GetWorld()->SpawnActor<AEnemyProjectile>(ProjectileClass, ProjectilePoint->GetComponentTransform(), SpawnParams))
+		{
+			Projectile->SetDamage(GetDamage());
+		}
 	}
 }
 
@@ -395,8 +404,16 @@ void AEnemy::HandleTakeAnyDamage(AActor * DamagedActor, float Damage, const UDam
 	}
 
 	CurHp -= Damage;
-	OnEnemyHpChanged.Broadcast(CurHp, MaxHp);
+	if(IsBossEnemy())
+	{
+		OnBossHpChanged.Broadcast(CurHp, MaxHp);
+	}
 
+	else
+	{
+		OnNormalHpChanged.Broadcast(CurHp);	
+	}
+	
 	if (CurHp <= 0.f)
 	{
 		ServerDeath(DamageCauser);
@@ -420,7 +437,7 @@ void AEnemy::ServerDeath_Implementation(AActor* DamageCauser)
 
 		if (auto const Player = Cast<ASoulCharacter>(DamageCauser))
 		{
-			Player->SetBossEnemy(nullptr);
+			SetEnemyHpBarHUD(Player);
 			Player->AddSoulsValue(SoulsValue);
 		}
 
@@ -431,6 +448,24 @@ void AEnemy::ServerDeath_Implementation(AActor* DamageCauser)
 void AEnemy::StartDead() const
 {
 	GetMesh()->bPauseAnims = true;
+}
+
+void AEnemy::SetEnemyHpBarHUD(ASoulCharacter* Player)
+{
+	if(Player == nullptr)
+	{
+		return;
+	}
+
+	if(IsBossEnemy())
+	{
+		Player->ServerAddBossEnemy(this, !IsDead());
+	}
+
+	else
+	{
+		Player->ServerAddNormalEnemy(this, !IsDead());
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -458,10 +493,16 @@ float AEnemy::GetDamage() const
 	return 0.f;
 }
 
-void AEnemy::ShowTargetWidget_Implementation(ASoulCharacter* InCharacter, bool bHide)
+void AEnemy::ShowTargetWidget_Implementation(ASoulCharacter* InCharacter, bool bActive)
 {
 
 }
+
+void AEnemy::ShowHpBarWidget_Implementation(bool bActive)
+{
+	
+}
+
 
 void AEnemy::OnOverlapBegin(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {

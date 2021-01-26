@@ -27,7 +27,7 @@ public:
 
 	// OverlapSphere를 생성시 형태를 그려준다.
 	static void DrawDLine(UWorld* World, FVector Start, FVector End);
-	
+
 	// 몬스터가 플레이어에게 데미지를 준다. Enemy와 EnemyProjectile 클래스에서 사용된다.
 	static void ApplyDamageToPlayer(AActor* InPlayer, float Damage, AController* Controller, AActor* DamageCauser, TSubclassOf<UDamageType> DamageType, float Height, bool bKnockDown);
 

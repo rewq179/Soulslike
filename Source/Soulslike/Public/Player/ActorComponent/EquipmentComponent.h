@@ -6,19 +6,6 @@
 #include "Components/ActorComponent.h"
 #include "DataType.h"
 #include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
 
 #include "EquipmentComponent.generated.h"
 
@@ -81,15 +68,22 @@ public:
 	//// 장착 아이템
 	
 protected:
-	UPROPERTY(ReplicatedUsing = OnRep_Weapon, BlueprintReadOnly, Category = Equipment)
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentWeapon , BlueprintReadOnly, Category = Equipment)
 	AWeapon* CurrentWeapon;
 
 	UFUNCTION()
-    void OnRep_Weapon();
+    void OnRep_CurrentWeapon();
+	
+	UPROPERTY(ReplicatedUsing = OnRep_WeaponHide, BlueprintReadOnly, Category = Equipment)
+	bool bWeaponHide;
+
+	UFUNCTION()
+    void OnRep_WeaponHide();
 
 public:
-	void SetCurrentWeapon(bool bEquip);
-
+	void SetCurrentWeapon(AWeapon* InWeapon);
+	void HideWeapon(const bool bHide);
+	
 	////////////////////////////////////////////////////////////////////////////
 	//// 외부에서 실행되는 함수
 
