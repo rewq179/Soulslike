@@ -30,6 +30,7 @@
 #include "Animation/AnimInstance.h"
 #include "TimerManager.h"
 #include "Net/UnrealNetwork.h"
+#include "System/SoulGameModeBase.h"
 
 ASoulCharacter::ASoulCharacter()
 {
@@ -224,6 +225,7 @@ void ASoulCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAction<FMouseWheelDelegate>("ChangeShield", IE_Pressed, this, &ASoulCharacter::ShiftLeftEquipments, EMouseWheel::Wheel_Shield);
 	PlayerInputComponent->BindAction<FMouseWheelDelegate>("ChangePotion", IE_Pressed, this, &ASoulCharacter::ShiftLeftEquipments, EMouseWheel::Wheel_Potion);
 
+	// 이동 및 회전
 	PlayerInputComponent->BindAxis("MoveForward", this, &ASoulCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ASoulCharacter::MoveRight);
 	PlayerInputComponent->BindAxis("Turn", this, &ASoulCharacter::AddControllerYawInput);
@@ -268,6 +270,11 @@ void ASoulCharacter::PossessedBy(AController* NewController)
 		if(ComboComponent)
 		{
 			ComboComponent->Initialize();
+		}
+
+		if(auto const GameModeBase = Cast<ASoulGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+		{
+			GameModeBase->AddPlayerController(SoulPC);
 		}
 	}
 }
@@ -862,7 +869,6 @@ void ASoulCharacter::MulticastSetBossEnemy_Implementation(AEnemy* InEnemy, const
 	
 	if(bAlive) // Set And Show
 	{
-		bPlayingScene = true;
 		BossEnemy = InEnemy;
 		BossEnemy->OnBossHpChanged.AddDynamic(this, &ASoulCharacter::OnBossEnemyHpChanged);
 
@@ -897,7 +903,33 @@ void ASoulCharacter::MulticastUpdateBossEnemyHp_Implementation(const float CurHp
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//// 아이템
+//// 던전
+
+void ASoulCharacter::MulticastTeleportAtLocation_Implementation(const FVector& Location)
+{
+	this->TeleportTo(Location, FRotator::ZeroRotator);
+	bPlayingScene = true;
+
+	if(IsLocallyControlled() && BossEnemy)
+	{
+	    const auto Camera = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
+		const FRotator Rotator = UKismetMathLibrary::FindLookAtRotation(Camera->GetCameraLocation(), BossEnemy->GetActorLocation());
+
+		GetController()->SetControlRotation(Rotator);	
+	}
+}
+
+void ASoulCharacter::MulticastEndPlayingScene_Implementation()
+{
+	if(IsLocallyControlled())
+	{
+		bPlayingScene = false;
+	}
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+//// HUD
 
 void ASoulCharacter::UseQuickPotion() 
 {

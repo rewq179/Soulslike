@@ -95,6 +95,14 @@ void ASoulPlayerController::ClientUpdateBossHp_Implementation(float CurHp, float
 }
 
 ////////////////////////////////////////////////////////////////////////////
+//// 던전
+
+void ASoulPlayerController::ClientShowDungeonMessage_Implementation(const FText& Message)
+{
+	OnShowDungeonMessage(Message);
+}
+
+////////////////////////////////////////////////////////////////////////////
 //// 상호작용
 
 void ASoulPlayerController::ClientShowInteractMessage_Implementation(bool bActive)

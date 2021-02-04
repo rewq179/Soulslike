@@ -89,6 +89,8 @@ void UEquipmentComponent::OnRep_WeaponHide()
 {
 	if(OwnerCharacter)
 	{
+		OwnerCharacter->SetEquip(!bWeaponHide);
+		
 		CurrentWeapon->SetHidden(bWeaponHide);
 	}
 }

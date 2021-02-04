@@ -397,7 +397,16 @@ public:
     void OnBossEnemyHpChanged(float CurHp, float MaxHp);
 
 	////////////////////////////////////////////////////////////////////////////
-	//// 보스 몬스터
+	//// 던전
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastTeleportAtLocation(const FVector& Location);
+
+	UFUNCTION(NetMulticast, Reliable)
+    void MulticastEndPlayingScene();
+	
+	////////////////////////////////////////////////////////////////////////////
+	//// HUD
 	
 	void UseQuickPotion();
 	void ShowMenuHUD();

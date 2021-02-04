@@ -54,8 +54,6 @@ void UCharacterAnimInstance::PlayerSound(const int32 SoundIndex)
 {
 	if(SoundIndex < FootStepSounds.Num())
 	{
-		UE_LOG(LogTemp,Log,TEXT("ST : %d"), SoundIndex);
-		
-		UGameplayStatics::PlaySound2D(GetWorld(), FootStepSounds[SoundIndex], 0.5f, 1.f, 0.f);
+		UGameplayStatics::PlaySound2D(GetWorld(), FootStepSounds[SoundIndex], 0.75f, 1.f, 0.f);
 	}
 }

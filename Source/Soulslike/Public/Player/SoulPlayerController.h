@@ -112,6 +112,16 @@ public:
 	void OnUpdateBossHp(float CurHp, float MaxHp);
 
 	////////////////////////////////////////////////////////////////////////////
+	//// 던전 설명
+
+	UFUNCTION(Client, Reliable)
+    void ClientShowDungeonMessage(const FText& Message);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Dungeon")
+    void OnShowDungeonMessage(const FText& Message);
+
+	
+	////////////////////////////////////////////////////////////////////////////
 	//// 상호작용
 	
 	UFUNCTION(Client, Reliable)

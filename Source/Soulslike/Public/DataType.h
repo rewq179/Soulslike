@@ -22,6 +22,75 @@ enum class EApplyStat : uint8
 };
 
 ////////////////////////////////////////////////////////////////////////////
+//// 던전
+///
+
+USTRUCT(BlueprintType)
+struct SOULSLIKE_API FDungeonRawTable : public FTableRowBase
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	int32 Id;
+	
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FText Name;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float SpawnX_0;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float SpawnY_0;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float SpawnZ_0;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float SpawnX_1;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float SpawnY_1;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float SpawnZ_1;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float SpawnX_2;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float SpawnY_2;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float SpawnZ_2;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float SpawnX_3;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float SpawnY_3;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float SpawnZ_3;
+	
+};
+
+USTRUCT(BlueprintType)
+struct FDungeonTable
+{
+	GENERATED_USTRUCT_BODY()
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	int32 Id;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FText Name;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	TArray<FVector> SpawnPoints;
+};
+
+
+////////////////////////////////////////////////////////////////////////////
 //// 아이템
 
 UENUM(BlueprintType)

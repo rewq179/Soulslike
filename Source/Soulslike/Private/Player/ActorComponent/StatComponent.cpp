@@ -20,7 +20,7 @@ UStatComponent::UStatComponent()
 
 	// 스텟 초기화
 	PlayerStat.MaxHp = 500.f;
-	PlayerStat.CurHp = PlayerStat.MaxHp * 0.5f;
+	PlayerStat.CurHp = PlayerStat.MaxHp;
 	PlayerStat.MaxStamina = 200.f;
 	PlayerStat.CurStamina = PlayerStat.MaxStamina;
 

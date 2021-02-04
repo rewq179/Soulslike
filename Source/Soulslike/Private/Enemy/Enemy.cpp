@@ -22,9 +22,11 @@
 #include "TimerManager.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimSequenceBase.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Engine/World.h"
+#include "System/SoulGameModeBase.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -85,6 +87,14 @@ void AEnemy::BeginPlay()
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		OnTakeAnyDamage.AddDynamic(this, &AEnemy::HandleTakeAnyDamage);
+
+		if(const auto GameModeBase = Cast<ASoulGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+		{
+			if(IsBossEnemy())
+			{
+				GameModeBase->SetBossEnemy(this);
+			}
+		}
 	}
 }
 
@@ -177,7 +187,7 @@ void AEnemy::SetMovementState(const EMovementState State)
 
 void AEnemy::SetTarget(AActor* InTarget) // 타겟이 존재하면 이동을 빨리한다.
 {
-	Target = InTarget; 
+	Target = InTarget;
 
 	SetMovementState(EMovementState::State_Run);
 }
@@ -213,25 +223,25 @@ void AEnemy::StartAggro()
 		return;
 	}
 	
-	auto const Player = Cast<ASoulCharacter>(Target);
-	if (Player == nullptr)
+	if (auto const Player = Cast<ASoulCharacter>(Target))
 	{
-		return;
+		SetEnemyHpBarHUD(Player);
 	}
-	
-	SetEnemyHpBarHUD(Player);
+
 	MulticastPlayMontage(AggroMontage, 1.f);
 }
 
 void AEnemy::EndAggro()
 {
-	OnAggroMoitionEnd.Broadcast();
-	
-	auto const Player = Cast<ASoulCharacter>(Target);
-	if (Player)
+	if(IsBossEnemy())
 	{
-		Player->SetPlayingScene(false);
+		if(auto const AIController = Cast<AEnemyAIController>(GetController()))
+		{
+			AIController->GetBlackboardComponent()->SetValueAsBool(AEnemyAIController::Aggro, true);
+		}
 	}
+
+	OnAggroMoitionEnd.Broadcast();
 }
 
 void AEnemy::StartAttack(EEnemyAttack Attack)

@@ -11,6 +11,8 @@
 
 #include "Net/UnrealNetwork.h"
 #include "Containers/UnrealString.h"
+#include "Kismet/GameplayStatics.h"
+#include "System/SoulGameModeBase.h"
 
 AInteractDoor::AInteractDoor()
 {
@@ -89,14 +91,14 @@ FText AInteractDoor::GetInteractMessage()
 
 void AInteractDoor::InteractDoor(bool bOpen)
 {
-	if (bOpen)
+	if (bOpen) // 문을 열어줌
 	{
 		MulticastDoorMoveTo(DoorLeft, DoorLeft->GetRelativeLocation(), FRotator(0.f, 0.f, 0.f));
 
 		bInteracted = true;
 	}
 
-	else
+	else // 닫아줌
 	{
 		MulticastDoorMoveTo(DoorLeft, DoorLeft->GetRelativeLocation(), FRotator(0.f, -90.f, 0.f));
 	}
@@ -145,6 +147,11 @@ void AInteractDoor::OnBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, 
 	if (OtherActor->ActorHasTag("Player"))
 	{
 		InteractDoor(false);
+
+		if(auto const GameModeBase = Cast<ASoulGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+		{
+			GameModeBase->RespawnAllPlayer();
+		}
 	}
 }
 

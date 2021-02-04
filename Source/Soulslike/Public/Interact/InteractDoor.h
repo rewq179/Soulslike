@@ -34,6 +34,10 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	/** True : 보스 몹이 등장하기전 사용되는 문 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Door")
+	bool bMainStageDoor;
+	
 	/** 문이 완전히 열리는데 걸리는 시간 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Interact)
 	float OpenTime;
