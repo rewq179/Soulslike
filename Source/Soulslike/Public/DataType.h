@@ -214,6 +214,33 @@ struct SOULSLIKE_API FItemTable : public FTableRowBase
 };
 
 ////////////////////////////////////////////////////////////////////////////
+//// 멀티플레이어
+
+UENUM(BlueprintType)
+enum class ELobbyStatus : uint8
+{
+	Lobby_Host UMETA(DisplayName = "Host"),
+    Lobby_Ready UMETA(DisplayName = "Ready"),
+    Lobby_Wait UMETA(DisplayName = "Wait"),
+    Lobby_Change UMETA(DisplayName = "Change")
+};
+
+USTRUCT(BlueprintType)
+struct SOULSLIKE_API FPlayerProfile
+{
+	GENERATED_USTRUCT_BODY()
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Profile")
+	FText PlayerName;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Profile")
+	UTexture2D* PlayerIcon;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Profile")
+	ELobbyStatus LobbyStatus;
+};
+
+////////////////////////////////////////////////////////////////////////////
 //// 플레이어
 
 UENUM(BlueprintType)

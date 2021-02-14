@@ -19,6 +19,7 @@ class SOULSLIKE_API ASoulPlayerController : public APlayerController, public ICo
 public:
 	ASoulPlayerController() {}
 
+public:
 	////////////////////////////////////////////////////////////////////////////
 	//// 인터페이스
 	

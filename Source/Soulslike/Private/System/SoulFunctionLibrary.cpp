@@ -2,17 +2,19 @@
 
 
 #include "System/SoulFunctionLibrary.h"
+#include "System/SoulGameInstance.h"
+#include "System/SoulGameModeBase.h"
+#include "System/LobbyGameModeBase.h"
+#include "Player/SoulCharacter.h"
 #include "Player/ActorComponent/StatComponent.h"
 
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "UObject/ConstructorHelpers.h"
 
 #include "Engine/Engine.h"
 #include "Containers/EnumAsByte.h"
 #include "DrawDebugHelpers.h"
-#include "Player/SoulCharacter.h"
 
 void USoulFunctionLibrary::CreateOverlapSphere(UWorld* World, const FVector& SphereLocation, float Radius, UClass* ClassFilter, AActor* IgnoreActor, TArray<AActor*>& OverlapActors)
 {
@@ -80,4 +82,25 @@ void USoulFunctionLibrary::ApplyEquipmentStat(UStatComponent* StatComponent, FIt
 	
 	StatComponent->AddHealthValue(Item.MaxHp * EquipConst, Item.Mp * EquipConst, Item.Stamina * EquipConst);
 	StatComponent->AddArmorValue(Item.MeleeArmor * EquipConst, Item.MagicArmor * EquipConst);
+}
+
+USoulGameInstance* USoulFunctionLibrary::GetSoulGameInstance(const UObject* WorldContextObject)
+{
+	UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull);
+
+	return World ? Cast<USoulGameInstance>(World->GetGameInstance()) : nullptr;
+}
+
+ALobbyGameModeBase* USoulFunctionLibrary::GetLobbyGameMode(const UObject* WorldContextObject)
+{
+	UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull);
+
+	return World ? Cast<ALobbyGameModeBase>(World->GetAuthGameMode()): nullptr;
+}
+
+ASoulGameModeBase* USoulFunctionLibrary::GetSoulGameMode(const UObject* WorldContextObject)
+{
+	UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull);
+
+	return World ? Cast<ASoulGameModeBase>(World->GetAuthGameMode()): nullptr;
 }

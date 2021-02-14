@@ -8,8 +8,10 @@ public class Soulslike : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "AIModule", "GameplayTasks", "NavigationSystem", "UMG" });
-
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "AIModule", 
+			"GameplayTasks", "NavigationSystem", "UMG", "OnlineSubsystem", "OnlineSubsystemUtils" });
+		DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
+		
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
 		// Uncomment if you are using Slate UI

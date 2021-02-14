@@ -22,6 +22,9 @@ class SOULSLIKE_API USoulFunctionLibrary : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 	
 public:
+	////////////////////////////////////////////////////////////////////////////
+	//// 플레이어, 에너미
+	
 	// OverlapSphere를 생성한다. Enemy와 SoulCharacter에서 사용된다.
 	static void CreateOverlapSphere(UWorld* World, const FVector& SphereLocation, float Radius, UClass* ClassFilter, AActor* IgnoreActor, TArray<AActor*>& OverlapActors);
 
@@ -33,4 +36,16 @@ public:
 
 	static void ApplyPotion(UStatComponent* StatComponent, FItemTable& Item);
 	static void ApplyEquipmentStat(UStatComponent* StatComponent, FItemTable& Item, const bool bEquip);
+
+    ////////////////////////////////////////////////////////////////////////////
+	//// 게터
+
+	UFUNCTION(BlueprintPure, Category="Game", meta=(WorldContext="WorldContextObject"))
+	static class USoulGameInstance* GetSoulGameInstance(const UObject* WorldContextObject);
+
+	UFUNCTION(BlueprintPure, Category="Game", meta=(WorldContext="WorldContextObject"))
+	static class ALobbyGameModeBase* GetLobbyGameMode(const UObject* WorldContextObject);
+
+	UFUNCTION(BlueprintPure, Category="Game", meta=(WorldContext="WorldContextObject"))
+	static class ASoulGameModeBase* GetSoulGameMode(const UObject* WorldContextObject);
 };
