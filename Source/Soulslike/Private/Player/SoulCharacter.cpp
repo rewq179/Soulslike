@@ -850,39 +850,21 @@ void ASoulCharacter::MulticastUpdateNormalEnemyHp_Implementation(const float Cur
 ////////////////////////////////////////////////////////////////////////////
 //// 보스 몬스터 HUD
 
-void ASoulCharacter::ServerAddBossEnemy_Implementation(AEnemy* InEnemy, const bool bAlive)
+void ASoulCharacter::ClientSetBossEnemy_Implementation(AEnemy* InEnemy, const bool bAlive)
 {
-	if(InEnemy)
+	if(SoulPC)
 	{
-		MulticastSetBossEnemy(InEnemy, bAlive);
-	}
-}
+		if(bAlive) // Set And Show
+		{
+			BossEnemy = InEnemy;
+			BossEnemy->OnBossHpChanged.AddDynamic(this, &ASoulCharacter::OnBossEnemyHpChanged);
+		}
 
-
-void ASoulCharacter::MulticastSetBossEnemy_Implementation(AEnemy* InEnemy, const bool bAlive)
-{
-	auto const PC = Cast<ASoulPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-	if(PC == nullptr)
-	{
-		return;
-	}
-	
-	if(bAlive) // Set And Show
-	{
-		BossEnemy = InEnemy;
-		BossEnemy->OnBossHpChanged.AddDynamic(this, &ASoulCharacter::OnBossEnemyHpChanged);
-
-		PC->ClientShowBossHpBar(true);
-		PC->ClientUpdateBossName(BossEnemy->GetEnemyName());
-		PC->ClientUpdateBossHp(BossEnemy->GetCurHp(), BossEnemy->GetMaxHp());
-	}
-
-	else // Clear
-	{
-		BossEnemy->OnBossHpChanged.RemoveDynamic(this, &ASoulCharacter::ASoulCharacter::OnBossEnemyHpChanged);
-		BossEnemy = nullptr;
-		
-		PC->ClientShowBossHpBar(false);
+		else // Clear
+		{
+			BossEnemy->OnBossHpChanged.RemoveDynamic(this, &ASoulCharacter::ASoulCharacter::OnBossEnemyHpChanged);
+			BossEnemy = nullptr;
+		}
 	}
 }
 
@@ -905,26 +887,9 @@ void ASoulCharacter::MulticastUpdateBossEnemyHp_Implementation(const float CurHp
 ////////////////////////////////////////////////////////////////////////////
 //// 던전
 
-void ASoulCharacter::MulticastTeleportAtLocation_Implementation(const FVector& Location)
+void ASoulCharacter::ClientEndPlayingScene_Implementation()
 {
-	this->TeleportTo(Location, FRotator::ZeroRotator);
-	bPlayingScene = true;
-
-	if(IsLocallyControlled() && BossEnemy)
-	{
-	    const auto Camera = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
-		const FRotator Rotator = UKismetMathLibrary::FindLookAtRotation(Camera->GetCameraLocation(), BossEnemy->GetActorLocation());
-
-		GetController()->SetControlRotation(Rotator);	
-	}
-}
-
-void ASoulCharacter::MulticastEndPlayingScene_Implementation()
-{
-	if(IsLocallyControlled())
-	{
-		bPlayingScene = false;
-	}
+	bPlayingScene = false;
 }
 
 

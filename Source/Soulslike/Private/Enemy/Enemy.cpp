@@ -469,7 +469,15 @@ void AEnemy::SetEnemyHpBarHUD(ASoulCharacter* Player)
 
 	if(IsBossEnemy())
 	{
-		Player->ServerAddBossEnemy(this, !IsDead());
+		if(IsDead())
+		{
+			USoulFunctionLibrary::GetSoulGameMode(GetWorld())->RemoveBossEnemy(this);
+		}
+
+		else
+		{
+			USoulFunctionLibrary::GetSoulGameMode(GetWorld())->AddBossEnemy(this);
+		}
 	}
 
 	else

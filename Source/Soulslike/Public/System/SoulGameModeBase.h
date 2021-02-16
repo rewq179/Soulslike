@@ -53,8 +53,10 @@ public:
 	void AddPlayerController(ASoulPlayerController* InPlayerController);
 
 	void RespawnAllPlayer();
-
 	void EndPlayingScene();
+
+	void AddBossEnemy(AEnemy* InBoss);
+	void RemoveBossEnemy(AEnemy* InBoss);
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 

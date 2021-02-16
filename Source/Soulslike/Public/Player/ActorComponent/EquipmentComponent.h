@@ -83,7 +83,7 @@ protected:
 public:
 	void SetCurrentWeapon(AWeapon* InWeapon);
 	void HideWeapon(const bool bHide);
-	
+
 	////////////////////////////////////////////////////////////////////////////
 	//// 외부에서 실행되는 함수
 
