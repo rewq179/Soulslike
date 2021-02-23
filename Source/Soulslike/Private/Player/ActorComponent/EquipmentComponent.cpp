@@ -69,14 +69,12 @@ void UEquipmentComponent::SetCurrentWeapon(AWeapon* InWeapon)
 	OnRep_CurrentWeapon();
 }
 
-
 void UEquipmentComponent::OnRep_CurrentWeapon()
 {
 	CurrentWeapon->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Weapon_R_Socket");
 
 	HideWeapon(true);
 }
-
 
 void UEquipmentComponent::HideWeapon(const bool bHide)
 {

@@ -384,12 +384,9 @@ protected:
 	AEnemy* BossEnemy;
 
 public:
-	UFUNCTION(Server, Reliable)
-    void ServerAddBossEnemy(AEnemy* InEnemy, const bool bAlive);
+	UFUNCTION(Client, Reliable)
+	void ClientSetBossEnemy(AEnemy* InEnemy, const bool bAlive);
 	
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastSetBossEnemy(AEnemy* InEnemy, const bool bAlive);
-
 	UFUNCTION(NetMulticast, Reliable)
     void MulticastUpdateBossEnemyHp(const float CurHp, const float MaxHp);
 		
@@ -399,11 +396,8 @@ public:
 	////////////////////////////////////////////////////////////////////////////
 	//// 던전
 
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastTeleportAtLocation(const FVector& Location);
-
-	UFUNCTION(NetMulticast, Reliable)
-    void MulticastEndPlayingScene();
+	UFUNCTION(Client, Reliable)
+    void ClientEndPlayingScene();
 	
 	////////////////////////////////////////////////////////////////////////////
 	//// HUD

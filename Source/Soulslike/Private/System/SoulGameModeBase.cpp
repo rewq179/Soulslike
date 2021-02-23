@@ -62,12 +62,10 @@ void ASoulGameModeBase::RespawnAllPlayer()
 	// 플레이어의 위치 텔레포트 및 던전 HUD 출력
 	for(int32 PlayerIndex = 0; PlayerIndex < SoulPlayerControllers.Num(); ++PlayerIndex)
 	{
-		SoulCharacters[PlayerIndex]->MulticastTeleportAtLocation(DungeonTables[CurDungeonId].SpawnPoints[PlayerIndex]);
-
-		if(SoulPlayerControllers[PlayerIndex]->IsLocalController())
-		{
-			SoulPlayerControllers[PlayerIndex]->ClientShowDungeonMessage(DungeonTables[CurDungeonId].Name);
-		}
+		SoulCharacters[PlayerIndex]->TeleportTo(DungeonTables[CurDungeonId].SpawnPoints[PlayerIndex], FRotator::ZeroRotator);
+		SoulCharacters[PlayerIndex]->SetPlayingScene(true);
+		
+		SoulPlayerControllers[PlayerIndex]->ClientShowDungeonMessage(DungeonTables[CurDungeonId].Name);
 	}
 }
 
@@ -75,7 +73,35 @@ void ASoulGameModeBase::EndPlayingScene()
 {
 	for(int32 PlayerIndex = 0; PlayerIndex < SoulPlayerControllers.Num(); ++PlayerIndex)
 	{
-		SoulCharacters[PlayerIndex]->MulticastEndPlayingScene();
+		SoulCharacters[PlayerIndex]->ClientEndPlayingScene();
+	}
+}
+
+void ASoulGameModeBase::AddBossEnemy(AEnemy* InBoss)
+{
+	if(InBoss)
+	{
+		for(int32 Index=0; Index < SoulCharacters.Num(); ++Index)
+		{
+			SoulCharacters[Index]->ClientSetBossEnemy(InBoss, true);
+
+			SoulPlayerControllers[Index]->ClientShowBossHpBar(true);
+            SoulPlayerControllers[Index]->ClientUpdateBossName(BossEnemy->GetEnemyName());
+            SoulPlayerControllers[Index]->ClientUpdateBossHp(BossEnemy->GetCurHp(), BossEnemy->GetMaxHp());
+		}
+	}
+}
+
+void ASoulGameModeBase::RemoveBossEnemy(AEnemy* InBoss)
+{
+	if(InBoss)
+	{
+		for(int32 Index=0; Index < SoulCharacters.Num(); ++Index)
+		{
+			SoulCharacters[Index]->ClientSetBossEnemy(InBoss, false);
+
+			SoulPlayerControllers[Index]->ClientShowBossHpBar(false);
+		}
 	}
 }
 
